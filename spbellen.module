@@ -1,0 +1,125 @@
+<?php
+
+function spbellen_init() {
+  module_load_include("inc", "spbellen", "spbellen");
+  module_load_include('inc', 'webform', 'includes/webform.submissions');
+}
+
+/**
+ *  * Implements hook_menu().
+ *   */
+function spbellen_menu() {
+  $items = array();
+
+  $items['bellen'] = array(
+    'title' => 'SP bellen',
+    'page callback'  => 'spbellen_redirect',
+    'access callback' => TRUE,
+  );
+
+  $items['admin/config/sp/spbellen'] = array(
+    'title' => 'SP bellen',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'spbellen_overview',
+    'file' => 'spbellen_admin_overview.inc',
+    'access callback' => sprbs_access_check(),
+  );
+
+  $items['admin/config/sp/spbellen/overview'] = array(
+    'title' => 'Overzicht',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => '0',
+  );
+
+  $items['admin/config/sp/spbellen/campaign'] = array(
+    'title' => 'Beheer belcampagnes',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_campaign_form'),
+    'file' => 'spbellen_admin_campaign_form.inc',
+    'access callback' => sprbs_access_check(),
+    'weight' => '1',
+  );
+
+  $items['admin/config/sp/spbellen/settings'] = array(
+    'title' => 'Instellingen',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_settings_form'),
+    'file' => 'spbellen_admin_settings_form.inc',
+    'access callback' => sprbs_access_check(),
+    'weight' => '2',
+  );
+
+  $items['spbellen/group/autocomplete'] = array(
+    'title' => 'SP bellen autocomplete',
+    'page callback' => 'spbellen_group_autocomplete',
+    'access callback' => sprbs_access_check(),
+    'type' => MENU_CALLBACK,
+    'file' => 'spbellen.inc',
+  );
+
+
+  return $items;
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function spbellen_entity_info() {
+  $info = array();
+  $info['campaign'] = array(
+    'label' => 'Belcampagne',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'spbellen_campaign',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+    'fieldable' => FALSE,
+  );
+
+  $info['campaign_groups'] = array(
+    'label' => 'Campagne groepen',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'spbellen_campaign_groups',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+    'fieldable' => FALSE,
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_entity_property_info_alter().
+ */
+function campaign_entity_property_info_alter(&$info) {
+  $properties = &$info['campaign']['properties'];
+  foreach (array_keys($properties) as $key) {
+    if ($key == 'id') {
+      continue;
+    }
+    $properties[$key] += array(
+      'setter callback' => 'entity_property_verbatim_set',
+    );
+  }
+
+  $properties = &$info['campaign_groups']['properties'];
+  foreach (array_keys($properties) as $key) {
+    if ($key == 'id') {
+      continue;
+    }
+    $properties[$key] += array(
+      'setter callback' => 'entity_property_verbatim_set',
+    );
+  }
+}
+
+function spbellen_redirect() {
+  $active_campaign = entity_load_single('campaign', variable_get('spbellen_active_campaign', ''));
+  $path = 'node/' . $active_campaign->webform_id;
+  drupal_goto($path);
+}

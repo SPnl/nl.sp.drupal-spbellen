@@ -1,0 +1,6 @@
+name = SP Bellen
+description = Drupal frontend voor ondersteuning bij het bellen van contacten uit CiviCRM.
+core = 7.x
+package = sprbs
+dependencies[] = sprbs
+dependencies[] = spciviapi

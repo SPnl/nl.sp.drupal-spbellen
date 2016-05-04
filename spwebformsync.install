@@ -1,0 +1,85 @@
+<?php
+
+/**
+ * Implements hook_install()
+ */
+function spwebformsync_install() {
+}
+
+/**
+ * Implements hook_uninstall()
+ */
+function spwebformsync_uninstall() {
+  // Remove any variables we created.
+  variable_del('spwebformsync_allowed_component_types');
+  variable_del('spwebformsync_civi_groups');
+  variable_del('spwebformsync_civi_tags');
+  variable_del('spwebformsync_sync_data');
+  variable_del('spwebformsync_hou_hoog_group');
+  variable_del('spwebformsync_unverified_tag');
+  variable_del('spwebformsync_sync_type');
+  variable_del('spwebformsync_cron_number');
+  variable_del('spwebformsync_postphoned_submission_syncs');
+  variable_del('spwebformsync_do_not_check_confirmation');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function spwebformsync_schema() {
+  $schema['spwebformsync_syncstate'] = array(
+    'description' => 'Status of webform submission processing (0=not processed, 1=synced, 2=error).',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'sid' => array(
+        'description' => 'The submission id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => 'The webform node id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'state' => array(
+        'description' => 'The submission state.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'unique keys' => array(
+      'sid' => array(
+        'sid',
+      ),
+    ),
+  );
+  return $schema;
+}
+
+function spwebformsync_update_7100() {
+  drupal_install_schema('spwebformsync');
+  spwebformsync_migrate_states();
+}
+
+function spwebformsync_migrate_states() {
+  require_once('spwebformsync.processing.inc');
+  $postphoned_submissions = variable_get('spwebformsync_postphoned_submission_syncs');
+  if (!empty($postphoned_submissions)) {
+    foreach ($postphoned_submissions as $nid => $values) {
+      foreach ($values as $sid) {
+        spwebformsync_store_submission_sync_state($nid, $sid, 'unprocessed');
+      }
+    }
+  }
+  variable_del('spwebformsync_postphoned_submission_syncs');
+}

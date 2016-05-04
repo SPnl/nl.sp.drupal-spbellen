@@ -1,0 +1,245 @@
+<?php
+
+/**
+ * Implements hook_install()
+ */
+function spbellen_install() {
+}
+
+/**
+ * Implements hook_uninstall()
+ */
+function spbellen_uninstall() {
+  // Remove any variables we created.
+  //variable_del('');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function spbellen_schema() {
+  $schema['spbellen_campaign'] = array(
+    'description' => 'Campaign settings',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'webform_id' => array(
+        'description' => 'The webform id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'condition_component' => array(
+        'description' => 'The intro form component that defines the condition to show the campaign questions.',
+        'type' => 'int',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'condition_accept_value' => array(
+        'description' => 'The value of the intro form component that defines wether to show the campagin questions.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+/* 
+      'start_date' => array(
+        'description' => 'Campaign start date (YYYY-MM-DD).',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'end_date' => array(
+        'description' => 'Campaign end date (YYYY-MM-DD).',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'start_time' => array(
+        'description' => 'Campaign start time (HH:MM:SS).',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'end_time' => array(
+        'description' => 'Campaign end time (HH:MM:SS).',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+*/
+      'disabled' => array(
+        'description' => 'Wether the campaign is disabled.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'unique keys' => array(
+      'webform_id' => array(
+        'webform_id',
+      ),
+    ),
+  );
+
+  $schema['spbellen_campaign_groups'] = array(
+    'description' => 'Links campaigns to CiviCRM groups.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'campaign_id' => array(
+        'description' => 'The campaign id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'civi_group_id' => array(
+        'description' => 'The CiviCRM group id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'group_name' => array(
+        'description' => 'The group name.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'group_type' => array(
+        'description' => 'Either target_group or call_group',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'disabled' => array(
+        'description' => 'Wether the campaign group is disabled.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+
+  $schema['spbellen_targets'] = array(
+    'description' => 'Target contacts for campaigns.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'civi_contact_id' => array(
+        'description' => 'The CiviCRM contact id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'campaign_id' => array(
+        'description' => 'The campaign id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'occupied' => array(
+        'description' => 'Wether the contact is being called.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+      'disabled' => array(
+        'description' => 'Wether the contact is disabled for the campaign.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+
+  $schema['spbellen_action'] = array(
+    'description' => 'Actions on target contact for campaign.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'user_id' => array(
+        'description' => 'The user id performing te action.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'target_id' => array(
+        'description' => 'The target contact is a campaign.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'timestamp' => array(
+        'description' => 'Unix timestamp.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'action_result' => array(
+        'description' => 'Either no_answer, wrong_number, voicemail_left_message_callback, voicemail_left_message_completed, voicemail_left_no_message, answered_call_back, answered_completed, answered_never_call_back.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not_null' => TRUE,
+      ),
+      'notes' => array(
+        'description' => 'Notes made by caller.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'webform_submission_id' => array(
+        'description' => 'The webform submission id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+
+  $schema['spbellen_blacklist'] = array(
+    'description' => 'Contacts that should not be called.',
+    'fields' => array(
+      'civi_contact_id' => array(
+        'description' => 'Primary key.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'civi_contact_id',
+    ),
+  );
+
+  return $schema;
+}
