@@ -90,6 +90,17 @@ function spbellen_entity_info() {
     'fieldable' => FALSE,
   );
 
+  $info['target'] = array(
+    'label' => 'Doel',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'spbellen_targets',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+    'fieldable' => FALSE,
+  );
+
   return $info;
 }
 
@@ -116,10 +127,37 @@ function campaign_entity_property_info_alter(&$info) {
       'setter callback' => 'entity_property_verbatim_set',
     );
   }
+
+  $properties = &$info['targets']['properties'];
+  foreach (array_keys($properties) as $key) {
+    if ($key == 'id') {
+      continue;
+    }
+    $properties[$key] += array(
+      'setter callback' => 'entity_property_verbatim_set',
+    );
+  }
 }
 
 function spbellen_redirect() {
   $active_campaign = entity_load_single('campaign', variable_get('spbellen_active_campaign', ''));
   $path = 'node/' . $active_campaign->webform_id;
   drupal_goto($path);
+}
+
+function spbellen_entity_delete($entity, $type) { 
+  if ($type == 'campaign') {
+    // Delete webform.
+    node_delete($entity->webform_id);
+    // Cleanup spbellen tables.
+    if (!empty($entity->id)) {
+      // Cleanup targets and campaign groups.
+      $sql = "DELETE  t, g FROM {spbellen_targets} t INNER JOIN {spbellen_campaign_groups} g ON g.campaign_id = t.campaign_id WHERE t.campaign_id = :campaign_id";
+      db_query($sql, array(':campaign_id' => $entity->id));
+    }
+  }
+  if ($type == 'webform') {
+    // To do: Check if there is a campaign connected to this webform.
+    // To do: If so, delete campaign.
+  }
 }

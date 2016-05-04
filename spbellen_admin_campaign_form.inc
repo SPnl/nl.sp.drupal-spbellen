@@ -39,21 +39,39 @@ function spbellen_campaign_form($form, &$form_state) {
     );
   }
   else {
-    // Show message.
-    $form['message_cache'] = array(
-      '#markup' => '<p><strong>Leeg de Drupal cache als een CiviCRM groep niet te vinden is!</strong></p>',
-    );
     if (!empty($webforms_list)) {
+      // Create webform select element.
+      if ($storage['campaign'] === 'new') {
+        // Filter already set forms.
+        $campaigns = entity_load('campaign');
+        foreach ($campaigns as $campaign) {
+          unset($webforms_list[$campaign->webform_id]);
+        }
+      }
       $disabled = ($storage['campaign'] === 'new') ? FALSE : TRUE;
-      // Create form element.
+      // Filter introform.
+      $introform_id = variable_get('spbellen_intro_webform', FALSE);
+      if (!empty($introform_id)) {
+        unset($webforms_list[$introform_id]);
+      }
       $form['webform'] = array(
         '#type' => 'select',
         '#title' => 'Kies het belscript webformulier',
+        '#name' => 'webform',
         '#options' => $webforms_list,
         '#empty_option' => 'Kies:',
         '#required' => TRUE,
         '#default_value' => empty($storage['webform']) ? array() : $storage['webform'],
         '#disabled' => $disabled,
+        '#ajax' => array(
+          'wrapper' => 'spbellen_ajax_form',
+          'callback' => 'spbellen_campaign_form_ajax_callback',
+        ),
+      );
+
+      // Show message.
+      $form['message_cache'] = array(
+        '#markup' => '<p><strong>Leeg de Drupal cache als een CiviCRM groep niet te vinden is!</strong></p>',
       );
 
       // Add group selections.
@@ -154,6 +172,18 @@ function spbellen_campaign_form($form, &$form_state) {
         }
       }
 
+      if ($storage['campaign'] !== 'new') {
+        $form['sync'] = array(
+          '#type' => 'fieldset',
+          '#title' => 'Synchronizeer de doelgroep met CiviCRM',
+        );
+        $form['sync']['sync_targets'] = array(
+          '#type' => 'button',
+          '#name' => 'sync_targets',
+          '#value' => 'Sync',
+          '#prefix' => '<p>Indien groepen gewijzigd zijn, eerst opslaan.</p>',
+        );
+      }
 
       $form['disabled'] = array(
         '#type' => 'checkboxes',
@@ -192,6 +222,18 @@ function spbellen_campaign_form_validate($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
+    case 'sync_targets':
+      $campaign = entity_load_single('campaign', $storage['campaign']);
+      if (!empty($campaign)) {
+        $result = spbellen_get_targets($campaign, $disabled = 0);
+        if ($result !== FALSE) {
+          drupal_set_message('Doelgroep is gesynchronizeerd.');
+        }
+        else {
+          drupal_set_message('Doelgroep kon niet worden gesynchronizeerd.', 'error');
+        }
+      }
+      break;
     case 'condition_component':
       if (!empty($values['condition_component'])) {
         $storage['condition_component'] = $values['condition_component'];
@@ -209,7 +251,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         // Preset stored campaign values.
         $campaign = entity_load_single('campaign', $storage['campaign']);
         if (!empty($campaign)) {
-          dpm($campaign);
           $storage['webform'] = $campaign->webform_id;
           $storage['condition_component'] = $campaign->condition_component;
           $storage['condition_accept_value'] = $campaign->condition_accept_value;
@@ -232,6 +273,8 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         }
       }
       break;
+    case 'webform':
+      $storage['webform'] = $values['webform'];
     case 'new_campaign':
       $storage['campaign'] = 'new';
       break;
@@ -245,6 +288,10 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         if (empty($storage[$type_key.'s'])) {
           form_set_error($type_key, 'Selecteer minimaal één '.$type_name.'.');
         }
+      }
+      // check if campaign questions condition is set.
+      if (empty($values['condition_component']) || empty($values['condition_accept_value'])) {
+        form_set_error('condition', 'Kies de conditie die bepaald of campagnevragen gesteld moeten worden.');
       }
       return;
       break;
@@ -282,7 +329,9 @@ function spbellen_campaign_form_submit($form, &$form_state) {
       // Store campaign in database.
       $campaign = spbellen_store_campaign($storage, $values);
       // Add spbellen intro form to campaign form.
-      //spbellen_add_intro_form($campaign);
+      if ($storage['campaign'] === 'new') {
+        spbellen_add_intro_form($campaign);
+      }
       break;
     case 'delete':
       // Delete campaign.
@@ -386,23 +435,6 @@ function spbellen_delete_campaign($storage) {
     }
     else {
       drupal_set_message('Campagne is verwijderd.');
-    }
-    $campaign_groups = array();
-    $query = new EntityFieldQuery();
-
-    $result = $query
-      ->entityCondition('entity_type', 'campaign_groups')
-      ->propertyCondition('campaign_id', $campaign->id) 
-      ->execute();
-
-    if (!empty($result['campaign_groups'])) {
-      $cgids = array_keys($result['campaign_groups']);
-      foreach ($cgids as $campaign_group_id) {
-        $result = entity_delete('campaign_groups', $campaign_group_id);
-        if ($result === FALSE) {
-          drupal_set_message('Het verwijderen van de groep is niet gelukt.', 'error');
-        }
-      }
     }
   }
 }

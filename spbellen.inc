@@ -17,8 +17,6 @@ function spbellen_get_webforms() {
       $webforms = entity_load('node', $nids);
     }
   } 
-  // Filter already set forms.
-  // To do.
   return $webforms;
 }
 
@@ -169,7 +167,6 @@ function spbellen_add_intro_form($campaign) {
   }
   else {
     $error = TRUE;
-    dpm('Could not load campaign webform.');
   }
 
   $intro_webform = node_load(variable_get('spbellen_intro_webform', ''));
@@ -180,14 +177,44 @@ function spbellen_add_intro_form($campaign) {
   }
   else {
     $error = TRUE;
-    dpm('Could not load intro webform.');
   }
 
   if (!$error) {
     // Create new webform that joins the intro and campaign webforms.
  
-    // Add intro fieldset.
     $joined_component_id = 1;
+
+    // Add contact components.
+    $contact_fields = array(
+      'contact_id' => 'Contact id',
+      'display_name' => 'Weergave naam',
+      'street_address'=> 'Adres',
+      'postal_code' => 'Postcode',
+      'city' => 'Plaats',
+      'email' => 'E-mail',
+      'gender' => 'Geslacht',
+      'phone' => 'Telefoonnummer',
+    );
+    foreach ($contact_fields as $key => $name) {
+      $joined_components[$joined_component_id] = array(
+        'pid' => 0,
+        'form_key' => $key,
+        'name' => $name,
+        'type' => 'hidden',
+        'value' => '',
+        'extra' => array(
+          'private' => 0,
+          'hidden_type' => 'value',
+          'analysis' => FALSE,
+        ),
+        'required' => 0,
+        'weight' => $joined_component_id,
+        'page_num' => 1,
+      );
+      $joined_component_id ++;
+    }
+
+    // Add intro fieldset.
     $joined_components[$joined_component_id] = array(
       'pid' => 0,
       'form_key' => 'intro',
@@ -327,20 +354,11 @@ function spbellen_add_intro_form($campaign) {
       $joined_conditional_id ++;
     }
 
-//    dpm('intro');
-//    dpm($intro_components);
-//    dpm($intro_conditionals);
-//    dpm('campaign');
-//    dpm($campaign_components);
-//    dpm($campaign_conditionals);
-//    dpm('joined');
-//    dpm($joined_components);
-//    dpm($joined_conditionals);
     // Create new webform.
     $joined_form = new stdClass();
     $joined_form->type = 'webform';
     node_object_prepare($joined_form);
-    $joined_form->title = 'Test: '.$campaign_webform->title;
+    $joined_form->title = 'Campagne: '.$campaign_webform->title;
     $joined_form->language = $campaign_webform->language;
     $joined_form->uid = $campaign_webform->uid;
     $joined_form->promote = $campaign_webform->promote;
@@ -369,11 +387,14 @@ function spbellen_add_intro_form($campaign) {
       'components' => $joined_components,
       'conditionals' => $joined_conditionals,
     );
-    dpm($joined_form);
     node_save($joined_form);
+    if (!empty($joined_form->nid)) {
+      $campaign->webform_id = $joined_form->nid;
+      entity_save('campaign', $campaign);
+      //node_delete($campaign_webform->nid);
+    }
   }
   else {
-    dpm('Error');
   }
 }
 
@@ -409,4 +430,88 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
     }
   }
   return $options;
+}
+
+function spbellen_get_targets($campaign, $disabled = 0) {
+  // Get campaign target groups.
+  $query = new EntityFieldQuery();
+  $result = $query
+    ->entityCondition('entity_type', 'campaign_groups')
+    ->propertyCondition('campaign_id', $campaign->id)
+    ->propertyCondition('group_type', 'target_group')
+    ->propertyCondition('disabled', $disabled)
+    ->execute();
+  if (isset($result['campaign_groups'])) {
+    $tids_civi = array();
+    $tids_db = array();
+    $campaign_groups_ids = array_keys($result['campaign_groups']);
+    $campaign_groups = entity_load('campaign_groups', $campaign_groups_ids);
+    // Get targets from CiviCRM.
+    $tids_civi = array();
+    set_time_limit(0);
+    $spcivi = \SPCivi::getInstance();
+    foreach ($campaign_groups as $campaign_group) {
+      $params = array(
+        'option.limit' => 9999,
+        'filter.group_id' => array(0 => $campaign_group->civi_group_id),
+        'is_deleted' => 0,
+        'do_not_phone' => 0,
+        'return' => 'contact_id',
+        'status' => 'Added',
+      );
+      $results = $spcivi->api('Contact', 'get', $params);
+      if (!isset($result['is_error']) || $result['is_error'] == 0) {
+        // New targets.
+        if (!empty($results['values'])) {
+          foreach ($results['values'] as $result) {
+            $tids_civi[$result['contact_id']] = $result['contact_id'];
+          }
+        }
+      }
+      else {
+        drupal_set_message('Er is een fout opgetreden bij het ophalen van doelgroepleden.', 'error');
+        watchdog('spbellen', '<p>Foutmelding:<br/>'.$result['error_message'].'</p>Parameters:<pre>'.print_r($params, TRUE).'</pre>');
+        return FALSE;
+      }
+      // Get targets from database.
+      $tids_db = array();
+      $query = new EntityFieldQuery();
+
+      $results = $query
+        ->entityCondition('entity_type', 'target')
+        ->propertyCondition('campaign_id', $campaign->id)
+        ->execute();
+
+      if (!empty($results['target'])) {
+        $tids = array_keys($results['target']);
+        $targets = entity_load('target', $tids);
+        foreach ($targets as $target) {
+          $tids_db[$target->civi_contact_id] = $target->civi_contact_id;
+        }
+      }
+    }
+    // Get new and deleted targets.
+    $tids_new = array_diff($tids_civi, $tids_db);
+    $tids_del = array_diff($tids_db, $tids_civi);
+
+    // Store new ids.
+    foreach ($tids_new as $tid) {
+      $result = db_insert('spbellen_targets')
+        ->fields(array(
+          'civi_contact_id' => $tid,
+          'campaign_id' => $campaign->id,
+          'occupied' => 0,
+          'disabled' => 0,
+        ))
+        ->execute();
+    }
+
+    // Delete removed targets in database.
+    foreach ($tids_del as $tid) {
+      db_delete('spbellen_targets')
+        ->condition('campaign_id', $campaign->id)
+        ->condition('civi_contact_id', $tid)
+        ->execute();
+    }
+  }
 }
