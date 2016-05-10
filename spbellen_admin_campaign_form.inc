@@ -338,6 +338,8 @@ function spbellen_campaign_form_submit($form, &$form_state) {
       spbellen_delete_campaign($storage);
       break;
     }
+    // Clear spbellen_forms cache.
+    cache_clear_all('spbellen_forms', 'cache');
   }
 }
 

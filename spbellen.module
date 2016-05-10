@@ -1,9 +1,7 @@
 <?php
 
-function spbellen_init() {
   module_load_include("inc", "spbellen", "spbellen");
   module_load_include('inc', 'webform', 'includes/webform.submissions');
-}
 
 /**
  *  * Implements hook_menu().
@@ -155,9 +153,89 @@ function spbellen_entity_delete($entity, $type) {
       $sql = "DELETE  t, g FROM {spbellen_targets} t INNER JOIN {spbellen_campaign_groups} g ON g.campaign_id = t.campaign_id WHERE t.campaign_id = :campaign_id";
       db_query($sql, array(':campaign_id' => $entity->id));
     }
+    // Clear spbellen forms cache.
+    cache_clear_all('spbellen_forms', 'cache');
   }
   if ($type == 'webform') {
     // To do: Check if there is a campaign connected to this webform.
     // To do: If so, delete campaign.
+    // Clear spbellen forms cache.
+    cache_clear_all('spbellen_forms', 'cache');
   }
+}
+
+function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
+  // Check if spbellen form.
+  if (!empty($form['#node'])) {
+    if (spbellen_is_spbellen_form($form['#node']->nid)) {
+      dpm('Form:');
+      dpm($form);
+      // Assign target.
+      $contact_data = spbellen_assign_target($form['#node']->nid);
+      dpm('Contact data:');
+      dpm($contact_data);
+      $contact_fields = spbellen_contact_fields();
+      $component_nr = 1;
+      foreach ($contact_fields as $key => $name) {
+        // Set form field values.
+        $form['submitted'][$key]['#value'] = $contact_data[$key];
+        $component_nr ++;
+      }
+    }
+  }
+}
+
+function spbellen_webform_insert($node, $submission) {
+  // Disown target.
+}
+
+function spbellen_user_login($edit, $account) {
+  // Store caller campaign access in session.
+  $caller_civi_groups = array();
+  $call_groups = array();
+  // Check if civicrm id for user is set.
+  if (!empty($account->field_contact_id)) {
+    // Get caller civi groups.
+    set_time_limit(0);
+    $spcivi = \SPCivi::getInstance();
+    $params = array(
+      'contact_id' => $account->field_contact_id['und'][0]['value'],
+    );
+    $results = $spcivi->api('GroupContact', 'get', $params);
+    if (spbellen_check_result($results, 'groepen', 'get', $params)) {
+      if (!empty($results['values'])) {
+        foreach ($results['values'] as $result) {
+          $caller_civi_groups[] = $result['group_id'];
+        }
+      }
+    }
+    // Get call groups.
+    $query = "SELECT webform_id, civi_group_id FROM {spbellen_campaign_groups} cg INNER JOIN {spbellen_campaign} ca ON cg.campaign_id = ca.id WHERE group_type = 'call_group'";
+    $results = db_query($query);
+    if ($results) {
+      while ($row = $results->fetchAssoc()) {
+        $call_groups[$row['webform_id']] = $row['civi_group_id'];
+      }
+    }
+    // Get intersection. 
+    $caller_call_groups = array_intersect($call_groups, $caller_civi_groups);
+    // Store caller call groups in session.
+    $_SESSION['spbellen']['call_groups'] = $caller_call_groups;
+  }
+}
+
+function spbellen_node_access($node, $op, $account) {
+  // Check campaign form access.
+  if (!empty($node->nid)) {
+    if (spbellen_is_spbellen_form($node->nid)) {
+      // Check session for call groups.
+      if(spbellen_campaign_form_access($node->nid)) {
+        return NODE_ACCESS_ALLOW;
+      }
+      else {
+        return NODE_ACCESS_DENY;
+      }
+    }
+  }
+  return NODE_ACCESS_IGNORE;
 }

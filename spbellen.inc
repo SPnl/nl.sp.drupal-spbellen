@@ -85,7 +85,7 @@ function spbellen_get_civi_groups($sync = TRUE) {
           'option.limit'          => 9999,
         );
         $groups_results = $spcivi->api('Group', 'get', $params);
-        if (_spcf_check_result($groups_results, 'groepen', 'get', $params)) {
+        if (spbellen_check_result($groups_results, 'groepen', 'get', $params)) {
           if (!empty($groups_results['values'])) {
             foreach ($groups_results['values'] as $value) {
               if (
@@ -185,16 +185,7 @@ function spbellen_add_intro_form($campaign) {
     $joined_component_id = 1;
 
     // Add contact components.
-    $contact_fields = array(
-      'contact_id' => 'Contact id',
-      'display_name' => 'Weergave naam',
-      'street_address'=> 'Adres',
-      'postal_code' => 'Postcode',
-      'city' => 'Plaats',
-      'email' => 'E-mail',
-      'gender' => 'Geslacht',
-      'phone' => 'Telefoonnummer',
-    );
+    $contact_fields = spbellen_contact_fields();
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
         'pid' => 0,
@@ -367,7 +358,7 @@ function spbellen_add_intro_form($campaign) {
     $joined_form->webform = array(
       'confirmation' => '',
       'confirmation_format' => NULL,
-      'redirect_url' => '',
+      'redirect_url' => '<none>',
       'status' => '1',
       'block' => '0',
       'teaser' => '0',
@@ -386,6 +377,7 @@ function spbellen_add_intro_form($campaign) {
       'emails' => array(),
       'components' => $joined_components,
       'conditionals' => $joined_conditionals,
+      'roles' => array(2),
     );
     node_save($joined_form);
     if (!empty($joined_form->nid)) {
@@ -460,7 +452,7 @@ function spbellen_get_targets($campaign, $disabled = 0) {
         'status' => 'Added',
       );
       $results = $spcivi->api('Contact', 'get', $params);
-      if (!isset($result['is_error']) || $result['is_error'] == 0) {
+      if (spbellen_check_result($results, 'contacten', 'get', $params)) {
         // New targets.
         if (!empty($results['values'])) {
           foreach ($results['values'] as $result) {
@@ -469,8 +461,6 @@ function spbellen_get_targets($campaign, $disabled = 0) {
         }
       }
       else {
-        drupal_set_message('Er is een fout opgetreden bij het ophalen van doelgroepleden.', 'error');
-        watchdog('spbellen', '<p>Foutmelding:<br/>'.$result['error_message'].'</p>Parameters:<pre>'.print_r($params, TRUE).'</pre>');
         return FALSE;
       }
       // Get targets from database.
@@ -514,4 +504,134 @@ function spbellen_get_targets($campaign, $disabled = 0) {
         ->execute();
     }
   }
+}
+
+function spbellen_contact_fields() {
+  $contact_fields = array(
+    'contact_id' => 'Contact id',
+    'display_name' => 'Weergave naam',
+    'street_address'=> 'Adres',
+    'postal_code' => 'Postcode',
+    'city' => 'Plaats',
+    'email' => 'E-mail',
+    'gender' => 'Geslacht',
+    'phone' => 'Telefoonnummer',
+  );
+  return $contact_fields;
+}
+
+function spbellen_is_spbellen_form($nid) {
+  // Check if spbellen form.
+  $data = &drupal_static(__FUNCTION__);
+  if (!isset($data[$nid])) {
+    if ($cache = cache_get('spbellen_forms')) {
+      $data = $cache->data;
+      if (!isset($data[$nid])) {
+        $data[$nid] = spbellen_is_spbellen_form_check($nid); 
+        cache_set('spbellen_forms', $data, 'cache');
+      }
+    }
+    else {
+      $data[$nid] = spbellen_is_spbellen_form_check($nid); 
+      cache_set('spbellen_forms', $data, 'cache');
+    }
+  }
+  return $data[$nid];
+}
+
+function spbellen_is_spbellen_form_check($nid) {
+  // Check if spbellen form.
+  $query = new EntityFieldQuery();
+  $result = $query
+    ->entityCondition('entity_type', 'campaign')
+    ->propertyCondition('webform_id', $nid)
+    ->execute();
+  if (isset($result['campaign'])) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+function spbellen_assign_target($form_node_id) {
+  global $user;
+  $caller = user_load($user->uid);
+  // Check if is logged in via spoauth.
+  if (
+    user_is_logged_in() &&
+    !empty($caller->field_contact_id)
+  ) {
+    $caller_id = $caller->field_contact_id['und'][0]['value'];
+    $query = "SELECT * FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid  AND occupied_id = :oid AND occupied_date > :time LIMIT 1";
+    $result = db_query($query, array(
+      ':cid' => $form_node_id,
+      ':oid' => $caller_id,
+      ':time' => time() - 1800,
+    ))->fetchAssoc();
+    if ($result) {
+      dpm('existing target');
+      // Already claimed target available.
+      dpm($result);
+    }
+    else {
+      // Get new target.
+      $query = "SELECT * FROM {spbellen_targets} WHERE campaign_id = :cid AND (occupied = 0 OR (occupied = 1 AND occupied_date < :time)) ORDER BY RAND() LIMIT 1";
+      $result = db_query($query, array(
+        ':cid' => $form_node_id,
+        ':time' => time() - 1800,
+      ))->fetchAssoc();
+      if ($result) {
+        dpm('claiming new target');
+        dpm($result);
+        // Claim target.
+        $result = db_update('spbellen_targets')
+          ->fields(array(
+            'occupied' => 1,
+            'occupied_date' => time(),
+            'occupied_id' => $caller_id,
+          ))
+          ->condition('id', $result['id'])
+          ->execute();
+      }
+    }
+    $target_id = $result['civi_contact_id'];
+    // Get civicrm data.
+    set_time_limit(0);
+    $spcivi = \SPCivi::getInstance();
+    $params = array(
+      'contact_id' => $target_id,
+    );
+    $result = $spcivi->api('Contact', 'getsingle', $params);
+    if (spbellen_check_result($result, 'contacten', 'get', $params)) {
+      return $result;
+    }
+  }
+  else {
+    drupal_set_message('Log in via SPNET om gebruik te kunnen maken van de spbellen.', 'error');
+  }
+  return FALSE;
+}
+
+function spbellen_check_result($result, $dataname, $action, $data = NULL, $submission = NULL) {
+  $action_name = ($action === 'get') ? 'ophalen' : 'aanmaken';
+  $place_name = ($action === 'get') ? 'uit' : 'in';
+  if (!isset($result['is_error']) || $result['is_error'] == 1) {
+    if (empty($submission)) {
+      drupal_set_message('Fout bij het ' . $action_name . ' van ' . $dataname . '.', 'error');
+      watchdog('spbellen', '<p>Fout bij het ' . $action_name . ' van ' . $dataname . '.<pre>' . print_r($result, TRUE) . '</pre>Parameters:<pre>' . print_r($data, TRUE) . '</pre>', array(), WATCHDOG_ERROR);
+    }
+    else {
+      drupal_set_message('Fout bij het ' . $action_name . ' van ' . $dataname . ' ' . $place_name . ' CiviCRM (sid = ' . $submission->sid . ').', 'error');
+      watchdog('spbellen', '<p>Fout bij het ' . $action_name . ' van ' . $dataname . ' ' . $place_name . ' CiviCRM (sid = ' . $submission->sid . ').</p>Resultaat:<pre>' . print_r($result, TRUE) . '</pre>Parameters:<pre>' . print_r($data, TRUE) . '</pre>', array(), WATCHDOG_ERROR);
+    }
+    return FALSE;
+  }
+  return TRUE;
+}
+
+function spbellen_campaign_form_access($form_nid) {
+  // Check session for call groups.
+  if (!empty($_SESSION['spbellen']['call_groups'][$form_nid])) {
+    return TRUE;
+  }
+  return FALSE;
 }

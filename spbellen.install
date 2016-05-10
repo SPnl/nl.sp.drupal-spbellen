@@ -163,6 +163,16 @@ function spbellen_schema() {
         'default' => 0,
         'not null' => TRUE,
       ),
+      'occupied_date' => array(
+        'description' => 'The moment when the target was occupied.',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'occupied_id' => array(
+        'description' => 'The civicrm id of the caller.',
+        'type' => 'int',
+        'size' => 'big',
+      ),
       'disabled' => array(
         'description' => 'Wether the contact is disabled for the campaign.',
         'type' => 'int',
@@ -178,6 +188,10 @@ function spbellen_schema() {
       'campaign_target' => array(
         'campaign_id',
         'civi_contact_id',
+      ),
+      'caller_target' => array(
+        'campaign_id',
+        'occupied_id',
       ),
     ),
   );
