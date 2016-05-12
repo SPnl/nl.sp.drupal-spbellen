@@ -261,7 +261,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
       $campaign = spbellen_store_campaign($storage, $values);
       // Add spbellen intro form to campaign form.
       if ($storage['campaign'] === 'new') {
-        spbellen_add_intro_form($campaign);
+        spbellen_create_campaign_form($campaign);
       }
       if (!empty($campaign)) {
         $result = spbellen_get_targets($campaign);
@@ -272,6 +272,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
           drupal_set_message('Doelgroep kon niet worden gesynchronizeerd.', 'error');
         }
       }
+      cache_clear_all('spbellen_forms', 'cache');
       break;
     case 'delete':
       // Delete campaign.
@@ -373,4 +374,3 @@ function spbellen_delete_campaign($campaign_id) {
     drupal_set_message('Campagne is verwijderd.');
   }
 }
-

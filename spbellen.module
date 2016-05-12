@@ -2,6 +2,7 @@
 
   module_load_include("inc", "spbellen", "spbellen");
   module_load_include('inc', 'webform', 'includes/webform.submissions');
+  module_load_include('inc', 'pathauto', 'pathauto');
 
 /**
  *  * Implements hook_menu().
@@ -143,34 +144,45 @@ function campaign_entity_property_info_alter(&$info) {
   }
 }
 
-function spbellen_redirect() {
-  $active_campaign = entity_load_single('campaign', variable_get('spbellen_active_campaign', ''));
-  $path = 'node/' . $active_campaign->webform_id;
-  drupal_goto($path);
+function spbellen_node_update($node) {
+  if (spbellen_is_spbellen_form_check($node->nid)) {
+    $alias = pathauto_cleanstring($node->title);
+    $alias_array = array(
+      'source' => 'node/'.$node->nid,
+      'alias' => 'bellen/campagne/'.$alias,
+    );
+    path_save($alias_array);
+  }
+}
+
+function spbellen_node_delete($node) {
+  if ($node->type == 'webform') {
+    if (spbellen_is_spbellen_form_check($node->nid)) {
+      $campaign_id = spbellen_get_campaign_id($node->nid);
+      if (!empty($campaign_id)) {
+        // Cleanup targets and campaign groups.
+        entity_delete('campaign', $campaign_id);
+      }
+    }
+  }
 }
 
 function spbellen_entity_delete($entity, $type) { 
   if ($type == 'campaign') {
     // Delete webform.
-    node_delete($entity->webform_id);
-    // Cleanup spbellen tables.
-    if (!empty($entity->id)) {
-      // Cleanup targets and campaign groups.
-      $sql = "DELETE FROM {spbellen_targets} WHERE campaign_id = :campaign_id";
-      db_query($sql, array(':campaign_id' => $entity->id));
-      $sql = "DELETE FROM {spbellen_campaign_groups} WHERE campaign_id = :campaign_id";
-      db_query($sql, array(':campaign_id' => $entity->id));
-      $sql = "DELETE ac FROM {spbellen_action} ac INNER JOIN {spbellen_targets} ta ON ac.target_id = ta.id WHERE campaign_id = :campaign_id";
-      db_query($sql, array(':campaign_id' => $entity->id));
+    if (node_load($entity->webform_id)) {
+      node_delete($entity->webform_id);
     }
+    // Cleanup targets and campaign groups.
+    $sql = "DELETE FROM {spbellen_targets} WHERE campaign_id = :campaign_id";
+    $result = db_query($sql, array(':campaign_id' => $entity->id));
+    $sql = "DELETE FROM {spbellen_campaign_groups} WHERE campaign_id = :campaign_id";
+    $result = db_query($sql, array(':campaign_id' => $entity->id));
+    $sql = "DELETE ac FROM {spbellen_action} ac INNER JOIN {spbellen_targets} ta ON ac.target_id = ta.id WHERE campaign_id = :campaign_id";
+    $result = db_query($sql, array(':campaign_id' => $entity->id));
     // Clear spbellen forms cache.
     cache_clear_all('spbellen_forms', 'cache');
-  }
-  if ($type == 'webform') {
-    // To do: Check if there is a campaign connected to this webform.
-    // To do: If so, delete campaign.
-    // Clear spbellen forms cache.
-    cache_clear_all('spbellen_forms', 'cache');
+    drupal_set_message('Campagne data is verwijderd.');
   }
 }
 
@@ -184,12 +196,10 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       $contact_data = spbellen_assign_target($campaign_id);
       // Fill data.
       $contact_fields = spbellen_contact_fields();
-      $component_nr = 1;
       foreach ($contact_fields as $key => $name) {
         // Set form field values.
         $form['submitted']['spbellen_hidden_'.$key]['#value'] = $contact_data[$key];
-        $form['submitted']['spbellen_'.$key]['#value'] = $contact_data[$key];
-        $component_nr ++;
+        $form['submitted']['contact_data']['spbellen_'.$key]['#value'] = $contact_data[$key];
       }
     }
   }
@@ -288,4 +298,117 @@ function spbellen_node_access($node, $op, $account) {
 
 function spbellen_error_page() {
   return '<p></p>';
+}
+
+/**
+ *  * Implements hook_block_info().
+ *   */
+function spbellen_block_info() {
+  $blocks['spbellen_history'] = array(
+    'info' => 'Belgeschiedenis',
+    //'cache' => DRUPAL_NO_CACHE,
+    'pages' => "bellen/campagne/*",
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+  );
+
+  $blocks['spbellen_contact_data'] = array(
+    'info' => 'Contact gegevens',
+    //'cache' => DRUPAL_NO_CACHE,
+    'pages' => "bellen/campagne/*",
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function spbellen_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'spbellen_history':
+      return array(
+        'subject' => 'Belgeschiedenis',
+        'content' => spbellen_history_block_content(),
+      );
+      break;
+    case 'spbellen_contact_data':
+      return array(
+        'subject' => 'Contact gegevens',
+        'content' => spbellen_contact_data_block_content(),
+      );
+      break;
+  }
+  return $block;
+}
+
+function spbellen_history_block_content() {
+  global $user;
+  $output = '';
+  $node = menu_get_object();
+  if (spbellen_is_spbellen_form($node->nid)) {
+    $caller = user_load($user->uid);
+    if (!empty($caller->field_contact_id)) {
+      $caller_id = $caller->field_contact_id['und'][0]['value'];
+      $campaign_id = spbellen_get_campaign_id($node->nid);
+      $translate = spbellen_action_translate();
+      $query = "SELECT attempts, timestamp, result, webform_submission_id FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
+      $result = db_query($query, array(':caller_id' => $caller_id, ':cid' => $campaign_id));
+      if (!empty($result)) {
+        while ($row = $result->fetchAssoc()) {
+          $output .= '<p>';
+          $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
+          $output .= $date_formatted.'<br/>';
+          $output .= $translate[$row['result']].'<br/>';
+          $output .= '</p>';
+        }
+      }
+    }
+  }
+  return $output;
+}
+
+function spbellen_contact_data_block_content() {
+  global $user;
+  $output = '';
+  $node = menu_get_object();
+  if (spbellen_is_spbellen_form($node->nid)) {
+    $caller = user_load($user->uid);
+    if (!empty($caller->field_contact_id)) {
+      $caller_id = $caller->field_contact_id['und'][0]['value'];
+      $campaign_id = spbellen_get_campaign_id($node->nid);
+      $contact_fields = spbellen_contact_fields();
+      $query = "SELECT target_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
+      $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $caller_id))->fetchAssoc();
+      if (!empty($result['target_id'])) {
+        $contact_data = spbellen_get_contact_data_uncached($result['target_id']);
+        $output .= '<p>';
+        $strong_fields = array('phone', 'display_name');
+        foreach ($contact_fields as $key => $value) {
+          $output .= !empty($contact_data[$key]) ? $contact_data[$key] : '';
+          $output .= '<br/>';
+        }
+        $output .= '</p>';
+      }
+    }
+  }
+  return $output;
+}
+
+function spbellen_cron() {
+  cache_clear_all('spbellen_contact_data', 'cache');
+}
+
+function spbellen_redirect() {
+  $active_campaign = entity_load_single('campaign', variable_get('spbellen_active_campaign', FALSE));
+  if ($active_campaign) {
+    $path = drupal_get_path_alias('node/' . $active_campaign->webform_id);
+    drupal_goto($path);
+  }
+  else {
+    drupal_set_message('Er is geen actieve campagne ingesteld.', 'error');
+    drupal_goto('bellen/error');
+  }
 }

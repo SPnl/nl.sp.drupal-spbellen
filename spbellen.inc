@@ -157,7 +157,7 @@ function spbellen_get_stored_campaign_groups($campaign_id, $type) {
   return $campaign_groups;
 }
 
-function spbellen_add_intro_form($campaign) {
+function spbellen_create_campaign_form($campaign) {
   $error = FALSE;
   $campaign_webform = node_load($campaign->webform_id);
   if (!empty($campaign_webform->webform)) {
@@ -190,9 +190,32 @@ function spbellen_add_intro_form($campaign) {
       $joined_component_id ++;
     }
 
+    // Add contact data fieldset.
+    $joined_components[$joined_component_id] = array(
+      'pid' => 0,
+      'form_key' => 'contact_data',
+      'name' => 'Contact gegevens corrigeren',
+      'type' => 'fieldset',
+      'value' => '',
+      'extra' => array(
+        'description_above' => 0,
+        'private' => 0,
+        'css_classes' => '',
+        'title_display' => 0,
+        'collapsible' => 1,
+        'collapsed' => 1,
+        'description' => '',
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $parent = $joined_component_id;
+    $joined_component_id ++;
+
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
-        'pid' => 0,
+        'pid' => $parent,
         'form_key' => 'spbellen_'.$key,
         'name' => $name,
         'type' => 'textfield',
@@ -485,6 +508,8 @@ function spbellen_add_intro_form($campaign) {
     $joined_form->promote = 0;
     $joined_form->comment = 0;
     $joined_form->sticky = 0;
+    $joined_form->path['pathauto'] = 0;
+    $joined_form->path['alias'] = 'bellen/campagne/'.pathauto_cleanstring($joined_form->title);
     // Attach the webform to the node.
     $joined_form->webform = array(
       'confirmation' => '',
@@ -515,6 +540,13 @@ function spbellen_add_intro_form($campaign) {
       $campaign->webform_id = $joined_form->nid;
       entity_save('campaign', $campaign);
       //node_delete($campaign_webform->nid);
+      $alias = pathauto_cleanstring($joined_form->title);
+      $alias_array = array(
+        'source' => 'node/'.$joined_form->nid,
+        'alias' => 'bellen/campagne/'.$alias,
+      );
+      path_delete($joined_form->nid);
+      path_save($alias_array);
     }
   }
   else {
@@ -637,14 +669,14 @@ function spbellen_get_targets($campaign) {
 
 function spbellen_contact_fields() {
   $contact_fields = array(
-    'contact_id' => 'Contact id',
+    'phone' => 'Telefoonnummer',
     'display_name' => 'Weergave naam',
+    'email' => 'E-mail',
     'street_address'=> 'Adres',
     'postal_code' => 'Postcode',
     'city' => 'Plaats',
-    'email' => 'E-mail',
+    'contact_id' => 'Contact id',
     'gender' => 'Geslacht',
-    'phone' => 'Telefoonnummer',
   );
   return $contact_fields;
 }
@@ -718,15 +750,12 @@ function spbellen_assign_target($campaign_id) {
       $target_id = $result['target_id'];
       // Get civicrm data.
       set_time_limit(0);
-      $spcivi = \SPCivi::getInstance();
-      $params = array(
-        'contact_id' => $target_id,
-      );
-      $result = $spcivi->api('Contact', 'get', $params);
-      if (spbellen_check_result($result, 'een contact', 'get', $params)) {
-        if (!empty($result['values'])) {
-          return $result['values'][0];
-        }
+      $result = spbellen_get_contact_data_uncached($result['target_id']);
+      if ($result) {
+        return $result;
+      }
+      else {
+        drupal_set_message('Er is geen contact gevonden.', 'error');
       }
     }
     else {
@@ -736,7 +765,7 @@ function spbellen_assign_target($campaign_id) {
   else {
     drupal_set_message('Log in via SPNET om gebruik te kunnen maken van de spbellen.', 'error');
   }
-  drupal_goto('/bellen/error');
+  //drupal_goto('/bellen/error');
   return FALSE;
 }
 
@@ -781,7 +810,7 @@ function spbellen_campaign_form_access($form_nid) {
 function spbellen_get_campaign_id($webform_id) {
   $query = "SELECT id FROM {spbellen_campaign} WHERE webform_id = :webform_id";
   $result = db_query($query, array(':webform_id' => $webform_id))->fetchAssoc();
-  return $result['id'];
+  return (!empty($result['id'])) ? $result['id'] : FALSE;
 }
 
 function spbellen_component_key_id_map($webform_node) {
@@ -809,4 +838,33 @@ function spbellen_blacklist($target_contact_id) {
       'civi_contact_id' => $target_contact_id,
     ))
     ->execute();
+}
+
+function spbellen_action_translate() {
+  return array(
+    'wrong_number' => 'Verkeerd nummer',
+    'busy' => 'In gesprek',
+    'answered_completed' => 'Gesprek afgerond.',
+    'answered_call_back' => 'Telefoon beantwoord, terugbellen.',
+    'answered_blacklist' => 'Niet meer bellen.',
+    'voicemail_no_message' => 'Voicemail, niet ingesproken.',
+    'voicemail_message_callback' => 'Voicmail ingesproken, terugbellen.',
+    'voicemail_message_complete' => 'Voicemail ingesproken, niet terugbellen.',
+  );
+}
+
+function spbellen_get_contact_data_uncached($contact_id) {
+  // Get civicrm data.
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'contact_id' => $contact_id,
+  );
+  $result = $spcivi->api('Contact', 'get', $params);
+  if (spbellen_check_result($result, 'een contact', 'get', $params)) {
+    if (!empty($result['values'])) {
+      return $result['values'][0];
+    }
+  }
+  return FALSE;
 }
