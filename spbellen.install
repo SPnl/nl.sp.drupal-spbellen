@@ -33,44 +33,6 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'condition_component' => array(
-        'description' => 'The intro form component that defines the condition to show the campaign questions.',
-        'type' => 'int',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'condition_accept_value' => array(
-        'description' => 'The value of the intro form component that defines wether to show the campagin questions.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-/* 
-      'start_date' => array(
-        'description' => 'Campaign start date (YYYY-MM-DD).',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-      'end_date' => array(
-        'description' => 'Campaign end date (YYYY-MM-DD).',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-      'start_time' => array(
-        'description' => 'Campaign start time (HH:MM:SS).',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-      'end_time' => array(
-        'description' => 'Campaign end time (HH:MM:SS).',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-*/
       'disabled' => array(
         'description' => 'Wether the campaign is disabled.',
         'type' => 'int',
@@ -122,13 +84,6 @@ function spbellen_schema() {
         'length' => 255,
         'not null' => TRUE,
       ),
-      'disabled' => array(
-        'description' => 'Wether the campaign group is disabled.',
-        'type' => 'int',
-        'size' => 'tiny',
-        'default' => 0,
-        'not null' => TRUE,
-      ),
     ),
     'primary key' => array(
       'id',
@@ -144,7 +99,7 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'civi_contact_id' => array(
+      'target_id' => array(
         'description' => 'The CiviCRM contact id.',
         'type' => 'int',
         'size' => 'big',
@@ -156,6 +111,20 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
+      'call_back' => array(
+        'description' => 'Wether to call again.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 1,
+        'not null' => TRUE,
+      ),
+      'attempts' => array(
+        'description' => 'Number of calls made.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
       'occupied' => array(
         'description' => 'Wether the contact is being called.',
         'type' => 'int',
@@ -163,22 +132,15 @@ function spbellen_schema() {
         'default' => 0,
         'not null' => TRUE,
       ),
-      'occupied_date' => array(
+      'date' => array(
         'description' => 'The moment when the target was occupied.',
         'type' => 'int',
         'size' => 'big',
       ),
-      'occupied_id' => array(
+      'caller_id' => array(
         'description' => 'The civicrm id of the caller.',
         'type' => 'int',
         'size' => 'big',
-      ),
-      'disabled' => array(
-        'description' => 'Wether the contact is disabled for the campaign.',
-        'type' => 'int',
-        'size' => 'tiny',
-        'default' => 0,
-        'not null' => TRUE,
       ),
     ),
     'primary key' => array(
@@ -187,11 +149,7 @@ function spbellen_schema() {
     'unique keys' => array(
       'campaign_target' => array(
         'campaign_id',
-        'civi_contact_id',
-      ),
-      'caller_target' => array(
-        'campaign_id',
-        'occupied_id',
+        'target_id',
       ),
     ),
   );
@@ -205,14 +163,14 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'user_id' => array(
-        'description' => 'The user id performing te action.',
+      'target_id' => array(
+        'description' => 'The target contact is a campaign.',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'target_id' => array(
-        'description' => 'The target contact is a campaign.',
+      'caller_id' => array(
+        'description' => 'The user id performing te action.',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
@@ -223,16 +181,11 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'action_result' => array(
+      'result' => array(
         'description' => 'Either no_answer, wrong_number, voicemail_left_message_callback, voicemail_left_message_completed, voicemail_left_no_message, answered_call_back, answered_completed, answered_never_call_back.',
         'type' => 'varchar',
         'length' => 255,
         'not_null' => TRUE,
-      ),
-      'notes' => array(
-        'description' => 'Notes made by caller.',
-        'type' => 'varchar',
-        'length' => 255,
       ),
       'webform_submission_id' => array(
         'description' => 'The webform submission id.',

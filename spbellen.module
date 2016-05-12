@@ -15,6 +15,12 @@ function spbellen_menu() {
     'access callback' => TRUE,
   );
 
+  $items['bellen/error'] = array(
+    'title' => '',
+    'page callback'  => 'spbellen_error_page',
+    'access callback' => TRUE,
+  );
+
   $items['admin/config/sp/spbellen'] = array(
     'title' => 'SP bellen',
     'type' => MENU_NORMAL_ITEM,
@@ -150,7 +156,11 @@ function spbellen_entity_delete($entity, $type) {
     // Cleanup spbellen tables.
     if (!empty($entity->id)) {
       // Cleanup targets and campaign groups.
-      $sql = "DELETE  t, g FROM {spbellen_targets} t INNER JOIN {spbellen_campaign_groups} g ON g.campaign_id = t.campaign_id WHERE t.campaign_id = :campaign_id";
+      $sql = "DELETE FROM {spbellen_targets} WHERE campaign_id = :campaign_id";
+      db_query($sql, array(':campaign_id' => $entity->id));
+      $sql = "DELETE FROM {spbellen_campaign_groups} WHERE campaign_id = :campaign_id";
+      db_query($sql, array(':campaign_id' => $entity->id));
+      $sql = "DELETE ac FROM {spbellen_action} ac INNER JOIN {spbellen_targets} ta ON ac.target_id = ta.id WHERE campaign_id = :campaign_id";
       db_query($sql, array(':campaign_id' => $entity->id));
     }
     // Clear spbellen forms cache.
@@ -167,26 +177,62 @@ function spbellen_entity_delete($entity, $type) {
 function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
   // Check if spbellen form.
   if (!empty($form['#node'])) {
-    if (spbellen_is_spbellen_form($form['#node']->nid)) {
-      dpm('Form:');
-      dpm($form);
+    $nid = $form['#node']->nid;
+    if (spbellen_is_spbellen_form($nid)) {
+      $campaign_id = spbellen_get_campaign_id($nid);
       // Assign target.
-      $contact_data = spbellen_assign_target($form['#node']->nid);
-      dpm('Contact data:');
-      dpm($contact_data);
+      $contact_data = spbellen_assign_target($campaign_id);
+      // Fill data.
       $contact_fields = spbellen_contact_fields();
       $component_nr = 1;
       foreach ($contact_fields as $key => $name) {
         // Set form field values.
-        $form['submitted'][$key]['#value'] = $contact_data[$key];
+        $form['submitted']['spbellen_hidden_'.$key]['#value'] = $contact_data[$key];
+        $form['submitted']['spbellen_'.$key]['#value'] = $contact_data[$key];
         $component_nr ++;
       }
     }
   }
 }
 
-function spbellen_webform_insert($node, $submission) {
-  // Disown target.
+function spbellen_webform_submission_insert($node, $submission) {
+  if (spbellen_is_spbellen_form($node->nid)) {
+    global $user;
+    $caller = user_load($user->uid);
+    $caller_id = $caller->field_contact_id['und'][0]['value'];
+    $campaign_id = spbellen_get_campaign_id($node->nid);
+    $map = spbellen_component_key_id_map($node);
+
+    // Get civicrm contact id from form.
+    $target_contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
+
+    // Get target id.
+    $query = "SELECT id FROM {spbellen_targets} WHERE target_id = :target_id AND campaign_id = :cid";
+    $result = db_query($query, array(':target_id' => $target_contact_id, ':cid' => $campaign_id))->fetchAssoc();
+    $tid = $result['id'];
+
+    // Create action.
+
+    if (!empty($submission->data[$map['call_answered']][0])) {
+      $result = $submission->data[$map['call_answered']][0];
+    }
+    if (!empty($submission->data[$map['target_available']][0])) {
+      $result = $submission->data[$map['target_available']][0];
+    }
+    if (!empty($submission->data[$map['voicemail_left_message']][0])) {
+      $result = $submission->data[$map['voicemail_left_message']][0];
+    }
+    spbellen_create_action($tid, $caller_id, $result, $submission->sid);
+
+    $call_back = (in_array($result, array('answered_call_back', 'voicemail_message_callback', 'voicemail_no_message', 'busy'))) ? 1 : 0;
+
+    if ($result === 'answered_blacklist') {
+      spbellen_blacklist($target_contact_id);
+    }
+
+    // Disassign target.
+    spbellen_disassign_target($tid, $call_back);
+  }
 }
 
 function spbellen_user_login($edit, $account) {
@@ -238,4 +284,8 @@ function spbellen_node_access($node, $op, $account) {
     }
   }
   return NODE_ACCESS_IGNORE;
+}
+
+function spbellen_error_page() {
+  return '<p></p>';
 }

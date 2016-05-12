@@ -49,11 +49,6 @@ function spbellen_campaign_form($form, &$form_state) {
         }
       }
       $disabled = ($storage['campaign'] === 'new') ? FALSE : TRUE;
-      // Filter introform.
-      $introform_id = variable_get('spbellen_intro_webform', FALSE);
-      if (!empty($introform_id)) {
-        unset($webforms_list[$introform_id]);
-      }
       $form['webform'] = array(
         '#type' => 'select',
         '#title' => 'Kies het belscript webformulier',
@@ -124,54 +119,6 @@ function spbellen_campaign_form($form, &$form_state) {
         );
       }
 
-      if (!empty($storage['webform'])) {
-        // Select the field value condition to show campaign questions.
-        // --------------------------------------------------------------------
-        $intro_form_id = variable_get('spbellen_intro_webform', FALSE);
-        $intro_form_components = spbellen_get_webform_allowed_components($intro_form_id, array('select' => 'select'));
-        if (!empty($intro_form_components)) {
-          $intro_form = node_load($intro_form_id);
-          $intro_form_component_select_options = webform_component_list($intro_form, $intro_form_components, FALSE);
-          $form['condition'] = array(
-            '#type' => 'fieldset',
-            '#title' => 'Kies de conditie die bepaald of campagnevragen gesteld moeten worden.',
-          );
-          $form['condition']['condition_component'] = array(
-            '#type' => 'select',
-            '#title' => 'Formulier veld',
-            '#options' => $intro_form_component_select_options,
-            '#empty_option' => '- Geen -',
-            '#ajax' => array(
-              'wrapper' => 'spbellen_ajax_form',
-              'callback' => 'spbellen_campaign_form_ajax_callback',
-            ),
-            '#name' => 'condition_component',
-            '#default_value' => empty($storage['condition_component']) ? array() : $storage['condition_component'],
-          );
-          if (!empty($storage['condition_component'])) {
-            $selected_component = $storage['condition_component'];
-            $condition_accept_value_options = spbellen_parse_webform_select_options($intro_form, $selected_component);
-            $form['condition']['condition_accept_value'] = array(
-              '#type' => 'select',
-              '#title' => 'Bij formulier veld waarde',
-              '#options' => $condition_accept_value_options,
-              '#empty_option' => '- Geen -',
-              '#ajax' => array(
-                'wrapper' => 'spbellen_ajax_form',
-                'callback' => 'spbellen_campaign_form_ajax_callback',
-              ),
-              '#name' => 'condition_accept_value',
-              '#default_value' => empty($storage['condition_accept_value']) ? array() : $storage['condition_accept_value'],
-            );
-          }
-        }
-        else {
-          $form['condition']['condition_no_components'] = array(
-            '#markup' => '<p>Er zijn geen geschikte webformulier velden gevonden.</p>',
-          );
-        }
-      }
-
       if ($storage['campaign'] !== 'new') {
         $form['sync'] = array(
           '#type' => 'fieldset',
@@ -225,23 +172,13 @@ function spbellen_campaign_form_validate($form, &$form_state) {
     case 'sync_targets':
       $campaign = entity_load_single('campaign', $storage['campaign']);
       if (!empty($campaign)) {
-        $result = spbellen_get_targets($campaign, $disabled = 0);
+        $result = spbellen_get_targets($campaign);
         if ($result !== FALSE) {
           drupal_set_message('Doelgroep is gesynchronizeerd.');
         }
         else {
           drupal_set_message('Doelgroep kon niet worden gesynchronizeerd.', 'error');
         }
-      }
-      break;
-    case 'condition_component':
-      if (!empty($values['condition_component'])) {
-        $storage['condition_component'] = $values['condition_component'];
-      }
-      break;
-    case 'condition_accept_value':
-      if (!empty($values['condition_accept_value'])) {
-        $storage['condition_accept_value'] = $values['condition_accept_value'];
       }
       break;
     case 'select_campaign':
@@ -252,8 +189,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         $campaign = entity_load_single('campaign', $storage['campaign']);
         if (!empty($campaign)) {
           $storage['webform'] = $campaign->webform_id;
-          $storage['condition_component'] = $campaign->condition_component;
-          $storage['condition_accept_value'] = $campaign->condition_accept_value;
           $storage['disabled'] = $campaign->disabled;
           $campaign_groups = array();
           $query = new EntityFieldQuery();
@@ -288,10 +223,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         if (empty($storage[$type_key.'s'])) {
           form_set_error($type_key, 'Selecteer minimaal één '.$type_name.'.');
         }
-      }
-      // check if campaign questions condition is set.
-      if (empty($values['condition_component']) || empty($values['condition_accept_value'])) {
-        form_set_error('condition', 'Kies de conditie die bepaald of campagnevragen gesteld moeten worden.');
       }
       return;
       break;
@@ -332,10 +263,19 @@ function spbellen_campaign_form_submit($form, &$form_state) {
       if ($storage['campaign'] === 'new') {
         spbellen_add_intro_form($campaign);
       }
+      if (!empty($campaign)) {
+        $result = spbellen_get_targets($campaign);
+        if ($result !== FALSE) {
+          drupal_set_message('Doelgroep is gesynchronizeerd.');
+        }
+        else {
+          drupal_set_message('Doelgroep kon niet worden gesynchronizeerd.', 'error');
+        }
+      }
       break;
     case 'delete':
       // Delete campaign.
-      spbellen_delete_campaign($storage);
+      spbellen_delete_campaign($storage['campaign']);
       break;
     }
     // Clear spbellen_forms cache.
@@ -399,8 +339,6 @@ function spbellen_store_campaign($storage, $values) {
     // Create campaign.
     $properties = array(
       'webform_id' => $values['webform'],
-      'condition_component' => $values['condition_component'],
-      'condition_accept_value' => $values['condition_accept_value'],
       'disabled' => $values['disabled']['disabled'],
     );
     $campaign = entity_create('campaign', $properties);
@@ -408,8 +346,6 @@ function spbellen_store_campaign($storage, $values) {
   else {
     $campaign = entity_load_single('campaign', $storage['campaign']);
     $campaign->webform_id = $values['webform'];
-    $campaign->condition_component = $values['condition_component'];
-    $campaign->condition_accept_value = $values['condition_accept_value'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
   }
   $result = entity_save('campaign', $campaign);
@@ -428,16 +364,13 @@ function spbellen_store_campaign($storage, $values) {
   return $campaign;
 }
 
-function spbellen_delete_campaign($storage) {
-  $campaign = entity_load_single('campaign', $storage['campaign']);
-  if (!empty($campaign)) {
-    $result = entity_delete('campaign', $campaign->id);
-    if ($result === FALSE) {
-      drupal_set_message('Het verwijderen van de campagne is niet gelukt.', 'error');
-    }
-    else {
-      drupal_set_message('Campagne is verwijderd.');
-    }
+function spbellen_delete_campaign($campaign_id) {
+  $result = entity_delete('campaign', $campaign_id);
+  if ($result === FALSE) {
+    drupal_set_message('Het verwijderen van de campagne is niet gelukt.', 'error');
+  }
+  else {
+    drupal_set_message('Campagne is verwijderd.');
   }
 }
 

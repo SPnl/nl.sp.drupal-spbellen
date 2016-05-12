@@ -164,23 +164,8 @@ function spbellen_add_intro_form($campaign) {
     $form = $campaign_webform->webform; 
     $campaign_components = !empty($form['components']) ? $form['components'] : array();
     $campaign_conditionals = !empty($form['conditionals']) ? $form['conditionals'] : array();
-  }
-  else {
-    $error = TRUE;
-  }
 
-  $intro_webform = node_load(variable_get('spbellen_intro_webform', ''));
-  if (!empty($intro_webform->webform)) {
-    $form = $intro_webform->webform;
-    $intro_components = !empty($form['components']) ? $form['components'] : array();
-    $intro_conditionals = !empty($form['conditionals']) ? $form['conditionals'] : array();
-  }
-  else {
-    $error = TRUE;
-  }
-
-  if (!$error) {
-    // Create new webform that joins the intro and campaign webforms.
+    // Create new campaign webform.
  
     $joined_component_id = 1;
 
@@ -189,13 +174,44 @@ function spbellen_add_intro_form($campaign) {
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
         'pid' => 0,
-        'form_key' => $key,
+        'form_key' => 'spbellen_hidden_'.$key,
         'name' => $name,
         'type' => 'hidden',
         'value' => '',
         'extra' => array(
           'private' => 0,
           'hidden_type' => 'value',
+          'analysis' => FALSE,
+        ),
+        'required' => 0,
+        'weight' => $joined_component_id,
+        'page_num' => 1,
+      );
+      $joined_component_id ++;
+    }
+
+    foreach ($contact_fields as $key => $name) {
+      $joined_components[$joined_component_id] = array(
+        'pid' => 0,
+        'form_key' => 'spbellen_'.$key,
+        'name' => $name,
+        'type' => 'textfield',
+        'value' => '',
+        'extra' => array(
+          'title_display' => 'inline',
+          'description_above' => 0,
+          'private' => 0,
+          'wrapper_classes' => '',
+          'css_classes' => '',
+          'width' => '',
+          'maxlength' => '',
+          'field_prefix' => '',
+          'field_suffix' => '',
+          'disabled' => 0,
+          'unique' => 0,
+          'description' => '',
+          'placeholder' => '',
+          'attributes' => array(),
           'analysis' => FALSE,
         ),
         'required' => 0,
@@ -228,39 +244,153 @@ function spbellen_add_intro_form($campaign) {
     $parent = $joined_component_id;
     $joined_component_id ++;
 
-    // Adding intro components');
-    foreach ($intro_components as $intro_cid => $intro_component) {
-      // Unset unknown id's.
-      unset($intro_component['nid']);
-      unset($intro_component['cid']);
-      $intro_component['pid'] = $parent;
-      $intro_component['weight'] = $joined_component_id;
-      $joined_components[$joined_component_id] = $intro_component;
-      $intro_component_id_map[$intro_cid] = $joined_component_id;
-      $joined_component_id ++;
-    }
+    // Add intro components.
+    // Call answered?
+    $joined_components[$joined_component_id] = array(
+      'pid' => $parent,
+      'form_key' => 'call_answered',
+      'name' => 'Heeft u iemand gesproken?',
+      'type' => 'select',
+      'value' => '',
+      'extra' => array(
+        'items' => "answered|Ja\nvoicemail|Nee, voicemail\nwrong_number|Nee, verkeerd nummer\nbusy|Nee, in gesprek",
+        'multiple' => 0,
+        'title_display' => 'before',
+        'description_above' => 0,
+        'private' => 0,
+        'wrapper_classes' => '',
+        'css_classes' => '',
+        'aslist' => 0,
+        'empty_option' => '',
+        'optrand' => 0,
+        'other_option' => NULL,
+        'other_text' => 'Other ...',
+        'description' => '',
+        'custom_keys' => FALSE,
+        'options_source' => '',
+        'analysis' => TRUE,
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $call_answered_component_id = $joined_component_id;
+    $joined_component_id ++;
+    // Target available?
+    $joined_components[$joined_component_id] = array(
+      'pid' => $parent,
+      'form_key' => 'target_available',
+      'name' => 'Is uw contact beschikbaar om vragen te beantwoorden?',
+      'type' => 'select',
+      'value' => '',
+      'extra' => array(
+        'items' => "answered_completed|Ja\nanswered_call_back|Nee, terugbellen\nanswered_blacklist|Nee, niet meer bellen",
+        'multiple' => 0,
+        'title_display' => 'before',
+        'description_above' => 0,
+        'private' => 0,
+        'wrapper_classes' => '',
+        'css_classes' => '',
+        'aslist' => 0,
+        'empty_option' => '',
+        'optrand' => 0,
+        'other_option' => NULL,
+        'other_text' => 'Other ...',
+        'description' => '',
+        'custom_keys' => FALSE,
+        'options_source' => '',
+        'analysis' => TRUE,
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $contact_available_component_id = $joined_component_id;
+    $joined_component_id ++;
+    // Voicemail left message?
+    $joined_components[$joined_component_id] = array(
+      'pid' => $parent,
+      'form_key' => 'voicemail_left_message',
+      'name' => 'Heeft u de voicemail ingesproken?',
+      'type' => 'select',
+      'value' => '',
+      'extra' => array(
+        'items' => "voicemail_no_message|Nee\nvoicemail_message_callback|Ja, nog een keer bellen\nvoicemail_message_complete|Ja, niet meer bellen",
+        'multiple' => 0,
+        'title_display' => 'before',
+        'description_above' => 0,
+        'private' => 0,
+        'wrapper_classes' => '',
+        'css_classes' => '',
+        'aslist' => 0,
+        'empty_option' => '',
+        'optrand' => 0,
+        'other_option' => NULL,
+        'other_text' => 'Other ...',
+        'description' => '',
+        'custom_keys' => FALSE,
+        'options_source' => '',
+        'analysis' => TRUE,
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $voicemail_left_message_component_id = $joined_component_id;
+    $joined_component_id ++;
 
     // Adding intro conditionals.
     $joined_conditional_id = 0;
-    foreach ($intro_conditionals as $intro_cid => $intro_conditional) {
-      // Unset unknown id's.
-      unset($intro_conditional['nid']);
-      $intro_conditional['rgid'] = $joined_conditional_id;
-      foreach ($intro_conditional['rules'] as $rid => &$rule) {
-        unset($rule['nid']);
-        unset($rule['rid']);
-        $rule['rgid'] = $joined_conditional_id;
-        $rule['source'] = $intro_component_id_map[$rule['source']];
-      }
-      foreach ($intro_conditional['actions'] as $aid => &$rule) {
-        unset($rule['nid']);
-        unset($rule['aid']);
-        $rule['rgid'] = $joined_conditional_id;
-        $rule['target'] = $intro_component_id_map[$rule['target']];
-      }
-      $joined_conditionals[$joined_conditional_id] = $intro_conditional;
-      $joined_conditional_id ++;
-    }
+    $joined_conditionals[$joined_conditional_id] = array(
+      'rgid' => $joined_conditional_id,
+      'andor' => NULL,
+      'rules' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'source_type' => 'component',
+          'source' => $call_answered_component_id,
+          'operator' => 'equal',
+          'value' => 'answered',
+        ),
+      ),
+      'actions' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'target_type' => 'component',
+          'target' => $contact_available_component_id,
+          'invert' => 0,
+          'action' => 'show',
+          'argument' => '',
+        ),
+      ),
+    );
+    $joined_conditional_id ++;
+
+    $joined_conditionals[$joined_conditional_id] = array(
+      'rgid' => $joined_conditional_id,
+      'andor' => NULL,
+      'rules' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'source_type' => 'component',
+          'source' => $call_answered_component_id,
+          'operator' => 'equal',
+          'value' => 'voicemail',
+        ),
+      ),
+      'actions' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'target_type' => 'component',
+          'target' => $voicemail_left_message_component_id,
+          'invert' => 0,
+          'action' => 'show',
+          'argument' => '',
+        ),
+      ),
+    );
+    $joined_conditional_id ++;
+
 
     // Add intro conditional to show campaign fieldset.
     
@@ -271,9 +401,9 @@ function spbellen_add_intro_form($campaign) {
         0 => array(
           'rgid' => $joined_conditional_id,
           'source_type' => 'component',
-          'source' => $intro_component_id_map[$campaign->condition_component],
+          'source' => $contact_available_component_id,
           'operator' => 'equal',
-          'value' => $campaign->condition_accept_value,
+          'value' => 'answered_completed',
         ),
       ),
       'actions' => array(
@@ -352,8 +482,9 @@ function spbellen_add_intro_form($campaign) {
     $joined_form->title = 'Campagne: '.$campaign_webform->title;
     $joined_form->language = $campaign_webform->language;
     $joined_form->uid = $campaign_webform->uid;
-    $joined_form->promote = $campaign_webform->promote;
-    $joined_form->comment = $campaign_webform->comment;
+    $joined_form->promote = 0;
+    $joined_form->comment = 0;
+    $joined_form->sticky = 0;
     // Attach the webform to the node.
     $joined_form->webform = array(
       'confirmation' => '',
@@ -424,14 +555,13 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
   return $options;
 }
 
-function spbellen_get_targets($campaign, $disabled = 0) {
+function spbellen_get_targets($campaign) {
   // Get campaign target groups.
   $query = new EntityFieldQuery();
   $result = $query
     ->entityCondition('entity_type', 'campaign_groups')
     ->propertyCondition('campaign_id', $campaign->id)
     ->propertyCondition('group_type', 'target_group')
-    ->propertyCondition('disabled', $disabled)
     ->execute();
   if (isset($result['campaign_groups'])) {
     $tids_civi = array();
@@ -488,10 +618,9 @@ function spbellen_get_targets($campaign, $disabled = 0) {
     foreach ($tids_new as $tid) {
       $result = db_insert('spbellen_targets')
         ->fields(array(
-          'civi_contact_id' => $tid,
+          'target_id' => $tid,
           'campaign_id' => $campaign->id,
           'occupied' => 0,
-          'disabled' => 0,
         ))
         ->execute();
     }
@@ -500,7 +629,7 @@ function spbellen_get_targets($campaign, $disabled = 0) {
     foreach ($tids_del as $tid) {
       db_delete('spbellen_targets')
         ->condition('campaign_id', $campaign->id)
-        ->condition('civi_contact_id', $tid)
+        ->condition('target_id', $tid)
         ->execute();
     }
   }
@@ -552,7 +681,7 @@ function spbellen_is_spbellen_form_check($nid) {
   return FALSE;
 }
 
-function spbellen_assign_target($form_node_id) {
+function spbellen_assign_target($campaign_id) {
   global $user;
   $caller = user_load($user->uid);
   // Check if is logged in via spoauth.
@@ -561,54 +690,67 @@ function spbellen_assign_target($form_node_id) {
     !empty($caller->field_contact_id)
   ) {
     $caller_id = $caller->field_contact_id['und'][0]['value'];
-    $query = "SELECT * FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid  AND occupied_id = :oid AND occupied_date > :time LIMIT 1";
+    $query = "SELECT target_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND call_back = 1 AND attempts < 3 AND campaign_id = :cid  AND caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
-      ':cid' => $form_node_id,
-      ':oid' => $caller_id,
-      ':time' => time() - 1800,
+      ':cid' => $campaign_id,
+      ':caller_id' => $caller_id,
     ))->fetchAssoc();
-    if ($result) {
-      dpm('existing target');
-      // Already claimed target available.
-      dpm($result);
-    }
-    else {
+    if (!$result) {
       // Get new target.
-      $query = "SELECT * FROM {spbellen_targets} WHERE campaign_id = :cid AND (occupied = 0 OR (occupied = 1 AND occupied_date < :time)) ORDER BY RAND() LIMIT 1";
+      $query = "SELECT id, target_id, occupied FROM {spbellen_targets}  ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE call_back = 1 AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND (occupied = 0 OR (occupied = 1 AND date < :time)) ORDER BY attempts ASC, RAND() LIMIT 1";
       $result = db_query($query, array(
-        ':cid' => $form_node_id,
+        ':cid' => $campaign_id,
         ':time' => time() - 1800,
       ))->fetchAssoc();
       if ($result) {
-        dpm('claiming new target');
-        dpm($result);
         // Claim target.
-        $result = db_update('spbellen_targets')
+        $civi_result = db_update('spbellen_targets')
           ->fields(array(
             'occupied' => 1,
-            'occupied_date' => time(),
-            'occupied_id' => $caller_id,
+            'date' => time(),
+            'caller_id' => $caller_id,
           ))
           ->condition('id', $result['id'])
           ->execute();
       }
     }
-    $target_id = $result['civi_contact_id'];
-    // Get civicrm data.
-    set_time_limit(0);
-    $spcivi = \SPCivi::getInstance();
-    $params = array(
-      'contact_id' => $target_id,
-    );
-    $result = $spcivi->api('Contact', 'getsingle', $params);
-    if (spbellen_check_result($result, 'contacten', 'get', $params)) {
-      return $result;
+    if (!empty($result)) {
+      $target_id = $result['target_id'];
+      // Get civicrm data.
+      set_time_limit(0);
+      $spcivi = \SPCivi::getInstance();
+      $params = array(
+        'contact_id' => $target_id,
+      );
+      $result = $spcivi->api('Contact', 'get', $params);
+      if (spbellen_check_result($result, 'een contact', 'get', $params)) {
+        if (!empty($result['values'])) {
+          return $result['values'][0];
+        }
+      }
+    }
+    else {
+      drupal_set_message('Er is geen contact gevonden.', 'error');
     }
   }
   else {
     drupal_set_message('Log in via SPNET om gebruik te kunnen maken van de spbellen.', 'error');
   }
+  drupal_goto('/bellen/error');
   return FALSE;
+}
+
+function spbellen_disassign_target($tid, $call_back) {
+  $result = db_update('spbellen_targets')
+    ->fields(array(
+      'occupied' => 0,
+      'date' => time(),
+      'caller_id' => NULL,
+      'call_back' => $call_back,
+    ))
+    ->expression('attempts', 'attempts + 1')
+    ->condition('id', $tid)
+    ->execute();
 }
 
 function spbellen_check_result($result, $dataname, $action, $data = NULL, $submission = NULL) {
@@ -634,4 +776,37 @@ function spbellen_campaign_form_access($form_nid) {
     return TRUE;
   }
   return FALSE;
+}
+
+function spbellen_get_campaign_id($webform_id) {
+  $query = "SELECT id FROM {spbellen_campaign} WHERE webform_id = :webform_id";
+  $result = db_query($query, array(':webform_id' => $webform_id))->fetchAssoc();
+  return $result['id'];
+}
+
+function spbellen_component_key_id_map($webform_node) {
+  foreach ($webform_node->webform['components'] as $key => $component) {
+    $map[$component['form_key']] = $key;
+  }
+  return $map;
+}
+
+function spbellen_create_action($tid, $caller_id, $result, $submission_id) {
+  db_insert('spbellen_action')
+    ->fields(array(
+      'target_id' => $tid,
+      'caller_id' => $caller_id,
+      'timestamp' => time(),
+      'result' => $result,
+      'webform_submission_id' => $submission_id,
+    ))
+    ->execute();
+}
+
+function spbellen_blacklist($target_contact_id) {
+  db_insert('spbellen_blacklist')
+    ->fields(array(
+      'civi_contact_id' => $target_contact_id,
+    ))
+    ->execute();
 }
