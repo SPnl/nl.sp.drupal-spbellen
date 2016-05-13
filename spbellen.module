@@ -306,20 +306,12 @@ function spbellen_error_page() {
  *  * Implements hook_block_info().
  *   */
 function spbellen_block_info() {
-  $blocks['spbellen_history'] = array(
-    'info' => 'Belgeschiedenis',
+  $blocks['spbellen'] = array(
+    'info' => 'SP Bellen',
     //'cache' => DRUPAL_NO_CACHE,
     'pages' => "bellen/campagne/*",
     'visibility' => BLOCK_VISIBILITY_LISTED,
   );
-
-  $blocks['spbellen_contact_data'] = array(
-    'info' => 'Contact gegevens',
-    //'cache' => DRUPAL_NO_CACHE,
-    'pages' => "bellen/campagne/*",
-    'visibility' => BLOCK_VISIBILITY_LISTED,
-  );
-
   return $blocks;
 }
 
@@ -334,19 +326,13 @@ function spbellen_block_view($delta = '') {
     if (spbellen_is_spbellen_form($nid)) {
       if (spbellen_campaign_form_access($nid)) {
         switch ($delta) {
-        case 'spbellen_history':
+        case 'spbellen':
           if (spbellen_campaign_form_access($nid)) {
             return array(
-              'subject' => 'Belgeschiedenis',
-              'content' => spbellen_history_block_content(),
+              'subject' => '',
+              'content' => spbellen_block_content(),
             );
           }
-          break;
-        case 'spbellen_contact_data':
-          return array(
-            'subject' => 'Contact gegevens',
-            'content' => spbellen_contact_data_block_content(),
-          );
           break;
         }
       }
@@ -355,7 +341,7 @@ function spbellen_block_view($delta = '') {
   return $block;
 }
 
-function spbellen_history_block_content() {
+function spbellen_block_content() {
   global $user;
   $output = '';
   $node = menu_get_object();
@@ -364,56 +350,68 @@ function spbellen_history_block_content() {
     if (!empty($caller->field_contact_id)) {
       $caller_id = $caller->field_contact_id['und'][0]['value'];
       $campaign_id = spbellen_get_campaign_id($node->nid);
-      $translate = spbellen_action_translate();
-      $query = "SELECT attempts, timestamp, result, webform_submission_id FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
-      $result = db_query($query, array(':caller_id' => $caller_id, ':cid' => $campaign_id));
-      if (!empty($result)) {
-        while ($row = $result->fetchAssoc()) {
-          $output .= '<p>';
-          $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
-          $output .= $date_formatted.'<br/>';
-          $output .= $translate[$row['result']].'<br/>';
-          $output .= '</p>';
-        }
-      }
-    }
-  }
-  return $output;
-}
 
-function spbellen_contact_data_block_content() {
-  global $user;
-  $output = '';
-  $node = menu_get_object();
-  if (spbellen_is_spbellen_form($node->nid)) {
-    $caller = user_load($user->uid);
-    if (!empty($caller->field_contact_id)) {
-      $caller_id = $caller->field_contact_id['und'][0]['value'];
-      $campaign_id = spbellen_get_campaign_id($node->nid);
       $contact_fields = spbellen_contact_fields();
       $query = "SELECT target_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $caller_id))->fetchAssoc();
       if (!empty($result['target_id'])) {
+
+        // Contact data.
         $contact_data = spbellen_get_contact_data_uncached($result['target_id']);
-        //drupal_set_message('<pre>'.print_r($contact_data, TRUE).'</pre>');
-        $big = array(
-          'phone',
-          'display_name',
-        );
-        $output .= '<ul class="spbellen contact_data big">';
-        foreach ($big as $key) {
-          if (!empty($contact_data[$key])) {
-            $output .= '<li>'.check_plain($contact_data[$key]).'</li>';
+        $data['phone'] = !empty($contact_data['phone']) ? check_plain($contact_data['phone']) : '';
+        $data['display_name'] = !empty($contact_data['display_name']) ? check_plain($contact_data['display_name']) : '';
+        $data['email'] = !empty($contact_data['email']) ? check_plain($contact_data['email']) : '';
+        $data['id'] = !empty($contact_data['id']) ? 'Id. nr. '.check_plain($contact_data['id']) : '';
+        $data['address'] = !empty($contact_data['postal_code']) ? check_plain($contact_data['postal_code']) : '';
+        $data['address'] .= !empty($contact_data['street_address']) ? ' '.check_plain($contact_data['street_address']) : '';
+        $data['city'] = !empty($contact_data['city']) ? check_plain($contact_data['city']) : '';
+
+        //Call history.
+        $translate = spbellen_action_translate();
+        $query = "SELECT attempts, timestamp, result, webform_submission_id FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
+        $result = db_query($query, array(':caller_id' => $caller_id, ':cid' => $campaign_id));
+        if (!empty($result)) {
+          while ($row = $result->fetchAssoc()) {
+            $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
+            $data['history'][] = array(
+              'date' => $date_formatted,
+              'result' => $translate[$row['result']],
+            );
           }
         }
-        $output .= '</ul>';
-        $output .= '<ul class="spbellen contact_data">';
-        foreach ($contact_fields as $key => $value) {
-          if (!empty($contact_data[$key]) && !in_array($key, $big)) {
-            $output .= '<li>'.check_plain($contact_data[$key]).'</li>';
+
+        // Create output;
+        $output .= '<div id="spbellen-block-data">';
+        $output .=   '<div class="wrapper left">';
+        $output .=     '<div class="content top">';
+        $output .=       '<h1>'.$data['phone'].'</h1>';
+        $output .=       '<h2>'.$data['display_name'].'</h2>';
+        $output .=     '</div>';
+        $output .=     '<div class="wrapper bottom">';
+        $output .=       '<div class="content left">';
+        $output .=         '<ul><li>'.$data['email'].'</li><li>'.$data['id'].'</li></ul>';
+        $output .=       '</div>';
+        $output .=       '<div class="content right">';
+        $output .=         '<ul><li>'.$data['address'].'</li><li>'.$data['city'].'</li></ul>';
+        $output .=       '</div>';
+        $output .=     '</div>';
+        $output .=   '</div>';
+        if (!empty($data['history'])) {
+          $output .=   '<div class="content right">';
+          $output .=     '<p><strong>Belgeschiedenis</strong></p>';
+          $output .=     '<ul>';
+          foreach ($data['history'] as $values) {
+            $output .=      '<li>'.$values['date'].'<br/>'.$values['result'].'</li>';
           }
+          $output .=     '</ul>';
+          $output .=   '</div>';
         }
-        $output .= '</ul>';
+        else {
+          $output .=   '<div class="content right">';
+          $output .=     '<p>Er is nog niet eerder gebeld</p>';
+          $output .=   '</div>';
+        }
+        $output .= '</div>';
       }
     }
   }

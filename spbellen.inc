@@ -244,28 +244,7 @@ function spbellen_create_campaign_form($campaign) {
       $joined_component_id ++;
     }
 
-    // Add intro fieldset.
-    $joined_components[$joined_component_id] = array(
-      'pid' => 0,
-      'form_key' => 'intro',
-      'name' => 'Intro',
-      'type' => 'fieldset',
-      'value' => '',
-      'extra' => array(
-        'description_above' => 0,
-        'private' => 0,
-        'css_classes' => '',
-        'title_display' => 0,
-        'collapsible' => 0,
-        'collapsed' => 0,
-        'description' => '',
-      ),
-      'required' => 0,
-      'weight' => $joined_component_id,
-      'page_num' => 1,
-    );
-    $parent = $joined_component_id;
-    $joined_component_id ++;
+    $parent = 0;
 
     // Add intro components.
     // Call answered?
