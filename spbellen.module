@@ -327,19 +327,28 @@ function spbellen_block_info() {
 function spbellen_block_view($delta = '') {
   $block = array();
 
-  switch ($delta) {
-    case 'spbellen_history':
-      return array(
-        'subject' => 'Belgeschiedenis',
-        'content' => spbellen_history_block_content(),
-      );
-      break;
-    case 'spbellen_contact_data':
-      return array(
-        'subject' => 'Contact gegevens',
-        'content' => spbellen_contact_data_block_content(),
-      );
-      break;
+  if (arg(0) == 'node' && is_numeric(arg(1)) && is_null(arg(2))) {
+    $nid = arg(1);
+    if (spbellen_is_spbellen_form($nid)) {
+      if (spbellen_campaign_form_access($nid)) {
+        switch ($delta) {
+        case 'spbellen_history':
+          if (spbellen_campaign_form_access($nid)) {
+            return array(
+              'subject' => 'Belgeschiedenis',
+              'content' => spbellen_history_block_content(),
+            );
+          }
+          break;
+        case 'spbellen_contact_data':
+          return array(
+            'subject' => 'Contact gegevens',
+            'content' => spbellen_contact_data_block_content(),
+          );
+          break;
+        }
+      }
+    }
   }
   return $block;
 }
