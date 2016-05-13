@@ -281,15 +281,17 @@ function spbellen_user_login($edit, $account) {
 }
 
 function spbellen_node_access($node, $op, $account) {
-  // Check campaign form access.
-  if (!empty($node->nid)) {
-    if (spbellen_is_spbellen_form($node->nid)) {
-      // Check session for call groups.
-      if(spbellen_campaign_form_access($node->nid)) {
-        return NODE_ACCESS_ALLOW;
-      }
-      else {
-        return NODE_ACCESS_DENY;
+  if ($op === 'view') {
+    // Check campaign form access.
+    if (!empty($node->nid)) {
+      if (spbellen_is_spbellen_form($node->nid)) {
+        // Check session for call groups.
+        if(spbellen_campaign_form_access($node->nid)) {
+          return NODE_ACCESS_ALLOW;
+        }
+        else {
+          return NODE_ACCESS_DENY;
+        }
       }
     }
   }
@@ -393,13 +395,25 @@ function spbellen_contact_data_block_content() {
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $caller_id))->fetchAssoc();
       if (!empty($result['target_id'])) {
         $contact_data = spbellen_get_contact_data_uncached($result['target_id']);
-        $output .= '<p>';
-        $strong_fields = array('phone', 'display_name');
-        foreach ($contact_fields as $key => $value) {
-          $output .= !empty($contact_data[$key]) ? $contact_data[$key] : '';
-          $output .= '<br/>';
+        //drupal_set_message('<pre>'.print_r($contact_data, TRUE).'</pre>');
+        $big = array(
+          'phone',
+          'display_name',
+        );
+        $output .= '<ul class="spbellen contact_data big">';
+        foreach ($big as $key) {
+          if (!empty($contact_data[$key])) {
+            $output .= '<li>'.check_plain($contact_data[$key]).'</li>';
+          }
         }
-        $output .= '</p>';
+        $output .= '</ul>';
+        $output .= '<ul class="spbellen contact_data">';
+        foreach ($contact_fields as $key => $value) {
+          if (!empty($contact_data[$key]) && !in_array($key, $big)) {
+            $output .= '<li>'.check_plain($contact_data[$key]).'</li>';
+          }
+        }
+        $output .= '</ul>';
       }
     }
   }
