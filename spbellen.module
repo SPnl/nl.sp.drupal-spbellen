@@ -357,7 +357,7 @@ function spbellen_block_content() {
       if (!empty($result['target_id'])) {
 
         // Contact data.
-        $contact_data = spbellen_get_contact_data_uncached($result['target_id']);
+        $contact_data = spbellen_get_contact_data($result['target_id']);
         $data['phone'] = !empty($contact_data['phone']) ? check_plain($contact_data['phone']) : '';
         $data['display_name'] = !empty($contact_data['display_name']) ? check_plain($contact_data['display_name']) : '';
         $data['email'] = !empty($contact_data['email']) ? check_plain($contact_data['email']) : '';

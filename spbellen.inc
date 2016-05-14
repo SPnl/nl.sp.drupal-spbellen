@@ -729,7 +729,7 @@ function spbellen_assign_target($campaign_id) {
       $target_id = $result['target_id'];
       // Get civicrm data.
       set_time_limit(0);
-      $result = spbellen_get_contact_data_uncached($result['target_id']);
+      $result = spbellen_get_contact_data($result['target_id']);
       if ($result) {
         return $result;
       }
@@ -832,18 +832,23 @@ function spbellen_action_translate() {
   );
 }
 
-function spbellen_get_contact_data_uncached($contact_id) {
-  // Get civicrm data.
-  set_time_limit(0);
-  $spcivi = \SPCivi::getInstance();
-  $params = array(
-    'contact_id' => $contact_id,
-  );
-  $result = $spcivi->api('Contact', 'get', $params);
-  if (spbellen_check_result($result, 'een contact', 'get', $params)) {
-    if (!empty($result['values'])) {
-      return $result['values'][0];
+function spbellen_get_contact_data($contact_id) {
+  $contact_data = &drupal_static(__FUNCTION__);
+  if (!isset($contact_data)) {
+    // Get civicrm data.
+    set_time_limit(0);
+    $spcivi = \SPCivi::getInstance();
+    $params = array(
+      'contact_id' => $contact_id,
+    );
+    $result = $spcivi->api('Contact', 'get', $params);
+    if (spbellen_check_result($result, 'een contact', 'get', $params)) {
+      if (!empty($result['values'])) {
+        $contact_data = $result['values'][0];
+        return $contact_data;
+      }
     }
+    return FALSE;
   }
-  return FALSE;
+  return $contact_data;
 }
