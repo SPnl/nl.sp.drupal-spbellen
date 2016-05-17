@@ -175,7 +175,7 @@ function spbellen_create_campaign_form($campaign) {
       $joined_components[$joined_component_id] = array(
         'pid' => 0,
         'form_key' => 'spbellen_hidden_'.$key,
-        'name' => $name,
+        'name' => $name . ' (verborgen)',
         'type' => 'hidden',
         'value' => '',
         'extra' => array(
