@@ -361,10 +361,10 @@ function spbellen_block_content() {
         $data['phone'] = !empty($contact_data['phone']) ? check_plain($contact_data['phone']) : '';
         $data['display_name'] = !empty($contact_data['display_name']) ? check_plain($contact_data['display_name']) : '';
         $data['email'] = !empty($contact_data['email']) ? check_plain($contact_data['email']) : '';
-        $data['id'] = !empty($contact_data['id']) ? 'Id. nr. '.check_plain($contact_data['id']) : '';
-        $data['address'] = !empty($contact_data['postal_code']) ? check_plain($contact_data['postal_code']) : '';
-        $data['address'] .= !empty($contact_data['street_address']) ? ' '.check_plain($contact_data['street_address']) : '';
-        $data['city'] = !empty($contact_data['city']) ? check_plain($contact_data['city']) : '';
+        $data['id'] = !empty($contact_data['id']) ? 'Id. '.check_plain($contact_data['id']) : '';
+        $data['address'] = !empty($contact_data['street_address']) ? check_plain($contact_data['street_address']) : '';
+        $data['city'] = !empty($contact_data['postal_code']) ? check_plain($contact_data['postal_code']) : '';
+        $data['city'] .= !empty($contact_data['city']) ? ' ' . check_plain($contact_data['city']) : '';
 
         //Call history.
         $translate = spbellen_action_translate();
