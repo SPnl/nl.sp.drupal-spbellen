@@ -206,42 +206,44 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
 }
 
 function spbellen_webform_submission_insert($node, $submission) {
+  global $user;
   if (spbellen_is_spbellen_form($node->nid)) {
-    global $user;
-    $caller = user_load($user->uid);
-    $caller_id = $caller->field_contact_id['und'][0]['value'];
-    $campaign_id = spbellen_get_campaign_id($node->nid);
-    $map = spbellen_component_key_id_map($node);
+    if (spbellen_campaign_form_access($node->nid)) {
+      $caller = user_load($user->uid);
+      $caller_id = $caller->field_contact_id['und'][0]['value'];
+      $campaign_id = spbellen_get_campaign_id($node->nid);
+      $map = spbellen_component_key_id_map($node);
 
-    // Get civicrm contact id from form.
-    $target_contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
+      // Get civicrm contact id from form.
+      $target_contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
 
-    // Get target id.
-    $query = "SELECT id FROM {spbellen_targets} WHERE target_id = :target_id AND campaign_id = :cid";
-    $result = db_query($query, array(':target_id' => $target_contact_id, ':cid' => $campaign_id))->fetchAssoc();
-    $tid = $result['id'];
+      // Get target id.
+      $query = "SELECT id FROM {spbellen_targets} WHERE target_id = :target_id AND campaign_id = :cid";
+      $result = db_query($query, array(':target_id' => $target_contact_id, ':cid' => $campaign_id))->fetchAssoc();
+      $tid = $result['id'];
 
-    // Create action.
+      // Create action.
 
-    if (!empty($submission->data[$map['call_answered']][0])) {
-      $result = $submission->data[$map['call_answered']][0];
+      if (!empty($submission->data[$map['call_answered']][0])) {
+        $result = $submission->data[$map['call_answered']][0];
+      }
+      if (!empty($submission->data[$map['target_available']][0])) {
+        $result = $submission->data[$map['target_available']][0];
+      }
+      if (!empty($submission->data[$map['voicemail_left_message']][0])) {
+        $result = $submission->data[$map['voicemail_left_message']][0];
+      }
+      spbellen_create_action($tid, $caller_id, $result, $submission->sid);
+
+      $call_back = (in_array($result, array('answered_call_back', 'voicemail_message_callback', 'voicemail_no_message', 'busy'))) ? 1 : 0;
+
+      if ($result === 'answered_blacklist') {
+        spbellen_blacklist($target_contact_id);
+      }
+
+      // Disassign target.
+      spbellen_disassign_target($tid, $call_back);
     }
-    if (!empty($submission->data[$map['target_available']][0])) {
-      $result = $submission->data[$map['target_available']][0];
-    }
-    if (!empty($submission->data[$map['voicemail_left_message']][0])) {
-      $result = $submission->data[$map['voicemail_left_message']][0];
-    }
-    spbellen_create_action($tid, $caller_id, $result, $submission->sid);
-
-    $call_back = (in_array($result, array('answered_call_back', 'voicemail_message_callback', 'voicemail_no_message', 'busy'))) ? 1 : 0;
-
-    if ($result === 'answered_blacklist') {
-      spbellen_blacklist($target_contact_id);
-    }
-
-    // Disassign target.
-    spbellen_disassign_target($tid, $call_back);
   }
 }
 

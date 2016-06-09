@@ -744,7 +744,7 @@ function spbellen_assign_target($campaign_id) {
   else {
     drupal_set_message('Log in via SPNET om gebruik te kunnen maken van de spbellen.', 'error');
   }
-  //drupal_goto('/bellen/error');
+  drupal_goto('/bellen/error');
   return FALSE;
 }
 
