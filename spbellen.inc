@@ -589,7 +589,7 @@ function spbellen_get_targets($campaign) {
         'filter.group_id' => array(0 => $campaign_group->civi_group_id),
         'is_deleted' => 0,
         'do_not_phone' => 0,
-        'return' => 'contact_id',
+        'return' => 'contact_id, phone',
         'status' => 'Added',
       );
       $results = $spcivi->api('Contact', 'get', $params);
@@ -597,7 +597,9 @@ function spbellen_get_targets($campaign) {
         // New targets.
         if (!empty($results['values'])) {
           foreach ($results['values'] as $result) {
-            $tids_civi[$result['contact_id']] = $result['contact_id'];
+            if (!empty($result['phone'])) {
+              $tids_civi[$result['contact_id']] = $result['contact_id'];
+            }
           }
         }
       }
