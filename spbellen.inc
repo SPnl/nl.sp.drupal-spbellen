@@ -89,7 +89,7 @@ function spbellen_get_civi_groups($sync = TRUE) {
           if (!empty($groups_results['values'])) {
             foreach ($groups_results['values'] as $value) {
               if (
-                !empty($value['group_type']) &&
+                empty($value['group_type']) || 
                 in_array('2', $value['group_type'])
               ) {
               $groups[$value['id']] = $value['title'];
@@ -617,7 +617,7 @@ function spbellen_get_targets($campaign) {
         $tids = array_keys($results['target']);
         $targets = entity_load('target', $tids);
         foreach ($targets as $target) {
-          $tids_db[$target->civi_contact_id] = $target->civi_contact_id;
+          $tids_db[$target->target_id] = $target->target_id;
         }
       }
     }
@@ -656,6 +656,7 @@ function spbellen_contact_fields() {
     'city' => 'Plaats',
     'contact_id' => 'Contact id',
     'gender' => 'Geslacht',
+    'is_lid' => 'Is lid',
   );
   return $contact_fields;
 }
@@ -845,10 +846,27 @@ function spbellen_get_contact_data($contact_id) {
     if (spbellen_check_result($result, 'een contact', 'get', $params)) {
       if (!empty($result['values'])) {
         $contact_data = $result['values'][0];
-        return $contact_data;
+
+        // Get membership data.
+        $params = array(
+          'contact_id' => '761666',
+          'membership_type_id' => array('IN' => array("1", "2", "3")),
+          'status_id' => 2,
+        );
+        $result = $spcivi->api('Membership', 'get', $params);
+        if (spbellen_check_result($result, 'lidmaatschapsinformatie', 'get', $params)) {
+          if (!empty($result['values'])) {
+            $contact_data['is_lid'] = 1;
+          }
+          else {
+            $contact_data['is_lid'] = 0;
+          }
+        }
       }
     }
-    return FALSE;
+    else {
+      return FALSE;
+    }
   }
   return $contact_data;
 }
