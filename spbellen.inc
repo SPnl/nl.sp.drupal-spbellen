@@ -197,11 +197,11 @@ function spbellen_create_campaign_form($campaign) {
     $joined_components[$joined_component_id] = array(
       'pid' => $parent,
       'form_key' => 'call_answered',
-      'name' => 'Heeft u iemand gesproken?',
+      'name' => 'Is de telefoon opgenomen?',
       'type' => 'select',
       'value' => '',
       'extra' => array(
-        'items' => "answered|Ja\nvoicemail|Nee, voicemail\nwrong_number|Nee, verkeerd nummer\nbusy|Nee, in gesprek",
+        'items' => "answered|Ja\nno|Nee\nwrong_number|Nee, verkeerd nummer",
         'multiple' => 0,
         'title_display' => 'before',
         'description_above' => 0,
@@ -218,7 +218,7 @@ function spbellen_create_campaign_form($campaign) {
         'options_source' => '',
         'analysis' => TRUE,
       ),
-      'required' => 0,
+      'required' => 1,
       'weight' => $joined_component_id,
       'page_num' => 1,
     );
@@ -228,11 +228,11 @@ function spbellen_create_campaign_form($campaign) {
     $joined_components[$joined_component_id] = array(
       'pid' => $parent,
       'form_key' => 'target_available',
-      'name' => 'Is uw contact beschikbaar om vragen te beantwoorden?',
+      'name' => 'Heb je met het contact gesproken?',
       'type' => 'select',
       'value' => '',
       'extra' => array(
-        'items' => "answered_completed|Ja\nanswered_call_back|Nee, terugbellen\nanswered_blacklist|Nee, niet meer bellen",
+        'items' => "answered_completed|Ja\nanswered_call_back|Nee, terugbellen\nanswered_blacklist|Nee, wil niet meer gebeld worden",
         'multiple' => 0,
         'title_display' => 'before',
         'description_above' => 0,
@@ -249,43 +249,48 @@ function spbellen_create_campaign_form($campaign) {
         'options_source' => '',
         'analysis' => TRUE,
       ),
-      'required' => 0,
+      'required' => 1,
       'weight' => $joined_component_id,
       'page_num' => 1,
     );
     $contact_available_component_id = $joined_component_id;
     $joined_component_id ++;
-    // Voicemail left message?
+
+    // Add campaign fieldset.
     $joined_components[$joined_component_id] = array(
-      'pid' => $parent,
-      'form_key' => 'voicemail_left_message',
-      'name' => 'Heeft u de voicemail ingesproken?',
-      'type' => 'select',
+      'pid' => 0,
+      'form_key' => 'campaign',
+      'name' => 'Campagnevragen',
+      'type' => 'fieldset',
       'value' => '',
       'extra' => array(
-        'items' => "voicemail_no_message|Nee\nvoicemail_message_callback|Ja, nog een keer bellen\nvoicemail_message_complete|Ja, niet meer bellen",
-        'multiple' => 0,
-        'title_display' => 'before',
         'description_above' => 0,
         'private' => 0,
-        'wrapper_classes' => '',
         'css_classes' => '',
-        'aslist' => 0,
-        'empty_option' => '',
-        'optrand' => 0,
-        'other_option' => NULL,
-        'other_text' => 'Other ...',
+        'title_display' => 0,
+        'collapsible' => 0,
+        'collapsed' => 0,
         'description' => '',
-        'custom_keys' => FALSE,
-        'options_source' => '',
-        'analysis' => TRUE,
       ),
       'required' => 0,
       'weight' => $joined_component_id,
       'page_num' => 1,
     );
-    $voicemail_left_message_component_id = $joined_component_id;
+    $campaign_fieldset_component_id = $joined_component_id;
+    $parent = $joined_component_id;
     $joined_component_id ++;
+
+    // Adding campaign components');
+    foreach ($campaign_components as $campaign_cid => $campaign_component) {
+      // Unset unknown id's.
+      unset($campaign_component['nid']);
+      unset($campaign_component['cid']);
+      $campaign_component['pid'] = $parent;
+      $campaign_component['weight'] = $joined_component_id;
+      $joined_components[$joined_component_id] = $campaign_component;
+      $campaign_component_id_map[$campaign_cid] = $joined_component_id;
+      $joined_component_id ++;
+    }
 
     // Add contact data fieldset.
     $joined_components[$joined_component_id] = array(
@@ -308,6 +313,7 @@ function spbellen_create_campaign_form($campaign) {
       'page_num' => 1,
     );
     $parent = $joined_component_id;
+    $correct_data_component_id = $joined_component_id;
     $joined_component_id ++;
 
     foreach ($contact_fields as $key => $name) {
@@ -368,34 +374,7 @@ function spbellen_create_campaign_form($campaign) {
     );
     $joined_conditional_id ++;
 
-    $joined_conditionals[$joined_conditional_id] = array(
-      'rgid' => $joined_conditional_id,
-      'andor' => NULL,
-      'rules' => array(
-        0 => array(
-          'rgid' => $joined_conditional_id,
-          'source_type' => 'component',
-          'source' => $call_answered_component_id,
-          'operator' => 'equal',
-          'value' => 'voicemail',
-        ),
-      ),
-      'actions' => array(
-        0 => array(
-          'rgid' => $joined_conditional_id,
-          'target_type' => 'component',
-          'target' => $voicemail_left_message_component_id,
-          'invert' => 0,
-          'action' => 'show',
-          'argument' => '',
-        ),
-      ),
-    );
-    $joined_conditional_id ++;
-
-
     // Add intro conditional to show campaign fieldset.
-    
     $joined_conditionals[$joined_conditional_id] = array(
       'rgid' => $joined_conditional_id,
       'andor' => NULL,
@@ -412,7 +391,7 @@ function spbellen_create_campaign_form($campaign) {
         0 => array(
           'rgid' => $joined_conditional_id,
           'target_type' => 'component',
-          'target' => $joined_component_id,
+          'target' => $campaign_fieldset_component_id,
           'invert' => 0,
           'action' => 'show',
           'argument' => '',
@@ -421,40 +400,31 @@ function spbellen_create_campaign_form($campaign) {
     );
     $joined_conditional_id ++;
 
-    // Add campaign fieldset.
-    $joined_components[$joined_component_id] = array(
-      'pid' => 0,
-      'form_key' => 'campaign',
-      'name' => 'Campagnevragen',
-      'type' => 'fieldset',
-      'value' => '',
-      'extra' => array(
-        'description_above' => 0,
-        'private' => 0,
-        'css_classes' => '',
-        'title_display' => 0,
-        'collapsible' => 0,
-        'collapsed' => 0,
-        'description' => '',
+    // Adding correct data conditionals.
+    $joined_conditionals[$joined_conditional_id] = array(
+      'rgid' => $joined_conditional_id,
+      'andor' => NULL,
+      'rules' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'source_type' => 'component',
+          'source' => $call_answered_component_id,
+          'operator' => 'equal',
+          'value' => 'answered',
+        ),
       ),
-      'required' => 0,
-      'weight' => $joined_component_id,
-      'page_num' => 1,
+      'actions' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'target_type' => 'component',
+          'target' => $correct_data_component_id,
+          'invert' => 0,
+          'action' => 'show',
+          'argument' => '',
+        ),
+      ),
     );
-    $parent = $joined_component_id;
-    $joined_component_id ++;
-
-    // Adding campaign components');
-    foreach ($campaign_components as $campaign_cid => $campaign_component) {
-      // Unset unknown id's.
-      unset($campaign_component['nid']);
-      unset($campaign_component['cid']);
-      $campaign_component['pid'] = $parent;
-      $campaign_component['weight'] = $joined_component_id;
-      $joined_components[$joined_component_id] = $campaign_component;
-      $campaign_component_id_map[$campaign_cid] = $joined_component_id;
-      $joined_component_id ++;
-    }
+    $joined_conditional_id ++;
 
     // Adding campaign conditionals');
     foreach ($campaign_conditionals as $campaign_cid => $campaign_conditional) {
@@ -824,14 +794,11 @@ function spbellen_blacklist($target_contact_id) {
 
 function spbellen_action_translate() {
   return array(
+    'no' => 'Niet opgenomen',
     'wrong_number' => 'Verkeerd nummer',
-    'busy' => 'In gesprek',
     'answered_completed' => 'Gesprek afgerond.',
-    'answered_call_back' => 'Telefoon beantwoord, terugbellen.',
+    'answered_call_back' => 'Telefoon opgenomen, terugbellen.',
     'answered_blacklist' => 'Niet meer bellen.',
-    'voicemail_no_message' => 'Voicemail, niet ingesproken.',
-    'voicemail_message_callback' => 'Voicmail ingesproken, terugbellen.',
-    'voicemail_message_complete' => 'Voicemail ingesproken, niet terugbellen.',
   );
 }
 

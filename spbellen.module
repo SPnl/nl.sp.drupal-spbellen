@@ -230,12 +230,9 @@ function spbellen_webform_submission_insert($node, $submission) {
       if (!empty($submission->data[$map['target_available']][0])) {
         $result = $submission->data[$map['target_available']][0];
       }
-      if (!empty($submission->data[$map['voicemail_left_message']][0])) {
-        $result = $submission->data[$map['voicemail_left_message']][0];
-      }
       spbellen_create_action($tid, $caller_id, $result, $submission->sid);
 
-      $call_back = (in_array($result, array('answered_call_back', 'voicemail_message_callback', 'voicemail_no_message', 'busy'))) ? 1 : 0;
+      $call_back = (in_array($result, array('no', 'answered_call_back'))) ? 1 : 0;
 
       if ($result === 'answered_blacklist') {
         spbellen_blacklist($target_contact_id);
