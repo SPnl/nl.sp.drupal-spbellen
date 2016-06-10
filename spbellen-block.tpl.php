@@ -20,6 +20,8 @@
           <li><?php print $email; ?></li>
           <?php if (!empty($is_lid)) : ?>
             <li>Lid nr. <?php print $contact_id; ?></li>
+          <?php else : ?>
+            <li>Geen lid</li>
           <?php endif; ?>
         </ul>
       </div>

@@ -190,60 +190,6 @@ function spbellen_create_campaign_form($campaign) {
       $joined_component_id ++;
     }
 
-    // Add contact data fieldset.
-    $joined_components[$joined_component_id] = array(
-      'pid' => 0,
-      'form_key' => 'contact_data',
-      'name' => 'Contact gegevens corrigeren',
-      'type' => 'fieldset',
-      'value' => '',
-      'extra' => array(
-        'description_above' => 0,
-        'private' => 0,
-        'css_classes' => '',
-        'title_display' => 0,
-        'collapsible' => 1,
-        'collapsed' => 1,
-        'description' => '',
-      ),
-      'required' => 0,
-      'weight' => $joined_component_id,
-      'page_num' => 1,
-    );
-    $parent = $joined_component_id;
-    $joined_component_id ++;
-
-    foreach ($contact_fields as $key => $name) {
-      $joined_components[$joined_component_id] = array(
-        'pid' => $parent,
-        'form_key' => 'spbellen_'.$key,
-        'name' => $name,
-        'type' => 'textfield',
-        'value' => '',
-        'extra' => array(
-          'title_display' => 'inline',
-          'description_above' => 0,
-          'private' => 0,
-          'wrapper_classes' => '',
-          'css_classes' => '',
-          'width' => '',
-          'maxlength' => '',
-          'field_prefix' => '',
-          'field_suffix' => '',
-          'disabled' => 0,
-          'unique' => 0,
-          'description' => '',
-          'placeholder' => '',
-          'attributes' => array(),
-          'analysis' => FALSE,
-        ),
-        'required' => 0,
-        'weight' => $joined_component_id,
-        'page_num' => 1,
-      );
-      $joined_component_id ++;
-    }
-
     $parent = 0;
 
     // Add intro components.
@@ -340,6 +286,60 @@ function spbellen_create_campaign_form($campaign) {
     );
     $voicemail_left_message_component_id = $joined_component_id;
     $joined_component_id ++;
+
+    // Add contact data fieldset.
+    $joined_components[$joined_component_id] = array(
+      'pid' => 0,
+      'form_key' => 'contact_data',
+      'name' => 'Contact gegevens corrigeren',
+      'type' => 'fieldset',
+      'value' => '',
+      'extra' => array(
+        'description_above' => 0,
+        'private' => 0,
+        'css_classes' => '',
+        'title_display' => 0,
+        'collapsible' => 1,
+        'collapsed' => 1,
+        'description' => '',
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $parent = $joined_component_id;
+    $joined_component_id ++;
+
+    foreach ($contact_fields as $key => $name) {
+      $joined_components[$joined_component_id] = array(
+        'pid' => $parent,
+        'form_key' => 'spbellen_'.$key,
+        'name' => $name,
+        'type' => 'textfield',
+        'value' => '',
+        'extra' => array(
+          'title_display' => 'inline',
+          'description_above' => 0,
+          'private' => 0,
+          'wrapper_classes' => '',
+          'css_classes' => '',
+          'width' => '',
+          'maxlength' => '',
+          'field_prefix' => '',
+          'field_suffix' => '',
+          'disabled' => 0,
+          'unique' => 0,
+          'description' => '',
+          'placeholder' => '',
+          'attributes' => array(),
+          'analysis' => FALSE,
+        ),
+        'required' => 0,
+        'weight' => $joined_component_id,
+        'page_num' => 1,
+      );
+      $joined_component_id ++;
+    }
 
     // Adding intro conditionals.
     $joined_conditional_id = 0;
