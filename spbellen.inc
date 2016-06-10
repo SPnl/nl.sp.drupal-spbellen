@@ -316,6 +316,16 @@ function spbellen_create_campaign_form($campaign) {
     $correct_data_component_id = $joined_component_id;
     $joined_component_id ++;
 
+    // Unset contact fields that do not need to be corrected.
+    $no_correct_fields = array(
+      'contact_id',
+      'gender',
+      'is_lid',
+    );
+    foreach ($no_correct_fields as $key) {
+      unset($contact_fields[$key]);
+    }
+    // Create correction fields.
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
         'pid' => $parent,
