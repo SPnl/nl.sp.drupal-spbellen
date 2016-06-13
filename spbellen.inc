@@ -599,7 +599,7 @@ function spbellen_get_targets($campaign) {
         $tids = array_keys($results['target']);
         $targets = entity_load('target', $tids);
         foreach ($targets as $target) {
-          $tids_db[$target->target_id] = $target->target_id;
+          $tids_db[$target->civi_contact_id] = $target->civi_contact_id;
         }
       }
     }
@@ -611,7 +611,7 @@ function spbellen_get_targets($campaign) {
     foreach ($tids_new as $tid) {
       $result = db_insert('spbellen_targets')
         ->fields(array(
-          'target_id' => $tid,
+          'civi_contact_id' => $tid,
           'campaign_id' => $campaign->id,
           'occupied' => 0,
         ))
@@ -622,7 +622,7 @@ function spbellen_get_targets($campaign) {
     foreach ($tids_del as $tid) {
       db_delete('spbellen_targets')
         ->condition('campaign_id', $campaign->id)
-        ->condition('target_id', $tid)
+        ->condition('civi_contact_id', $tid)
         ->execute();
     }
   }
@@ -685,14 +685,15 @@ function spbellen_assign_target($campaign_id) {
   ) {
     // Check if existing target exists.
     $caller_id = $caller->field_contact_id['und'][0]['value'];
-    $query = "SELECT target_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND call_back = 1 AND attempts < 3 AND campaign_id = :cid  AND caller_id = :caller_id LIMIT 1";
+    dpm($caller_id);
+    $query = "SELECT ta.civi_contact_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
       ':cid' => $campaign_id,
       ':caller_id' => $caller_id,
     ))->fetchAssoc();
     if (!$result) {
       // Get new target.
-      $query = "SELECT id, target_id, occupied FROM {spbellen_targets}  ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE call_back = 1 AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND date < :call_again_time))) OR (occupied = 1 AND date < :occupied_time)) ORDER BY attempts ASC, RAND() LIMIT 1";
+      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.timestamp < :call_again_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, RAND() LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
         ':occupied_time' => time() - 1800,
@@ -711,10 +712,10 @@ function spbellen_assign_target($campaign_id) {
       }
     }
     if (!empty($result)) {
-      $target_id = $result['target_id'];
+      $civi_contact_id = $result['civi_contact_id'];
       // Get civicrm data.
       set_time_limit(0);
-      $result = spbellen_get_contact_data($result['target_id']);
+      $result = spbellen_get_contact_data($civi_contact_id);
       if ($result) {
         return $result;
       }
@@ -724,7 +725,7 @@ function spbellen_assign_target($campaign_id) {
     }
     else {
       // Find occupied targets.
-      $query = "SELECT COUNT(*) number FROM {spbellen_targets}  ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE call_back = 1 AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
+      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (result = 'not_answered' OR result = 'answered_call_back') AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
       ))->fetchAssoc();
@@ -743,13 +744,13 @@ function spbellen_assign_target($campaign_id) {
   return FALSE;
 }
 
-function spbellen_disassign_target($tid, $call_back) {
+function spbellen_disassign_target($tid, $last_action_id) {
   $result = db_update('spbellen_targets')
     ->fields(array(
       'occupied' => 0,
       'date' => time(),
       'caller_id' => NULL,
-      'call_back' => $call_back,
+      'last_action_id' => $last_action_id,
     ))
     ->expression('attempts', 'attempts + 1')
     ->condition('id', $tid)
@@ -795,7 +796,7 @@ function spbellen_component_key_id_map($webform_node) {
 }
 
 function spbellen_create_action($tid, $caller_id, $result, $submission_id) {
-  db_insert('spbellen_action')
+  $action_id = db_insert('spbellen_action')
     ->fields(array(
       'target_id' => $tid,
       'caller_id' => $caller_id,
@@ -804,6 +805,7 @@ function spbellen_create_action($tid, $caller_id, $result, $submission_id) {
       'webform_submission_id' => $submission_id,
     ))
     ->execute();
+  return $action_id;
 }
 
 function spbellen_blacklist($target_contact_id) {

@@ -99,7 +99,7 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'target_id' => array(
+      'civi_contact_id' => array(
         'description' => 'The CiviCRM contact id.',
         'type' => 'int',
         'size' => 'big',
@@ -111,12 +111,10 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'call_back' => array(
-        'description' => 'Wether to call again.',
+      'last_action_id' => array(
+        'description' => 'The id of the last call action performed for this target.',
         'type' => 'int',
-        'size' => 'tiny',
-        'default' => 1,
-        'not null' => TRUE,
+        'size' => 'big',
       ),
       'attempts' => array(
         'description' => 'Number of calls made.',
@@ -149,7 +147,7 @@ function spbellen_schema() {
     'unique keys' => array(
       'campaign_target' => array(
         'campaign_id',
-        'target_id',
+        'civi_contact_id',
       ),
     ),
   );
@@ -182,7 +180,7 @@ function spbellen_schema() {
         'not null' => TRUE,
       ),
       'result' => array(
-        'description' => 'Either no_answer, wrong_number, voicemail_left_message_callback, voicemail_left_message_completed, voicemail_left_no_message, answered_call_back, answered_completed, answered_never_call_back.',
+        'description' => 'Either not_answered, wrong_number, answered_completed, answered_call_back, answered_blacklist.',
         'type' => 'varchar',
         'length' => 255,
         'not_null' => TRUE,

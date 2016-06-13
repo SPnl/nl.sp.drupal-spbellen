@@ -219,8 +219,8 @@ function spbellen_webform_submission_insert($node, $submission) {
       $target_contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
 
       // Get target id.
-      $query = "SELECT id FROM {spbellen_targets} WHERE target_id = :target_id AND campaign_id = :cid";
-      $result = db_query($query, array(':target_id' => $target_contact_id, ':cid' => $campaign_id))->fetchAssoc();
+      $query = "SELECT id FROM {spbellen_targets} WHERE civi_contact_id = :civi_contact_id AND campaign_id = :cid";
+      $result = db_query($query, array(':civi_contact_id' => $target_contact_id, ':cid' => $campaign_id))->fetchAssoc();
       $tid = $result['id'];
 
       // Create action.
@@ -231,16 +231,14 @@ function spbellen_webform_submission_insert($node, $submission) {
       if (!empty($submission->data[$map['target_available']][0])) {
         $result = $submission->data[$map['target_available']][0];
       }
-      spbellen_create_action($tid, $caller_id, $result, $submission->sid);
-
-      $call_back = (in_array($result, array('not_answered', 'answered_call_back'))) ? 1 : 0;
+      $action_id = spbellen_create_action($tid, $caller_id, $result, $submission->sid);
 
       if ($result === 'answered_blacklist') {
         spbellen_blacklist($target_contact_id);
       }
 
       // Disassign target.
-      spbellen_disassign_target($tid, $call_back);
+      spbellen_disassign_target($tid, $action_id);
     }
   }
 }
@@ -347,12 +345,12 @@ function spbellen_block_content() {
       $caller_id = $caller->field_contact_id['und'][0]['value'];
       $campaign_id = spbellen_get_campaign_id($node->nid);
 
-      $query = "SELECT target_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
+      $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $caller_id))->fetchAssoc();
-      if (!empty($result['target_id'])) {
+      if (!empty($result['civi_contact_id'])) {
 
         // Contact data.
-        $contact_data = spbellen_get_contact_data($result['target_id']);
+        $contact_data = spbellen_get_contact_data($result['civi_contact_id']);
         $contact_fields = spbellen_contact_fields();
         foreach ($contact_fields as $key => $name) {
           $data[$key] = !empty($contact_data[$key]) ? check_plain($contact_data[$key]) : '';
