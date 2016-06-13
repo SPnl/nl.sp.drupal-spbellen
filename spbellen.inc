@@ -683,6 +683,7 @@ function spbellen_assign_target($campaign_id) {
     user_is_logged_in() &&
     !empty($caller->field_contact_id)
   ) {
+    // Check if existing target exists.
     $caller_id = $caller->field_contact_id['und'][0]['value'];
     $query = "SELECT target_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND call_back = 1 AND attempts < 3 AND campaign_id = :cid  AND caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
@@ -691,10 +692,11 @@ function spbellen_assign_target($campaign_id) {
     ))->fetchAssoc();
     if (!$result) {
       // Get new target.
-      $query = "SELECT id, target_id, occupied FROM {spbellen_targets}  ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE call_back = 1 AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND (occupied = 0 OR (occupied = 1 AND date < :time)) ORDER BY attempts ASC, RAND() LIMIT 1";
+      $query = "SELECT id, target_id, occupied FROM {spbellen_targets}  ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE call_back = 1 AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND date < :call_again_time))) OR (occupied = 1 AND date < :occupied_time)) ORDER BY attempts ASC, RAND() LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
-        ':time' => time() - 1800,
+        ':occupied_time' => time() - 1800,
+        ':call_again_time' => time() - 2700,
       ))->fetchAssoc();
       if ($result) {
         // Claim target.
@@ -717,11 +719,21 @@ function spbellen_assign_target($campaign_id) {
         return $result;
       }
       else {
-        drupal_set_message('Er is geen contact gevonden.', 'error');
+        drupal_set_message('Er kon geen contact informatie worden opgehaald.', 'error');
       }
     }
     else {
-      drupal_set_message('Er is geen contact gevonden.', 'error');
+      // Find occupied targets.
+      $query = "SELECT COUNT(*) number FROM {spbellen_targets}  ta LEFT JOIN {spbellen_blacklist} bl ON ta.target_id = bl.civi_contact_id WHERE call_back = 1 AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
+      $result = db_query($query, array(
+        ':cid' => $campaign_id,
+      ))->fetchAssoc();
+      if ($result) {
+        drupal_set_message('Er is geen beschikbaar contact gevonden (er zijn '.$result['number'].' contacten die op een later moment nog gebeld kunnen worden).', 'error');
+      }
+      else {
+        drupal_set_message('Er is geen beschikbaar contact gevonden.', 'error');
+      }
     }
   }
   else {

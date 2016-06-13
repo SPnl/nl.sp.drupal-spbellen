@@ -18,7 +18,8 @@ function spbellen_menu() {
 
   $items['bellen/error'] = array(
     'title' => '',
-    'page callback'  => 'spbellen_error_page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_error_page'),
     'access callback' => TRUE,
   );
 
@@ -297,10 +298,6 @@ function spbellen_node_access($node, $op, $account) {
   return NODE_ACCESS_IGNORE;
 }
 
-function spbellen_error_page() {
-  return '<p></p>';
-}
-
 /**
  *  * Implements hook_block_info().
  *   */
@@ -412,4 +409,18 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'variables' => $variables,
   );
   return $registry;
+}
+
+function spbellen_error_page() {
+  $form['back'] = array(
+    '#type' => 'submit',
+    '#value' => 'Terug naar het belformulier',
+    '#prefix' => '<div class="content">',
+    '#suffix' => '</div>',
+  );
+  return $form;
+}
+
+function spbellen_error_page_submit($form, &$form_state) {
+  drupal_goto('bellen');
 }
