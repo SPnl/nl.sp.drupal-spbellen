@@ -685,7 +685,6 @@ function spbellen_assign_target($campaign_id) {
   ) {
     // Check if existing target exists.
     $caller_id = $caller->field_contact_id['und'][0]['value'];
-    dpm($caller_id);
     $query = "SELECT ta.civi_contact_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
       ':cid' => $campaign_id,
