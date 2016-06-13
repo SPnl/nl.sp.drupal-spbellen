@@ -201,7 +201,7 @@ function spbellen_create_campaign_form($campaign) {
       'type' => 'select',
       'value' => '',
       'extra' => array(
-        'items' => "answered|Ja\nno|Nee\nwrong_number|Nee, verkeerd nummer",
+        'items' => "answered|Ja\nnot_answered|Nee\nwrong_number|Nee, verkeerd nummer",
         'multiple' => 0,
         'title_display' => 'before',
         'description_above' => 0,
@@ -816,7 +816,7 @@ function spbellen_blacklist($target_contact_id) {
 
 function spbellen_action_translate() {
   return array(
-    'no' => 'Niet opgenomen',
+    'not_answered' => 'Niet opgenomen',
     'wrong_number' => 'Verkeerd nummer',
     'answered_completed' => 'Gesprek afgerond.',
     'answered_call_back' => 'Telefoon opgenomen, terugbellen.',
