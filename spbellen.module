@@ -202,6 +202,14 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
         $form['submitted']['spbellen_hidden_'.$key]['#value'] = $contact_data[$key];
         $form['submitted']['contact_data']['spbellen_'.$key]['#value'] = $contact_data[$key];
       }
+      // Add custom validation function.
+      $form['#validate'][] = 'spbellen_custom_webform_validate';
+      // Add next button.
+      $form['actions']['spbellen_next']  = array(
+        '#type' => 'button',
+        '#value' => t('Next'),
+        '#attributes' => array('style' => array('float: right')),
+      );
     }
   }
 }
@@ -428,4 +436,34 @@ function spbellen_error_page() {
 
 function spbellen_error_page_submit($form, &$form_state) {
   drupal_goto('bellen');
+}
+
+function spbellen_custom_webform_validate($form, &$form_state) {
+  // Check if submit button or next button.
+  if (
+    !empty($form_state['triggering_element']['#value']) &&
+    $form_state['triggering_element']['#value'] === 'Volgende'
+  ) {
+  // Next button.
+  // Disassign target from caller.
+  global $user;
+  $caller = user_load($user->uid);
+  $caller_id = $caller->field_contact_id['und'][0]['value'];
+  $result = db_update('spbellen_targets')
+    ->fields(array(
+      'occupied' => 0,
+      'date' => time(),
+      'caller_id' => NULL,
+    ))  
+    ->condition('caller_id', $caller_id)
+    ->execute();
+    drupal_goto('bellen');
+  }
+  else {
+    // Submit button.
+    // Check if value is selected for 'call_answered'.
+    if (empty($form_state['values']['submitted']['call_answered'])) {
+      form_set_error('call_answered', 'Vul een antwoord in!');
+    }
+  }
 }

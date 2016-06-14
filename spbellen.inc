@@ -218,7 +218,7 @@ function spbellen_create_campaign_form($campaign) {
         'options_source' => '',
         'analysis' => TRUE,
       ),
-      'required' => 1,
+      'required' => 0,
       'weight' => $joined_component_id,
       'page_num' => 1,
     );
@@ -692,7 +692,7 @@ function spbellen_assign_target($campaign_id) {
     ))->fetchAssoc();
     if (!$result) {
       // Get new target.
-      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.timestamp < :call_again_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, RAND() LIMIT 1";
+      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.timestamp < :call_again_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
         ':occupied_time' => time() - 1800,
