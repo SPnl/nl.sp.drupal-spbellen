@@ -406,6 +406,13 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'template' => 'spbellen-block',
     'variables' => $variables,
   );
+  $variables = array(
+    'campaign_stats',
+  );
+  $registry['spbellen_overview_theme'] = array(
+    'template' => 'spbellen-overview',
+    'variables' => $variables,
+  );
   return $registry;
 }
 
