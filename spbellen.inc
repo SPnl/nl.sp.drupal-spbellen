@@ -317,14 +317,7 @@ function spbellen_create_campaign_form($campaign) {
     $joined_component_id ++;
 
     // Unset contact fields that do not need to be corrected.
-    $no_correct_fields = array(
-      'contact_id',
-      'gender',
-      'is_lid',
-    );
-    foreach ($no_correct_fields as $key) {
-      unset($contact_fields[$key]);
-    }
+    $contact_fields =  spbellen_no_correct_contact_fields();
     // Create correction fields.
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
@@ -639,6 +632,18 @@ function spbellen_contact_fields() {
     'contact_id' => 'Contact id',
     'gender' => 'Geslacht',
     'is_lid' => 'Is lid',
+  );
+  return $contact_fields;
+}
+
+function spbellen_no_correct_contact_fields() {
+  $contact_fields = array(
+    'phone' => 'Telefoonnummer',
+    'display_name' => 'Weergave naam',
+    'email' => 'E-mail',
+    'street_address'=> 'Adres',
+    'postal_code' => 'Postcode',
+    'city' => 'Plaats',
   );
   return $contact_fields;
 }

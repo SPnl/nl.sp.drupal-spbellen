@@ -200,10 +200,11 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       foreach ($contact_fields as $key => $name) {
         // Set form field values.
         $form['submitted']['spbellen_hidden_'.$key]['#value'] = $contact_data[$key];
-        $form['submitted']['contact_data']['spbellen_'.$key]['#value'] = $contact_data[$key];
+        $form['submitted']['contact_data']['spbellen_'.$key]['#default_value'] = $contact_data[$key];
       }
-      // Add custom validation function.
+      // Add custom submit and validation function.
       $form['#validate'][] = 'spbellen_custom_webform_validate';
+      $form['#submit'][] = 'spbellen_custom_webform_submit';
       // Add next button.
       $form['actions']['spbellen_next']  = array(
         '#type' => 'button',
@@ -465,5 +466,49 @@ function spbellen_custom_webform_validate($form, &$form_state) {
     if (empty($form_state['values']['submitted']['call_answered'])) {
       form_set_error('call_answered', 'Vul een antwoord in!');
     }
+  }
+}
+
+function spbellen_custom_webform_submit($form, &$form_state) {
+  // Check if corrected fields equal original values.
+  $contact_fields =  spbellen_contact_fields();
+  foreach ($form['#node']->webform['components'] as $cid => $values) {
+    foreach ($contact_fields as $field_key => $field_name) {
+      if ($values['form_key'] === 'spbellen_hidden_' . $field_key) {
+        $original_key_to_cid[$field_key] = $cid;
+      }
+      if ($values['form_key'] === 'spbellen_' . $field_key) {
+        $corrected_key_to_cid[$field_key] = $cid;
+      }
+    }
+  }
+  $values = $form_state['values']['submitted'];
+
+  $contact_fields =  spbellen_no_correct_contact_fields();
+  $correction = FALSE;
+  $params = array();
+  foreach ($contact_fields as $field_key => $field_name) {
+    $correction = TRUE;
+    if ($values[$original_key_to_cid[$field_key]] !== $values[$corrected_key_to_cid[$field_key]]) {
+      $params['correction_lines'][] = 'Originele waarde '.$field_name.': '.$values[$original_key_to_cid[$field_key]];
+      $params['correction_lines'][] = 'Gecorrigeerde waarde '.$field_name.': '.$values[$corrected_key_to_cid[$field_key]];
+    }
+  }
+  if ($correction) {
+    $params['contact_id'] = $values[$original_key_to_cid['contact_id']];
+    drupal_mail('spbellen', 'spbellen_correct', 'tdgraaff@sp.nl', language_default(), $params, 'webmaster@sp.nl');
+  }
+}
+
+function spbellen_mail($key, &$message, $params) {
+  switch ($key) {
+  case 'spbellen_correct':
+    $message['subject'] = 'Correctie gegevens CiviCRM contact';
+    $message['body'][] = 'CiviCRM contact id: ' . $params['contact_id'];
+    $message['body'][] = '';
+    foreach ($params['correction_lines'] as $line) {
+      $message['body'][] = $line;
+    }
+    break;
   }
 }
