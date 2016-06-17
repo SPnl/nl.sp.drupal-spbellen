@@ -208,7 +208,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       // Add next button.
       $form['actions']['spbellen_next']  = array(
         '#type' => 'button',
-        '#value' => t('Next'),
+        '#value' => 'Overslaan',
         '#attributes' => array('style' => array('float: right')),
       );
     }
@@ -443,7 +443,7 @@ function spbellen_custom_webform_validate($form, &$form_state) {
   // Check if submit button or next button.
   if (
     !empty($form_state['triggering_element']['#value']) &&
-    $form_state['triggering_element']['#value'] === 'Volgende'
+    $form_state['triggering_element']['#value'] === 'Overslaan'
   ) {
   // Next button.
   // Disassign target from caller.
@@ -488,8 +488,12 @@ function spbellen_custom_webform_submit($form, &$form_state) {
   $correction = FALSE;
   $params = array();
   foreach ($contact_fields as $field_key => $field_name) {
-    $correction = TRUE;
-    if ($values[$original_key_to_cid[$field_key]] !== $values[$corrected_key_to_cid[$field_key]]) {
+    if (
+      !empty($values[$original_key_to_cid[$field_key]]) &&
+      !empty($values[$corrected_key_to_cid[$field_key]]) &&
+      $values[$original_key_to_cid[$field_key]] !== $values[$corrected_key_to_cid[$field_key]]
+    ) {
+      $correction = TRUE;
       $params['correction_lines'][] = 'Originele waarde '.$field_name.': '.$values[$original_key_to_cid[$field_key]];
       $params['correction_lines'][] = 'Gecorrigeerde waarde '.$field_name.': '.$values[$corrected_key_to_cid[$field_key]];
     }
@@ -506,8 +510,10 @@ function spbellen_mail($key, &$message, $params) {
     $message['subject'] = 'Correctie gegevens CiviCRM contact';
     $message['body'][] = 'CiviCRM contact id: ' . $params['contact_id'];
     $message['body'][] = '';
-    foreach ($params['correction_lines'] as $line) {
-      $message['body'][] = $line;
+    if (!empty($params['correction_lines'])) {
+      foreach ($params['correction_lines'] as $line) {
+        $message['body'][] = $line;
+      }
     }
     break;
   }

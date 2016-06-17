@@ -11,7 +11,7 @@
  */
 ?>
 
-<?php if(!empty($campaign_state)) : ?>
+<?php if(!empty($campaign_stats)) : ?>
   <?php foreach($campaign_stats as $data) : ?>
     <h3><?php print($data['title']); ?></h3>
     <table style="width: auto">

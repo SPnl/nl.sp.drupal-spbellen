@@ -12,12 +12,12 @@
     <div class="content top">
       <h1><?php print $phone; ?></h1>
       <?php $gender_trans = array('Man' => 'm', 'Vrouw' => 'v', 'Anders' => '?'); ?>
-      <h2><?php print $display_name; ?> (<?php print $gender_trans[$gender]; ?>)</h2>
+      <h2><?php print $display_name; ?><?php print !empty($gender) ? ' ('.$gender_trans[$gender].')' : ''; ?></h2>
     </div>
     <div class="wrapper bottom">
       <div class="content left">
         <ul>
-          <li><?php print $email; ?></li>
+          <li><?php print !empty($email) ? $email : ''; ?></li>
           <?php if (!empty($is_lid)) : ?>
             <li>Lid nr. <?php print $contact_id; ?></li>
           <?php else : ?>
@@ -26,7 +26,7 @@
         </ul>
       </div>
       <div class="content right">
-        <ul><li><?php print $street_address; ?></li><li><?php print $city; ?></li></ul>
+        <ul><li><?php print !empty($street_address) ? $street_address : 'straat onbekend'; ?></li><li><?php print !empty($city) ? $city : 'stad onbekend'; ?></li></ul>
       </div>
     </div>
   </div>

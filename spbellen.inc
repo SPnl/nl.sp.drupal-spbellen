@@ -846,7 +846,7 @@ function spbellen_get_contact_data($contact_id) {
 
         // Get membership data.
         $params = array(
-          'contact_id' => '761666',
+          'contact_id' => $contact_id,
           'membership_type_id' => array('IN' => array("1", "2", "3")),
           'status_id' => 2,
         );
