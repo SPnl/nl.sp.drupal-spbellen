@@ -1,18 +1,9 @@
 <?php
 
 function spbellen_settings_form($form, &$form_state) {
-  $campaigns_list = spbellen_get_campaigns_list();
-  $default = variable_get('spbellen_active_campaign', '');
-  $form['campaign'] = array(
-    '#title' => 'Selecteer de actieve campagne',
-    '#type' => 'select',
-    '#options' => $campaigns_list,
-    '#empty_option' => 'Geen',
-    '#default_value' => $default,
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => 'Sla op',
+  $form = array();
+  $form['no_settings'] = array(
+    '#markup' => '<p>Er zijn nog geen instellingen beschikbaar.</p>',
   );
   return $form;
 }

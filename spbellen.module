@@ -12,7 +12,8 @@ function spbellen_menu() {
 
   $items['bellen'] = array(
     'title' => 'SP bellen',
-    'page callback'  => 'spbellen_redirect',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_campaign_selection_form'),
     'access callback' => TRUE,
   );
 
@@ -405,16 +406,47 @@ function spbellen_cron() {
   cache_clear_all('spbellen_contact_data', 'cache');
 }
 
-function spbellen_redirect() {
-  $active_campaign = entity_load_single('campaign', variable_get('spbellen_active_campaign', FALSE));
-  if ($active_campaign) {
-    $path = drupal_get_path_alias('node/' . $active_campaign->webform_id);
+function spbellen_campaign_selection_form($form, &$form_state) {
+  $form = array();
+  $campaigns = spbellen_get_campaigns();
+  $campaign_list = array();
+  foreach ($campaigns as $campaign) {
+    if (!empty($campaign->webform_id)) {
+      if (spbellen_campaign_form_access($campaign->webform_id)) {
+        $webform = entity_load_single('node', $campaign->webform_id);
+        $campaign_list[$campaign->webform_id] = $webform->title;
+      }
+    }
+  }
+  // If only one campaign, go there directly.
+  if (count($campaign_list) === 1) {
+    $path = drupal_get_path_alias('node/' . key($campaign_list));
     drupal_goto($path);
   }
-  else {
-    drupal_set_message('Er is geen actieve campagne ingesteld.', 'error');
-    drupal_goto('bellen/error');
+  // Otherwise show selection form.
+  if (!empty($campaign_list)) {
+    $form['campaign'] = array(
+      '#type' => 'select',
+      '#title' => 'Selecteer een belcampagne:',
+      '#options' => $campaign_list,
+      '#required' => TRUE,
+    );
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => 'Selecteer',
+    );
   }
+  else {
+    $form['no_campaigns'] = array(
+      '#markup' => '<p>Er is geen campagne beschikbaar.</p>',
+    );
+  }
+  return $form;
+}
+
+function spbellen_campaign_selection_form_submit($form, &$form_state) {
+  $path = drupal_get_path_alias('node/' . $form_state['values']['campaign']);
+  drupal_goto($path);
 }
 
 /**
