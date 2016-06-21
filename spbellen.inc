@@ -906,6 +906,18 @@ function spbellen_get_contact_data($contact_id) {
       if (!empty($result['values'])) {
         $contact_data = $result['values'][0];
 
+        // Get mobile phone if available.
+        $params = array(
+          'contact_id' => $contact_id,
+          'phone_type_id' => 2,
+        );
+        $result = $spcivi->api('Phone', 'get', $params);
+        if (spbellen_check_result($result, 'een telefoonnummer', 'get', $params)) {
+          if (!empty($result['values'][0]['phone'])) {
+            $contact_data['phone'] = $result['values'][0]['phone'];
+          }
+        }
+
         // Get membership data.
         $params = array(
           'contact_id' => $contact_id,
