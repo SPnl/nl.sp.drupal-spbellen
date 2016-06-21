@@ -383,6 +383,37 @@ function spbellen_create_campaign_form($campaign) {
       $joined_component_id ++;
     }
 
+    // Message for next caller.
+    $joined_components[$joined_component_id] = array(
+      'pid' => 0,
+      'form_key' => 'caller_message',
+      'name' => 'Informatie voor volgende beller',
+      'type' => 'textfield',
+      'value' => '',
+      'extra' => array(
+        'title_display' => 'before',
+        'description_above' => 0,
+        'private' => 0,
+        'wrapper_classes' => '',
+        'css_classes' => '',
+        'width' => '',
+        'max_length' => '',
+        'field_prefix' => '',
+        'field_suffix' => '',
+        'disabled' => 0,
+        'unique' => 0,
+        'description' => '',
+        'placeholder' => '',
+        'attributes' => array(),
+        'analysis' => FALSE,
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $caller_message_component_id = $joined_component_id;
+    $joined_component_id ++;
+
     // Adding intro conditionals.
     $joined_conditional_id = 0;
     $joined_conditionals[$joined_conditional_id] = array(
@@ -508,6 +539,39 @@ function spbellen_create_campaign_form($campaign) {
       $joined_conditionals[$joined_conditional_id] = $campaign_conditional;
       $joined_conditional_id ++;
     }
+
+    // Add conditionals to show caller_message.
+    $joined_conditionals[$joined_conditional_id] = array(
+      'rgid' => $joined_conditional_id,
+      'andor' => 'or',
+      'rules' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'source_type' => 'component',
+          'source' => $call_answered_component_id,
+          'operator' => 'equal',
+          'value' => 'not_answered',
+        ),
+        1 => array(
+          'rgid' => $joined_conditional_id,
+          'source_type' => 'component',
+          'source' => $contact_available_component_id,
+          'operator' => 'equal',
+          'value' => 'answered_call_back',
+        ),
+      ),
+      'actions' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'target_type' => 'component',
+          'target' => $caller_message_component_id,
+          'invert' => 0,
+          'action' => 'show',
+          'argument' => '',
+        ),
+      ),
+    );
+    $joined_conditional_id ++;
 
     // Create new webform.
     $joined_form = new stdClass();
@@ -860,7 +924,7 @@ function spbellen_component_key_id_map($webform_node) {
   return $map;
 }
 
-function spbellen_create_action($tid, $caller_id, $result, $submission_id, $call_back_time) {
+function spbellen_create_action($tid, $caller_id, $result, $submission_id, $call_back_time, $caller_message = '') {
   $action_id = db_insert('spbellen_action')
     ->fields(array(
       'target_id' => $tid,
@@ -869,6 +933,7 @@ function spbellen_create_action($tid, $caller_id, $result, $submission_id, $call
       'result' => $result,
       'webform_submission_id' => $submission_id,
       'call_back_time' => $call_back_time,
+      'caller_message' => $caller_message,
     ))
     ->execute();
   return $action_id;

@@ -227,3 +227,16 @@ function spbellen_update_7001() {
   ); 
   db_add_field( 'spbellen_action', 'call_back_time', $spec);
 }
+
+/**
+ * Add caller message field to {spbellen_action} table.
+ */
+function spbellen_update_7002() {
+  $spec = array(
+    'description' => 'Message for next caller.',
+    'type' => 'text',
+    'size' => 'normal',
+    'not null' => FALSE,
+  ); 
+  db_add_field( 'spbellen_action', 'caller_message', $spec);
+}

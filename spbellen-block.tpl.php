@@ -35,7 +35,7 @@
       <p><strong>Belgeschiedenis</strong></p>
       <ul>
         <?php foreach ($history as $values) : ?> 
-          <li><?php print $values['date']; ?><br/><?php print $values['result']; ?></li>
+        <li><?php print $values['date']; ?><br/><?php print $values['result']; ?><br/>Opmerking: "<?php print $values['caller_message']; ?>"</li>
         <?php endforeach; ?> 
       </ul>
     </div>
