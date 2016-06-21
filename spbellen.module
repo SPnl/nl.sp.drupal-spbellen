@@ -492,22 +492,26 @@ function spbellen_custom_webform_validate($form, &$form_state) {
     !empty($form_state['triggering_element']['#value']) &&
     $form_state['triggering_element']['#value'] === 'Overslaan'
   ) {
-  // Next button.
-  // Disassign target from caller.
-  global $user;
-  $caller = user_load($user->uid);
-  $caller_id = $caller->field_contact_id['und'][0]['value'];
-  $result = db_update('spbellen_targets')
-    ->fields(array(
-      'occupied' => 0,
-      'date' => time(),
-      'caller_id' => NULL,
-    ))  
-    ->condition('caller_id', $caller_id)
-    ->execute();
-    drupal_goto('bellen');
+    // Next button.
+    // Disassign target from caller.
+    global $user;
+    $caller = user_load($user->uid);
+    $caller_id = $caller->field_contact_id['und'][0]['value'];
+    $result = db_update('spbellen_targets')
+      ->fields(array(
+        'occupied' => 0,
+        'date' => time(),
+        'caller_id' => NULL,
+      ))  
+      ->condition('caller_id', $caller_id)
+      ->execute();
+    $path = drupal_get_path_alias('node/' . $form['#node']->nid);
+    drupal_goto($path);
   }
-  else {
+  else if (
+    !empty($form_state['triggering_element']['#value']) &&
+    $form_state['triggering_element']['#value'] === 'Verder'
+  ) {
     // Submit button.
     // Check if value is selected for 'call_answered'.
     if (empty($form_state['values']['submitted']['call_answered'])) {

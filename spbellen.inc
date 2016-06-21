@@ -537,6 +537,9 @@ function spbellen_create_campaign_form($campaign) {
       'submit_interval' => '-1',
       'total_submit_limit' => '-1',
       'total_submit_interval' => '-1',
+      'progressbar_bar' => 0,
+      'preview' => 1,
+      'preview_next_button_label' => 'Verder',
       'record_exists' => TRUE,
       'roles' => array(
         0 => '1', // Anonymous user can submit this webform.
