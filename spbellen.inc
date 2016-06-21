@@ -224,11 +224,12 @@ function spbellen_create_campaign_form($campaign) {
     );
     $call_answered_component_id = $joined_component_id;
     $joined_component_id ++;
+
     // Target available?
     $joined_components[$joined_component_id] = array(
       'pid' => $parent,
       'form_key' => 'target_available',
-      'name' => 'Heb je met het contact gesproken?',
+      'name' => 'Is het contact beschikbaar om vragen te beantwoorden?',
       'type' => 'select',
       'value' => '',
       'extra' => array(
@@ -254,6 +255,38 @@ function spbellen_create_campaign_form($campaign) {
       'page_num' => 1,
     );
     $contact_available_component_id = $joined_component_id;
+    $joined_component_id ++;
+
+    // Target available today?
+    $joined_components[$joined_component_id] = array(
+      'pid' => $parent,
+      'form_key' => 'not_available_today',
+      'name' => 'Vandaag niet meer bellen',
+      'type' => 'select',
+      'value' => '',
+      'extra' => array(
+        'items' => "not_available_today|Vandaag niet meer bellen",
+        'multiple' => 1,
+        'title_display' => 'none',
+        'description_above' => 0,
+        'private' => 0,
+        'wrapper_classes' => '',
+        'css_classes' => '',
+        'aslist' => 0,
+        'empty_option' => '',
+        'optrand' => 0,
+        'other_option' => NULL,
+        'other_text' => 'Other ...',
+        'description' => '',
+        'custom_keys' => FALSE,
+        'options_source' => '',
+        'analysis' => TRUE,
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $not_available_today_component_id = $joined_component_id;
     $joined_component_id ++;
 
     // Add campaign fieldset.
@@ -369,6 +402,32 @@ function spbellen_create_campaign_form($campaign) {
           'rgid' => $joined_conditional_id,
           'target_type' => 'component',
           'target' => $contact_available_component_id,
+          'invert' => 0,
+          'action' => 'show',
+          'argument' => '',
+        ),
+      ),
+    );
+    $joined_conditional_id ++;
+
+    // Not today conditional.
+    $joined_conditionals[$joined_conditional_id] = array(
+      'rgid' => $joined_conditional_id,
+      'andor' => NULL,
+      'rules' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'source_type' => 'component',
+          'source' => $contact_available_component_id,
+          'operator' => 'equal',
+          'value' => 'answered_call_back',
+        ),
+      ),
+      'actions' => array(
+        0 => array(
+          'rgid' => $joined_conditional_id,
+          'target_type' => 'component',
+          'target' => $not_available_today_component_id,
           'invert' => 0,
           'action' => 'show',
           'argument' => '',
@@ -697,11 +756,11 @@ function spbellen_assign_target($campaign_id) {
     ))->fetchAssoc();
     if (!$result) {
       // Get new target.
-      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.timestamp < :call_again_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
+      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.call_back_time < :current_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
         ':occupied_time' => time() - 1800,
-        ':call_again_time' => time() - 2700,
+        ':current_time' => time(),
       ))->fetchAssoc();
       if ($result) {
         // Claim target.
@@ -799,7 +858,7 @@ function spbellen_component_key_id_map($webform_node) {
   return $map;
 }
 
-function spbellen_create_action($tid, $caller_id, $result, $submission_id) {
+function spbellen_create_action($tid, $caller_id, $result, $submission_id, $call_back_time) {
   $action_id = db_insert('spbellen_action')
     ->fields(array(
       'target_id' => $tid,
@@ -807,6 +866,7 @@ function spbellen_create_action($tid, $caller_id, $result, $submission_id) {
       'timestamp' => time(),
       'result' => $result,
       'webform_submission_id' => $submission_id,
+      'call_back_time' => $call_back_time,
     ))
     ->execute();
   return $action_id;

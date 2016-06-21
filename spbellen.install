@@ -214,3 +214,16 @@ function spbellen_schema() {
 
   return $schema;
 }
+
+/**
+ * Add call again field to {spbellen_action} table.
+ */
+function spbellen_update_7001() {
+  $spec = array(
+    'description' => 'Unix timestamp.',
+    'type' => 'int',
+    'size' => 'big',
+    'not null' => TRUE,
+  ); 
+  db_add_field( 'spbellen_action', 'call_back_time', $spec);
+}

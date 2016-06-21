@@ -249,7 +249,13 @@ function spbellen_webform_submission_insert($node, $submission) {
       if (!empty($submission->data[$map['target_available']][0])) {
         $result = $submission->data[$map['target_available']][0];
       }
-      $action_id = spbellen_create_action($tid, $caller_id, $result, $submission->sid);
+      if (!empty($submission->data[$map['not_available_today']][0])) {
+        $call_back_time = strtotime('tomorrow') + 21600; // Call back after 6:00 next day.
+      }
+      else {
+        $call_back_time = time() + 2700; // Call back after 45 minutes.
+      }
+      $action_id = spbellen_create_action($tid, $caller_id, $result, $submission->sid, $call_back_time);
 
       if ($result === 'answered_blacklist') {
         spbellen_blacklist($target_contact_id);
