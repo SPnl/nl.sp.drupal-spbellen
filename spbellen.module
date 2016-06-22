@@ -316,7 +316,14 @@ function spbellen_node_access($node, $op, $account) {
       if (spbellen_is_spbellen_form($node->nid)) {
         // Check session for call groups.
         if(spbellen_campaign_form_access($node->nid)) {
-          return NODE_ACCESS_ALLOW;
+          // Check if disabled.
+          $campaign = spbellen_get_campaign($node->nid);
+          if (!empty($campaign) && !$campaign->disabled) {
+            return NODE_ACCESS_ALLOW;
+          }
+          else {
+            return NODE_ACCESS_DENY;
+          }
         }
         else {
           return NODE_ACCESS_DENY;
@@ -418,7 +425,7 @@ function spbellen_campaign_selection_form($form, &$form_state) {
   $campaigns = spbellen_get_campaigns();
   $campaign_list = array();
   foreach ($campaigns as $campaign) {
-    if (!empty($campaign->webform_id)) {
+    if (!empty($campaign->webform_id) && $campaign->disabled == 0) {
       if (spbellen_campaign_form_access($campaign->webform_id)) {
         $webform = entity_load_single('node', $campaign->webform_id);
         $campaign_list[$campaign->webform_id] = $webform->title;

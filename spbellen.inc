@@ -31,6 +31,17 @@ function spbellen_get_webforms_list() {
   return $webforms_list;
 }
 
+function spbellen_get_campaign($webform_id) {
+  $campaign_id = spbellen_get_campaign_id($webform_id);
+  if (!empty($campaign_id)) {
+    $campaign = entity_load_single('campaign', $campaign_id);
+    if (!empty($campaign)) {
+      return $campaign;
+    }
+  }
+  return FALSE;
+}
+
 function spbellen_get_campaigns() {
   $campaigns = &drupal_static(__FUNCTION__);
   if (!isset($campaigns)) {
