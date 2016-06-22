@@ -170,10 +170,11 @@ function spbellen_create_campaign_form($campaign) {
     $joined_component_id = 1;
 
     // Add contact components.
+    $parent = 0;
     $contact_fields = spbellen_contact_fields();
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
-        'pid' => 0,
+        'pid' => $parent,
         'form_key' => 'spbellen_hidden_'.$key,
         'name' => $name . ' (verborgen)',
         'type' => 'hidden',
@@ -190,9 +191,26 @@ function spbellen_create_campaign_form($campaign) {
       $joined_component_id ++;
     }
 
-    $parent = 0;
-
     // Add intro components.
+    // Intro text. 
+    $joined_components[$joined_component_id] = array(
+      'pid' => $parent,
+      'form_key' => 'intro_text',
+      'name' => 'Introductietekst',
+      'type' => 'markup',
+      'value' => $campaign->intro_text,
+      'extra' => array(
+        'format' => 'filtered_html',
+        'private' => 0,
+        'display_on' => 'form',
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $text_intro_component_id = $joined_component_id;
+    $joined_component_id ++;
+
     // Call answered?
     $joined_components[$joined_component_id] = array(
       'pid' => $parent,
@@ -290,8 +308,9 @@ function spbellen_create_campaign_form($campaign) {
     $joined_component_id ++;
 
     // Add campaign fieldset.
+    $parent = 0;
     $joined_components[$joined_component_id] = array(
-      'pid' => 0,
+      'pid' => $parent,
       'form_key' => 'campaign',
       'name' => 'Campagnevragen',
       'type' => 'fieldset',
@@ -326,8 +345,9 @@ function spbellen_create_campaign_form($campaign) {
     }
 
     // Add contact data fieldset.
+    $parent = 0;
     $joined_components[$joined_component_id] = array(
-      'pid' => 0,
+      'pid' => $parent,
       'form_key' => 'contact_data',
       'name' => 'Contact gegevens corrigeren',
       'type' => 'fieldset',
@@ -384,8 +404,9 @@ function spbellen_create_campaign_form($campaign) {
     }
 
     // Message for next caller.
+    $parent = 0;
     $joined_components[$joined_component_id] = array(
-      'pid' => 0,
+      'pid' => $parent,
       'form_key' => 'caller_message',
       'name' => 'Informatie voor volgende beller',
       'type' => 'textfield',

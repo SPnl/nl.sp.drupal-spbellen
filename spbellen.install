@@ -40,6 +40,12 @@ function spbellen_schema() {
         'default' => 0,
         'not null' => TRUE,
       ),
+      'intro_text' => array(
+        'description' => 'Campaign caller introduction text.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
     ),
     'primary key' => array(
       'id',
@@ -191,6 +197,18 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
+      'call_back_time' => array(
+        'description' => 'Unix timestamp.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'caller_message' => array(
+        'description' => 'Message for next caller.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+      )
     ),
     'primary key' => array(
       'id',
@@ -239,4 +257,17 @@ function spbellen_update_7002() {
     'not null' => FALSE,
   ); 
   db_add_field( 'spbellen_action', 'caller_message', $spec);
+}
+
+/**
+ * Add intro text field to {spbellen_campaign} table.
+ */
+function spbellen_update_7003() {
+  $spec = array(
+    'description' => 'Campaign caller introduction text.',
+    'type' => 'text',
+    'size' => 'normal',
+    'not null' => FALSE,
+  ); 
+  db_add_field( 'spbellen_campaign', 'intro_text', $spec);
 }

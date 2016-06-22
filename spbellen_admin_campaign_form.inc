@@ -132,6 +132,14 @@ function spbellen_campaign_form($form, &$form_state) {
         );
       }
 
+      if ($storage['campaign'] === 'new') {
+        $form['intro_text'] = array(
+          '#type' => 'textarea',
+          '#title' => 'Introductietekst voor beller',
+          '#format' => 'filtered_html',
+        );
+      }
+
       $form['disabled'] = array(
         '#type' => 'checkboxes',
         '#title' => 'Maak de campagne ontoegankelijk voor bellers',
@@ -341,6 +349,7 @@ function spbellen_store_campaign($storage, $values) {
     $properties = array(
       'webform_id' => $values['webform'],
       'disabled' => $values['disabled']['disabled'],
+      'intro_text' => $values['intro_text'],
     );
     $campaign = entity_create('campaign', $properties);
   }
