@@ -8,9 +8,16 @@
 ?>
 
 <div id="spbellen-block-data">
+  <div id="spbellen-stats">
+    <div id="spbellen_completed_percentage" style="width:<?php print $stats['completed_percentage']; ?>%"></div>
+    <div id="spbellen_call_back_percentage" style="width:<?php print $stats['call_back_percentage']; ?>%"></div>
+    <div id="spbellen_not_contacted_percentage" style="width:<?php print $stats['not_contacted_percentage']; ?>%"></div>
+    <div id="spbellen_wrong_number_percentage" style="width:<?php print $stats['wrong_number_percentage']; ?>%"></div>
+    <div id="spbellen_blacklisted_percentage" style="width:<?php print $stats['blacklisted_percentage']; ?>%"></div>
+  </div>
   <div class="wrapper left">
     <div class="content top">
-      <h1><?php print $phone; ?></h1>
+      <h1><?php print substr($phone, 0, 2) . ' ' . chunk_split(substr($phone, 2), 4, ' '); ?></h1>
       <?php $gender_trans = array('Man' => 'm', 'Vrouw' => 'v', 'Anders' => '?'); ?>
       <h2><?php print $display_name; ?><?php print !empty($gender) ? ' ('.$gender_trans[$gender].')' : ''; ?></h2>
     </div>
@@ -35,7 +42,7 @@
       <p><strong>Belgeschiedenis</strong></p>
       <ul>
         <?php foreach ($history as $values) : ?> 
-        <li><?php print $values['date']; ?><br/><?php print $values['result']; ?><br/>Opmerking: "<?php print $values['caller_message']; ?>"</li>
+        <li><?php print $values['date']; ?><br/><?php print $values['result']; ?><?php if (!empty($values['caller_message'])) : ?><br/>Opmerking: "<?php print $values['caller_message']; ?>"<?php endif; ?></li>
         <?php endforeach; ?> 
       </ul>
     </div>

@@ -353,22 +353,20 @@ function spbellen_block_info() {
 function spbellen_block_view($delta = '') {
   $block = array();
 
-  if (arg(0) == 'node' && is_numeric(arg(1)) && is_null(arg(2))) {
-    $nid = arg(1);
-    if (spbellen_is_spbellen_form($nid)) {
-      if (spbellen_campaign_form_access($nid)) {
-        switch ($delta) {
-        case 'spbellen':
-          if (spbellen_campaign_form_access($nid)) {
-            return array(
-              'subject' => '',
-              'content' => spbellen_block_content(),
-            );
-          }
-          break;
+  switch ($delta) {
+  case 'spbellen':
+    if (arg(0) == 'node' && is_numeric(arg(1)) && is_null(arg(2))) {
+      $nid = arg(1);
+      if (spbellen_is_spbellen_form($nid)) {
+        if (spbellen_campaign_form_access($nid)) {
+          $block = array(
+            'subject' => '',
+            'content' => spbellen_block_content(),
+          );
         }
       }
     }
+    break;
   }
   return $block;
 }
@@ -408,6 +406,10 @@ function spbellen_block_content() {
             );
           }
         }
+
+        // Stats
+        $stats = spbellen_get_campaign_stats($campaign_id);
+        $data['stats'] = $stats;
 
         $output = theme('spbellen_block_theme', $data);
       }

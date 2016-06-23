@@ -101,6 +101,7 @@ function spbellen_get_civi_groups($sync = TRUE) {
             foreach ($groups_results['values'] as $value) {
               if (
                 empty($value['group_type']) || 
+                (array_key_exists(0, $value['group_type']) && empty($value['group_type'][0])) || 
                 in_array('2', $value['group_type'])
               ) {
               $groups[$value['id']] = $value['title'];
@@ -1037,4 +1038,36 @@ function spbellen_get_contact_data($contact_id) {
     }
   }
   return $contact_data;
+}
+
+function spbellen_get_all_stats() {
+  $stats = &drupal_static(__FUNCTION__);
+  if (!isset($stats)) {
+    $stats = array();
+    $campaigns = spbellen_get_campaigns();
+    if (!empty($campaigns)) {
+      foreach ($campaigns as $campaign_id => $campaign) {
+        $stats[$campaign_id] = spbellen_get_campaign_stats($campaign_id);
+      }
+    }
+  }
+  return $stats;
+}
+
+function spbellen_get_campaign_stats($campaign_id) {
+  $stats = &drupal_static(__FUNCTION__);
+  if (!isset($stats['campaign_id'])) {
+    $stats = array();
+    $campaign = entity_load_single('campaign', $campaign_id);
+    $webform = entity_load_single('node', $campaign->webform_id);
+    $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT {JOIN spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE campaign_id = :campaign_id;";
+    $result = db_query($query, array(':campaign_id' => $campaign_id));
+    $record = $result->fetchAssoc();
+    foreach ($record as $key => $value) {
+      $stats[$campaign_id][$key] = empty($value) ? 0 : $value;
+      $stats[$campaign_id][$key.'_percentage'] = floor(100 * $value / $record['total']);
+    }
+    $stats[$campaign_id]['title'] = $webform->title;
+  }
+  return $stats[$campaign_id];
 }
