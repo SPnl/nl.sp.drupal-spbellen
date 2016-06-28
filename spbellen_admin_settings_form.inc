@@ -1,20 +1,24 @@
 <?php
 
 function spbellen_settings_form($form, &$form_state) {
-  $form = array();
-  $form['no_settings'] = array(
-    '#markup' => '<p>Er zijn nog geen instellingen beschikbaar.</p>',
+  // Set e-mail settings.
+  $form['spbellen_email_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'E-mail instellingen',
   );
-  return $form;
+  $form['spbellen_email_settings']['spbellen_corrections_email_address'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Correcties contactgegevens sturen naar:',
+    '#default_value' => variable_get('spbellen_corrections_email_address', ''),
+  );
+  return system_settings_form($form);
 }
 
-function spbellen_settings_form_submit($form, &$form_state) {
+function spbellen_settings_form_validate($form, &$form_state) {
   $values = $form_state['values'];
-  if (!empty($values['campaign'])) {
-    variable_set('spbellen_active_campaign', $values['campaign']);
-    drupal_set_message('Actieve campagne is opgeslagen.');
-  }
-  else {
-    drupal_set_message('Er is geen actieve campagne.', 'warning');
+  if (!empty($values['spbellen_corrections_email_address'])) {
+    if (! valid_email_address($values['spbellen_corrections_email_address'])) {
+      form_set_error('spbellen_corrections_email_address', 'Vul een geldig e-mailadres in!');
+    }
   }
 }

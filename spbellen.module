@@ -537,37 +537,41 @@ function spbellen_custom_webform_validate($form, &$form_state) {
 }
 
 function spbellen_custom_webform_submit($form, &$form_state) {
-  // Check if corrected fields equal original values.
-  $contact_fields =  spbellen_contact_fields();
-  foreach ($form['#node']->webform['components'] as $cid => $values) {
-    foreach ($contact_fields as $field_key => $field_name) {
-      if ($values['form_key'] === 'spbellen_hidden_' . $field_key) {
-        $original_key_to_cid[$field_key] = $cid;
-      }
-      if ($values['form_key'] === 'spbellen_' . $field_key) {
-        $corrected_key_to_cid[$field_key] = $cid;
+  if ($form_state['clicked_button']['#value'] === 'Indienen') {
+    // Check if corrected fields equal original values.
+    $contact_fields =  spbellen_contact_fields();
+    foreach ($form['#node']->webform['components'] as $cid => $values) {
+      foreach ($contact_fields as $field_key => $field_name) {
+        if ($values['form_key'] === 'spbellen_hidden_' . $field_key) {
+          $original_key_to_cid[$field_key] = $cid;
+        }
+        if ($values['form_key'] === 'spbellen_' . $field_key) {
+          $corrected_key_to_cid[$field_key] = $cid;
+        }
       }
     }
-  }
-  $values = $form_state['values']['submitted'];
+    $values = $form_state['values']['submitted'];
 
-  $contact_fields =  spbellen_no_correct_contact_fields();
-  $correction = FALSE;
-  $params = array();
-  foreach ($contact_fields as $field_key => $field_name) {
-    if (
-      !empty($values[$original_key_to_cid[$field_key]]) &&
-      !empty($values[$corrected_key_to_cid[$field_key]]) &&
-      $values[$original_key_to_cid[$field_key]] !== $values[$corrected_key_to_cid[$field_key]]
-    ) {
-      $correction = TRUE;
-      $params['correction_lines'][] = 'Originele waarde '.$field_name.': '.$values[$original_key_to_cid[$field_key]];
-      $params['correction_lines'][] = 'Gecorrigeerde waarde '.$field_name.': '.$values[$corrected_key_to_cid[$field_key]];
+    $contact_fields =  spbellen_no_correct_contact_fields();
+    $correction = FALSE;
+    $params = array();
+    foreach ($contact_fields as $field_key => $field_name) {
+      if (
+        !empty($values[$original_key_to_cid[$field_key]]) &&
+        !empty($values[$corrected_key_to_cid[$field_key]]) &&
+        $values[$original_key_to_cid[$field_key]] !== $values[$corrected_key_to_cid[$field_key]]
+      ) {
+        $correction = TRUE;
+        $params['correction_lines'][] = 'Originele waarde '.$field_name.': '.$values[$original_key_to_cid[$field_key]];
+        $params['correction_lines'][] = 'Gecorrigeerde waarde '.$field_name.': '.$values[$corrected_key_to_cid[$field_key]];
+        $params['correction_lines'][] = '';
+      }
     }
-  }
-  if ($correction) {
-    $params['contact_id'] = $values[$original_key_to_cid['contact_id']];
-    drupal_mail('spbellen', 'spbellen_correct', 'tdgraaff@sp.nl', language_default(), $params, 'webmaster@sp.nl');
+    $corrections_email = variable_get('spbellen_corrections_email_address', '');
+    if ($correction && !empty($corrections_email)) {
+      $params['contact_id'] = $values[$original_key_to_cid['contact_id']];
+      drupal_mail('spbellen', 'spbellen_correct', $corrections_email, language_default(), $params, 'webmaster@sp.nl');
+    }
   }
 }
 
@@ -575,6 +579,8 @@ function spbellen_mail($key, &$message, $params) {
   switch ($key) {
   case 'spbellen_correct':
     $message['subject'] = 'Correctie gegevens CiviCRM contact';
+    $message['body'][] = 'Beste,';
+    $message['body'][] = 'Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven.';
     $message['body'][] = 'CiviCRM contact id: ' . $params['contact_id'];
     $message['body'][] = '';
     if (!empty($params['correction_lines'])) {
@@ -582,6 +588,9 @@ function spbellen_mail($key, &$message, $params) {
         $message['body'][] = $line;
       }
     }
+    $message['body'][] = 'Passen jullie deze indien nodig aan in CiviCRM?';
+    $message['body'][] = 'Thx, SP Webteam';
+    $message['body'][] = '(Dit is een automatisch gegenereerd bericht)';
     break;
   }
 }
