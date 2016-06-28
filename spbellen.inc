@@ -729,7 +729,7 @@ function spbellen_get_targets($campaign) {
         // New targets.
         if (!empty($results['values'])) {
           foreach ($results['values'] as $result) {
-            if (!empty($result['phone'])) {
+            if (!empty($result['phone']) && $result['do_not_phone'] == 0) {
               $tids_civi[$result['contact_id']] = $result['contact_id'];
             }
           }
@@ -874,12 +874,28 @@ function spbellen_assign_target($campaign_id) {
       }
     }
     if (!empty($result)) {
+      // A target was found!
       $civi_contact_id = $result['civi_contact_id'];
       // Get civicrm data.
       set_time_limit(0);
       $result = spbellen_get_contact_data($civi_contact_id);
       if ($result) {
-        return $result;
+        // Check if target may be called!
+        if (isset($result['do_not_phone']) && $result['do_not_phone'] == 0) {
+          return $result;
+        }
+        else {
+          // Contact privacy instelling in CiviCRM is sinds de laatste sync gewijzigd, en contact mag niet meer gebeld worden.
+          // Blacklist
+          spbellen_blacklist($civi_contact_id);
+          // And reload page.
+          $campaign = entity_load_single('campaign', $campaign_id);
+          if ($campaign) {
+            $webform_id = $campaign->webform_id;
+            $path = drupal_get_path_alias('node/' . $webform_id);
+            drupal_goto($path);
+          }
+        }
       }
       else {
         drupal_set_message('Er kon geen contact informatie worden opgehaald.', 'error');
@@ -978,6 +994,7 @@ function spbellen_blacklist($target_contact_id) {
       'civi_contact_id' => $target_contact_id,
     ))
     ->execute();
+  spbellen_civi_no_calls($target_contact_id);
 }
 
 function spbellen_action_translate() {
@@ -1070,4 +1087,20 @@ function spbellen_get_campaign_stats($campaign_id) {
     $stats[$campaign_id]['title'] = $webform->title;
   }
   return $stats[$campaign_id];
+}
+
+/*
+ * Set CiviCRM privacy settings for contact to no calls.
+ */
+function spbellen_civi_no_calls($contact_id) {
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'id' => $contact_id,
+    'do_not_phone' => 1,
+  );
+  $result = $spcivi->api('Contact', 'create', $params);
+  if (spbellen_check_result($result, 'een contact', 'create', $params)) {
+    watchdog('spbellen', 'CiviCRM contact nr. '.$contact_id.' privacy instelling "Niet bellen" ingeschakeld.');
+  }
 }
