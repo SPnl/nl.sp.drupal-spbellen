@@ -29,13 +29,14 @@ function spbellen_menu() {
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'spbellen_overview',
     'file' => 'spbellen_admin_overview.inc',
-    'access callback' => sprbs_access_check(),
+    'access callback' => 'sprbs_access_check',
   );
 
   $items['admin/config/sp/spbellen/overview'] = array(
     'title' => 'Overzicht',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => '0',
+    'access callback' => 'sprbs_access_check',
   );
 
   $items['admin/config/sp/spbellen/campaign'] = array(
@@ -44,7 +45,7 @@ function spbellen_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_campaign_form'),
     'file' => 'spbellen_admin_campaign_form.inc',
-    'access callback' => sprbs_access_check(),
+    'access callback' => 'sprbs_access_check',
     'weight' => '1',
   );
 
@@ -54,14 +55,14 @@ function spbellen_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_settings_form'),
     'file' => 'spbellen_admin_settings_form.inc',
-    'access callback' => sprbs_access_check(),
+    'access callback' => 'sprbs_access_check',
     'weight' => '2',
   );
 
   $items['spbellen/group/autocomplete'] = array(
     'title' => 'SP bellen autocomplete',
     'page callback' => 'spbellen_group_autocomplete',
-    'access callback' => sprbs_access_check(),
+    'access callback' => 'sprbs_access_check',
     'type' => MENU_CALLBACK,
     'file' => 'spbellen.inc',
   );
