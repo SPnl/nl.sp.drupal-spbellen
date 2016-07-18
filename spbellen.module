@@ -29,14 +29,14 @@ function spbellen_menu() {
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'spbellen_overview',
     'file' => 'spbellen_admin_overview.inc',
-    'access callback' => 'sprbs_access_check',
+    'access callback' => 'user_is_logged_in',
   );
 
   $items['admin/config/sp/spbellen/overview'] = array(
     'title' => 'Overzicht',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => '0',
-    'access callback' => 'sprbs_access_check',
+    'access callback' => 'user_is_logged_in',
   );
 
   $items['admin/config/sp/spbellen/campaign'] = array(
