@@ -17,7 +17,7 @@
   </div>
   <div class="wrapper left">
     <div class="content top">
-      <h1><?php print substr($phone, 0, 2) . ' ' . chunk_split(substr($phone, 2), 4, ' '); ?></h1>
+      <h1><?php $phone = preg_replace("/[^0-9]/", "", $phone); ?><?php print substr($phone, 0, 2) . ' ' . chunk_split(substr($phone, 2), 4, ' '); ?></h1>
       <?php $gender_trans = array('Man' => 'm', 'Vrouw' => 'v', 'Anders' => '?'); ?>
       <h2><?php print $display_name; ?><?php print !empty($gender) ? ' ('.$gender_trans[$gender].')' : ''; ?></h2>
     </div>
