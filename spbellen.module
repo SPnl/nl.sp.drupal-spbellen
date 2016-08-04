@@ -344,22 +344,38 @@ function spbellen_user_login($edit, $account) {
 }
 
 function spbellen_node_access($node, $op, $account) {
+  global $user;
   if ($op === 'view') {
     // Check campaign form access.
     if (!empty($node->nid)) {
-      if (spbellen_is_spbellen_form($node->nid)) {
-        // Check session for call groups.
-        if(spbellen_campaign_form_access($node->nid)) {
-          // Check if disabled.
-          $campaign = spbellen_get_campaign($node->nid);
-          if (!empty($campaign) && !$campaign->disabled) {
+      // Check if webform.
+      if (!empty($node->webform)) {
+        // Check if spbellen form.
+        if (spbellen_is_spbellen_form($node->nid)) {
+          // Allow beheerders.
+          if (in_array('beheerder', $user->roles)) {
             return NODE_ACCESS_ALLOW;
           }
+          // Check session for call groups.
+          if(spbellen_campaign_form_access($node->nid)) {
+            // Check if disabled.
+            $campaign = spbellen_get_campaign($node->nid);
+            if (!empty($campaign) && !$campaign->disabled) {
+              // Campaign not disabled.
+              return NODE_ACCESS_ALLOW;
+            }
+            else {
+              // Campaign is disabled.
+              return NODE_ACCESS_DENY;
+            }
+          }
           else {
+            // Deny access when not in callgroup.
             return NODE_ACCESS_DENY;
           }
         }
         else {
+          // Deny access to non belforms.
           return NODE_ACCESS_DENY;
         }
       }
