@@ -271,3 +271,16 @@ function spbellen_update_7003() {
   ); 
   db_add_field( 'spbellen_campaign', 'intro_text', $spec);
 }
+
+/**
+ * Add phonenumber field to {spbellen_targets} table.
+ */
+function spbellen_update_7004() {
+  $spec = array(
+    'description' => 'Contact phone number.',
+    'type' => 'text',
+    'size' => 'normal',
+    'not null' => FALSE,
+  ); 
+  db_add_field( 'spbellen_targets', 'phonenumber', $spec);
+}

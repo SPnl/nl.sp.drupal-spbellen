@@ -726,11 +726,20 @@ function spbellen_get_targets($campaign) {
       );
       $results = $spcivi->api('Contact', 'get', $params);
       if (spbellen_check_result($results, 'contacten', 'get', $params)) {
-        // New targets.
+        // Current targets from CiviCRM.
         if (!empty($results['values'])) {
           foreach ($results['values'] as $result) {
+            $contact_id = $result['contact_id'];
             if (!empty($result['phone']) && $result['do_not_phone'] == 0) {
-              $tids_civi[$result['contact_id']] = $result['contact_id'];
+              $tids_civi[$contact_id] = $contact_id;
+              $mobile_phone = spbellen_get_mobile_phone($contact_id);
+              if (!empty($mobile_phone)) {
+                $phonenumber = $mobile_phone;
+              }
+              else {
+                $phonenumber = $result['phone'];
+              }
+              $phonenumbers_civi[$contact_id] = preg_replace('/[^0-9]/', '', $phonenumber);
             }
           }
         }
@@ -766,6 +775,7 @@ function spbellen_get_targets($campaign) {
           'civi_contact_id' => $tid,
           'campaign_id' => $campaign->id,
           'occupied' => 0,
+          'phonenumber' => $phonenumbers_civi[$tid],
         ))
         ->execute();
     }
@@ -1022,15 +1032,9 @@ function spbellen_get_contact_data($contact_id) {
         $contact_data = $result['values'][0];
 
         // Get mobile phone if available.
-        $params = array(
-          'contact_id' => $contact_id,
-          'phone_type_id' => 2,
-        );
-        $result = $spcivi->api('Phone', 'get', $params);
-        if (spbellen_check_result($result, 'een telefoonnummer', 'get', $params)) {
-          if (!empty($result['values'][0]['phone'])) {
-            $contact_data['phone'] = $result['values'][0]['phone'];
-          }
+        $mobile_phone = spbellen_get_mobile_phone($contact_id);
+        if (!empty($mobile_phone)) {
+          $contact_data['phone'] = $mobile_phone;
         }
 
         // Get membership data.
@@ -1103,4 +1107,20 @@ function spbellen_civi_no_calls($contact_id) {
   if (spbellen_check_result($result, 'een contact', 'create', $params)) {
     watchdog('spbellen', 'CiviCRM contact nr. '.$contact_id.' privacy instelling "Niet bellen" ingeschakeld.');
   }
+}
+
+function spbellen_get_mobile_phone($contact_id) {
+  $spcivi = \SPCivi::getInstance();
+  // Get mobile phone if available.
+  $params = array(
+    'contact_id' => $contact_id,
+    'phone_type_id' => 2,
+  );
+  $result = $spcivi->api('Phone', 'get', $params);
+  if (spbellen_check_result($result, 'een telefoonnummer', 'get', $params)) {
+    if (!empty($result['values'][0]['phone'])) {
+      return $result['values'][0]['phone'];
+    }
+  }
+  return FALSE;
 }
