@@ -143,13 +143,40 @@ function spbellen_group_autocomplete($string) {
   drupal_json_output($matches);
 }
 
-function spbellen_parse_group_form_select_value($group_raw) {
-  $group = '';
-  preg_match('@^.+\(([0-9]+)\)$@', $group_raw, $matches);
-  if (!empty($matches[1])) {
-    $group = $matches[1];
+function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
+  $matches = array();
+  if (!empty($string)) {
+    if (spbellen_campaign_form_access($webform_id)) {
+      $campaign_id = spbellen_get_campaign_id($webform_id);
+      if (!empty($campaign_id)) {
+        $query = "SELECT ta.id, phonenumber FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND phonenumber LIKE :phonenumber LIMIT 5";
+        $substitutions = array(
+          ':campaign_id' => $campaign_id,
+          ':phonenumber' => "$string%",
+          ':caller_id' => $user_id
+        );
+        $result = db_query($query, $substitutions);
+        if ($result) {
+          while ($row = $result->fetchAssoc()) {
+            $text = $row['phonenumber'] . ' (' . $row['id'] . ')';
+            $matches[$text] = $text;
+          }
+        }
+      }
+    }
   }
-  return $group;
+
+  //Return the result to the form in json
+  drupal_json_output($matches);
+}
+
+function spbellen_parse_id_form_select_value($id_raw) {
+  $id = '';
+  preg_match('@^.+\(([0-9]+)\)$@', $id_raw, $matches);
+  if (!empty($matches[1])) {
+    $id = $matches[1];
+  }
+  return $id;
 }
 
 function spbellen_get_stored_campaign_groups($campaign_id, $type) {
@@ -873,7 +900,7 @@ function spbellen_assign_target($campaign_id) {
       ))->fetchAssoc();
       if ($result) {
         // Claim target.
-        $civi_result = db_update('spbellen_targets')
+        db_update('spbellen_targets')
           ->fields(array(
             'occupied' => 1,
             'date' => time(),
@@ -1120,6 +1147,17 @@ function spbellen_get_mobile_phone($contact_id) {
   if (spbellen_check_result($result, 'een telefoonnummer', 'get', $params)) {
     if (!empty($result['values'][0]['phone'])) {
       return $result['values'][0]['phone'];
+    }
+  }
+  return FALSE;
+}
+
+function spbellen_get_active_campaign() {
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $nid = arg(1);
+    $campaign_id = spbellen_get_campaign_id($nid);
+    if ($campaign_id !== FALSE) {
+      return $campaign_id;
     }
   }
   return FALSE;

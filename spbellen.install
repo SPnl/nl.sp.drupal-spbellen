@@ -146,6 +146,12 @@ function spbellen_schema() {
         'type' => 'int',
         'size' => 'big',
       ),
+      'phonenumber' => array(
+        'description' => 'Contact phone number.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
     ),
     'primary key' => array(
       'id',

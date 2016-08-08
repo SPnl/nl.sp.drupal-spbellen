@@ -243,7 +243,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
     if (!empty($matches[1])) {
       $groups = spbellen_get_civi_groups();
       $group_raw = $values[$matches[1]];
-      $group = spbellen_parse_group_form_select_value($group_raw);
+      $group = spbellen_parse_id_form_select_value($group_raw);
       $storage[$matches[1].'s'][$group] = $groups[$group];
       $form_state['input'][$matches[1]] = '';
     }

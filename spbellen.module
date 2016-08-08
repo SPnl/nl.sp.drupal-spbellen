@@ -67,7 +67,14 @@ function spbellen_menu() {
     'file' => 'spbellen.inc',
   );
 
-
+  $items['spbellen/contact_search/autocomplete/%/%'] = array(
+    'title' => 'SP bellen autocomplete',
+    'page callback' => 'spbellen_contact_search_autocomplete',
+    'page arguments' => array(3, 4),
+    'access callback' => 'user_is_logged_in',
+    'type' => MENU_CALLBACK,
+    'file' => 'spbellen.inc',
+  );
   return $items;
 }
 
@@ -109,6 +116,17 @@ function spbellen_entity_info() {
     'fieldable' => FALSE,
   );
 
+  $info['action'] = array(
+    'label' => 'Actie',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'spbellen_action',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+    'fieldable' => FALSE,
+  );
+
   return $info;
 }
 
@@ -116,34 +134,22 @@ function spbellen_entity_info() {
  * Implements hook_entity_property_info_alter().
  */
 function campaign_entity_property_info_alter(&$info) {
-  $properties = &$info['campaign']['properties'];
-  foreach (array_keys($properties) as $key) {
-    if ($key == 'id') {
-      continue;
+  $tables = array(
+    'campaign',
+    'campaign_groups',
+    'target',
+    'action',
+  );
+  foreach ($tables as $table) {
+    $properties = &$info[$table]['properties'];
+    foreach (array_keys($properties) as $key) {
+      if ($key == 'id') {
+        continue;
+      }
+      $properties[$key] += array(
+        'setter callback' => 'entity_property_verbatim_set',
+      );
     }
-    $properties[$key] += array(
-      'setter callback' => 'entity_property_verbatim_set',
-    );
-  }
-
-  $properties = &$info['campaign_groups']['properties'];
-  foreach (array_keys($properties) as $key) {
-    if ($key == 'id') {
-      continue;
-    }
-    $properties[$key] += array(
-      'setter callback' => 'entity_property_verbatim_set',
-    );
-  }
-
-  $properties = &$info['targets']['properties'];
-  foreach (array_keys($properties) as $key) {
-    if ($key == 'id') {
-      continue;
-    }
-    $properties[$key] += array(
-      'setter callback' => 'entity_property_verbatim_set',
-    );
   }
 }
 
@@ -388,8 +394,14 @@ function spbellen_node_access($node, $op, $account) {
  *  * Implements hook_block_info().
  *   */
 function spbellen_block_info() {
-  $blocks['spbellen'] = array(
-    'info' => 'SP Bellen',
+  $blocks['spbellen_contact_block'] = array(
+    'info' => 'SP Bellen contact info',
+    //'cache' => DRUPAL_NO_CACHE,
+    'pages' => "bellen/campagne/*",
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+  );
+  $blocks['spbellen_search_block'] = array(
+    'info' => 'SP Bellen zoek contact',
     //'cache' => DRUPAL_NO_CACHE,
     'pages' => "bellen/campagne/*",
     'visibility' => BLOCK_VISIBILITY_LISTED,
@@ -403,25 +415,33 @@ function spbellen_block_info() {
 function spbellen_block_view($delta = '') {
   $block = array();
 
-  switch ($delta) {
-  case 'spbellen':
+  if ($delta === 'spbellen_contact_block' || $delta === 'spbellen_search_block') {
     if (arg(0) == 'node' && is_numeric(arg(1)) && is_null(arg(2))) {
       $nid = arg(1);
       if (spbellen_is_spbellen_form($nid)) {
         if (spbellen_campaign_form_access($nid)) {
-          $block = array(
-            'subject' => '',
-            'content' => spbellen_block_content(),
-          );
+          switch ($delta) {
+          case 'spbellen_contact_block':
+            $block = array(
+              'subject' => '',
+              'content' => spbellen_contact_block_content(),
+            );
+            break;
+          case 'spbellen_search_block':
+            $block = array(
+              'subject' => '',
+              'content' => spbellen_search_block_content(),
+            );
+            break;
+          }
         }
       }
     }
-    break;
   }
   return $block;
 }
 
-function spbellen_block_content() {
+function spbellen_contact_block_content() {
   global $user;
   $output = '';
   $node = menu_get_object();
@@ -468,8 +488,83 @@ function spbellen_block_content() {
   return $output;
 }
 
-function spbellen_cron() {
-  cache_clear_all('spbellen_contact_data', 'cache');
+function spbellen_search_block_content() {
+  $form = drupal_get_form('spbellen_contact_search_form');
+  $output = drupal_render($form);
+  return $output;
+}
+
+function spbellen_contact_search_form($form, &$form_state) {
+  global $user;
+  $form = array();
+  if (!empty($form_state['values'])) {
+    $values = $form_state['values'];
+  }
+  // Get webform_id.
+  if (empty($form_state['webform_id'])) {
+    if (arg(0) == 'node' && is_numeric(arg(1))) {
+      $webform_id = arg(1);
+      $form_state['webform_id'] = $webform_id;
+    }
+  }
+  else {
+    $webform_id = $form_state['webform_id'];
+  }
+  if (!empty($webform_id)) {
+    $form['contact'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Zoek contact',
+      '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $user->name . '/' . $webform_id,
+    );
+    $form['search'] = array(
+      '#type' => 'submit',
+      '#name' => 'spbellen_search_contact',
+      '#value' => 'Ga',
+    );
+  }
+  return $form;
+}
+
+function spbellen_contact_search_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  $target_id_raw = $values['contact'];
+  $target_id = spbellen_parse_id_form_select_value($target_id_raw);
+  if (empty($target_id)) {
+    form_set_error('contact', 'Kies een bestaand contact uit de lijst.');
+  }
+}
+
+function spbellen_contact_search_form_submit($form, &$form_state) {
+  global $user;
+  $values = $form_state['values'];
+  $target_id_raw = $values['contact'];
+  $target_id = spbellen_parse_id_form_select_value($target_id_raw);
+  if (!empty($target_id)) {
+    // Unclaim current target.
+    db_update('spbellen_targets')
+      ->fields(array(
+        'occupied' => 0,
+        'date' => time(),
+        'caller_id' => NULL,
+      ))
+      ->condition('caller_id', $user->name)
+      ->condition('occupied', 1)
+      ->execute();
+
+    // Claim new target.
+    db_update('spbellen_targets')
+      ->fields(array(
+        'occupied' => 1,
+        'date' => time(),
+        'caller_id' => $user->name,
+      ))
+      ->condition('id', $target_id)
+      ->execute();
+  }
+}
+
+function spbellen_contact_search_form_ajax_callback($form, &$form_state) {
+  return $form;
 }
 
 function spbellen_campaign_selection_form($form, &$form_state) {
