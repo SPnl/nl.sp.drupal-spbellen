@@ -147,11 +147,21 @@ function spbellen_campaign_form($form, &$form_state) {
         '#options' => array('disabled' => 'Campagne uitgeschakeld'),
         '#default_value' => empty($storage['disabled']) ? array() : array('disabled'),
       );
+
+      $form['open_access'] = array(
+        '#type' => 'checkboxes',
+        '#title' => 'Sta open aanmelding bellers toe',
+        '#name' => 'open_access',
+        '#options' => array('enabled' => 'Open aanmelding'),
+        '#default_value' => empty($storage['open_access']) ? array() : array('enabled'),
+      );
+
       $form['submit'] = array(
         '#type' => 'submit',
         '#value' => 'Sla op',
         '#name' => 'submit',
       );
+
       if ($storage['campaign'] !== 'new') {
         $form['delete'] = array(
           '#type' => 'submit',
@@ -198,6 +208,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         if (!empty($campaign)) {
           $storage['webform'] = $campaign->webform_id;
           $storage['disabled'] = $campaign->disabled;
+          $storage['open_access'] = $campaign->open_access;
           $campaign_groups = array();
           $query = new EntityFieldQuery();
 
@@ -349,6 +360,7 @@ function spbellen_store_campaign($storage, $values) {
     $properties = array(
       'webform_id' => $values['webform'],
       'disabled' => $values['disabled']['disabled'],
+      'open_access' => $values['open_access']['enabled'],
       'intro_text' => $values['intro_text'],
     );
     $campaign = entity_create('campaign', $properties);
@@ -357,6 +369,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign = entity_load_single('campaign', $storage['campaign']);
     $campaign->webform_id = $values['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
+    $campaign->open_access = empty($values['open_access']['enabled']) ? 0 : 1;
   }
   $result = entity_save('campaign', $campaign);
 

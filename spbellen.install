@@ -40,6 +40,13 @@ function spbellen_schema() {
         'default' => 0,
         'not null' => TRUE,
       ),
+      'open_access' => array(
+        'description' => 'Wether open sign up is allowed for the campaign.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
       'intro_text' => array(
         'description' => 'Campaign caller introduction text.',
         'type' => 'text',
@@ -342,13 +349,11 @@ function spbellen_update_7003() {
  */
 function spbellen_update_7004() {
   $spec = array(
-    'contact_data_id' => array(
-      'description' => 'The id of the contact data.',
-      'type' => 'int',
-      'size' => 'big',
-    ),
+    'description' => 'The id of the contact data.',
+    'type' => 'int',
+    'size' => 'big',
   );
-  db_add_field( 'spbellen_targets', $key, $spec);
+  db_add_field( 'spbellen_targets', 'contact_data_id', $spec);
 
   $table = array(
     'description' => 'Contact data.',
@@ -410,4 +415,18 @@ function spbellen_update_7004() {
     ),
   );
   db_create_table('spbellen_contact_data', $table);
+}
+
+/**
+ * Add open_access to  {spbellen_campaigns} table.
+ */
+function spbellen_update_7005() {
+  $spec = array(
+    'description' => 'Wether open sign up is allowed for the campaign.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'not null' => TRUE,
+  );
+  db_add_field( 'spbellen_campaign', 'open_access', $spec);
 }
