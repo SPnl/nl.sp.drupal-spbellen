@@ -531,7 +531,7 @@ function spbellen_contact_search_form($form, &$form_state) {
     $form['search'] = array(
       '#type' => 'submit',
       '#name' => 'spbellen_search_contact',
-      '#value' => 'Zoek',
+      '#value' => 'Ga',
     );
   }
   return $form;
