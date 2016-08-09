@@ -146,11 +146,10 @@ function spbellen_schema() {
         'type' => 'int',
         'size' => 'big',
       ),
-      'phonenumber' => array(
-        'description' => 'Contact phone number.',
-        'type' => 'text',
-        'size' => 'normal',
-        'not null' => FALSE,
+      'contact_data_id' => array(
+        'description' => 'The id of the contact data.',
+        'type' => 'int',
+        'size' => 'big',
       ),
     ),
     'primary key' => array(
@@ -236,6 +235,66 @@ function spbellen_schema() {
     ),
   );
 
+  $schema['spbellen_contact_data'] = array(
+    'description' => 'Contact data.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Data id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'phone' => array(
+        'description' => 'Contact phone number.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'display_name' => array(
+        'description' => 'Display name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'email' => array(
+        'description' => 'Email address',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'street_address'=> array(
+        'description' => 'Street address',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'postal_code' => array(
+        'description' => 'Postal code',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'city' => array(
+        'description' => 'City',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'contact_id' => array(
+        'description' => 'Contact id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'gender' => array(
+        'description' => 'Gender',
+        'type' => 'varchar',
+        'length' => 255,
+       ),
+      'is_lid' => array(
+        'description' => 'Membership status',
+        'type' => 'int',
+        'size' => 'tiny',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+
   return $schema;
 }
 
@@ -279,14 +338,76 @@ function spbellen_update_7003() {
 }
 
 /**
- * Add phonenumber field to {spbellen_targets} table.
+ * Add target data to table {spbellen_contact_data} table.
  */
 function spbellen_update_7004() {
   $spec = array(
-    'description' => 'Contact phone number.',
-    'type' => 'text',
-    'size' => 'normal',
-    'not null' => FALSE,
-  ); 
-  db_add_field( 'spbellen_targets', 'phonenumber', $spec);
+    'contact_data_id' => array(
+      'description' => 'The id of the contact data.',
+      'type' => 'int',
+      'size' => 'big',
+    ),
+  );
+  db_add_field( 'spbellen_targets', $key, $spec);
+
+  $table = array(
+    'description' => 'Contact data.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Data id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'phone' => array(
+        'description' => 'Contact phone number.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'display_name' => array(
+        'description' => 'Display name',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'email' => array(
+        'description' => 'Email address',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'street_address'=> array(
+        'description' => 'Street address',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'postal_code' => array(
+        'description' => 'Postal code',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'city' => array(
+        'description' => 'City',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'contact_id' => array(
+        'description' => 'Contact id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'gender' => array(
+        'description' => 'Gender',
+        'type' => 'varchar',
+        'length' => 255,
+       ),
+      'is_lid' => array(
+        'description' => 'Membership status',
+        'type' => 'int',
+        'size' => 'tiny',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+  db_create_table('spbellen_contact_data', $table);
 }

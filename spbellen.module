@@ -127,6 +127,17 @@ function spbellen_entity_info() {
     'fieldable' => FALSE,
   );
 
+  $info['contact_data'] = array(
+    'label' => 'Contact data',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'spbellen_contact_data',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+    'fieldable' => FALSE,
+  );
+
   return $info;
 }
 
@@ -139,6 +150,7 @@ function campaign_entity_property_info_alter(&$info) {
     'campaign_groups',
     'target',
     'action',
+    'contact_data',
   );
   foreach ($tables as $table) {
     $properties = &$info[$table]['properties'];

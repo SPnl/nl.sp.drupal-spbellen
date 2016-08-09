@@ -149,16 +149,17 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
     if (spbellen_campaign_form_access($webform_id)) {
       $campaign_id = spbellen_get_campaign_id($webform_id);
       if (!empty($campaign_id)) {
-        $query = "SELECT ta.id, phonenumber FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND phonenumber LIKE :phonenumber LIMIT 5";
+        $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 5";
         $substitutions = array(
           ':campaign_id' => $campaign_id,
           ':phonenumber' => "$string%",
+          ':display_name' => "%$string%",
           ':caller_id' => $user_id
         );
         $result = db_query($query, $substitutions);
         if ($result) {
           while ($row = $result->fetchAssoc()) {
-            $text = $row['phonenumber'] . ' (' . $row['id'] . ')';
+            $text = $row['phone'] . ', ' . $row['display_name'] . ' (' . $row['id'] . ')';
             $matches[$text] = $text;
           }
         }
@@ -726,6 +727,8 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
 }
 
 function spbellen_get_targets($campaign) {
+  $fields = array_keys(spbellen_contact_fields());
+  $fields_list = implode(', ', $fields);
   // Get campaign target groups.
   $query = new EntityFieldQuery();
   $result = $query
@@ -748,7 +751,7 @@ function spbellen_get_targets($campaign) {
         'filter.group_id' => array(0 => $campaign_group->civi_group_id),
         'is_deleted' => 0,
         'do_not_phone' => 0,
-        'return' => 'contact_id, phone',
+        'return' => $fields_list,
         'status' => 'Added',
       );
       $results = $spcivi->api('Contact', 'get', $params);
@@ -757,16 +760,28 @@ function spbellen_get_targets($campaign) {
         if (!empty($results['values'])) {
           foreach ($results['values'] as $result) {
             $contact_id = $result['contact_id'];
-            if (!empty($result['phone']) && $result['do_not_phone'] == 0) {
+            // Check if has phonenumer.
+            if (!empty($result['phone'])) {
               $tids_civi[$contact_id] = $contact_id;
-              $mobile_phone = spbellen_get_mobile_phone($contact_id);
-              if (!empty($mobile_phone)) {
-                $phonenumber = $mobile_phone;
+              // Get mobile phone.
+              $phonenumber = $result['phone'];
+              if (strpos($result['phone'], '06') !== 0) {
+                $mobile_phone = spbellen_get_mobile_phone($contact_id);
+                if (!empty($mobile_phone)) {
+                  $phonenumber = $mobile_phone;
+                }
               }
-              else {
-                $phonenumber = $result['phone'];
+              $result['phone'] = preg_replace('/[^0-9]/', '', $phonenumber);
+
+              // Get membership data.
+              $membership = spbellen_is_member($contact_id);
+              if ($membership !== FALSE) {
+                $result['is_lid'] = spbellen_is_member($contact_id);
               }
-              $phonenumbers_civi[$contact_id] = preg_replace('/[^0-9]/', '', $phonenumber);
+              // Store data.
+              foreach ($fields as $field) {
+                $data[$contact_id][$field] = $result[$field];
+              }
             }
           }
         }
@@ -797,22 +812,26 @@ function spbellen_get_targets($campaign) {
 
     // Store new ids.
     foreach ($tids_new as $tid) {
+      foreach ($fields as $field) {
+        $values[$field] = $data[$tid][$field];
+      }
+      $contact_data_id = db_insert('spbellen_contact_data')
+        ->fields($values)
+        ->execute();
       $result = db_insert('spbellen_targets')
         ->fields(array(
           'civi_contact_id' => $tid,
           'campaign_id' => $campaign->id,
           'occupied' => 0,
-          'phonenumber' => $phonenumbers_civi[$tid],
+          'contact_data_id' => $contact_data_id,
         ))
         ->execute();
     }
 
     // Delete removed targets in database.
     foreach ($tids_del as $tid) {
-      db_delete('spbellen_targets')
-        ->condition('campaign_id', $campaign->id)
-        ->condition('civi_contact_id', $tid)
-        ->execute();
+      $query = "DELETE ta, cd FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE civi_contact_id = :target_id AND campaign_id = :campaign_id";
+      db_query($query, array(':target_id' => $tid, ':campaign_id' => $campaign->id));
     }
   }
 }
@@ -913,26 +932,10 @@ function spbellen_assign_target($campaign_id) {
     if (!empty($result)) {
       // A target was found!
       $civi_contact_id = $result['civi_contact_id'];
-      // Get civicrm data.
-      set_time_limit(0);
+      // Get contact data.
       $result = spbellen_get_contact_data($civi_contact_id);
       if ($result) {
-        // Check if target may be called!
-        if (isset($result['do_not_phone']) && $result['do_not_phone'] == 0) {
-          return $result;
-        }
-        else {
-          // Contact privacy instelling in CiviCRM is sinds de laatste sync gewijzigd, en contact mag niet meer gebeld worden.
-          // Blacklist
-          spbellen_blacklist($civi_contact_id);
-          // And reload page.
-          $campaign = entity_load_single('campaign', $campaign_id);
-          if ($campaign) {
-            $webform_id = $campaign->webform_id;
-            $path = drupal_get_path_alias('node/' . $webform_id);
-            drupal_goto($path);
-          }
-        }
+        return $result;
       }
       else {
         drupal_set_message('Er kon geen contact informatie worden opgehaald.', 'error');
@@ -1047,43 +1050,13 @@ function spbellen_action_translate() {
 function spbellen_get_contact_data($contact_id) {
   $contact_data = &drupal_static(__FUNCTION__);
   if (!isset($contact_data)) {
-    // Get civicrm data.
-    set_time_limit(0);
-    $spcivi = \SPCivi::getInstance();
-    $params = array(
-      'contact_id' => $contact_id,
-    );
-    $result = $spcivi->api('Contact', 'get', $params);
-    if (spbellen_check_result($result, 'een contact', 'get', $params)) {
-      if (!empty($result['values'])) {
-        $contact_data = $result['values'][0];
-
-        // Get mobile phone if available.
-        $mobile_phone = spbellen_get_mobile_phone($contact_id);
-        if (!empty($mobile_phone)) {
-          $contact_data['phone'] = $mobile_phone;
-        }
-
-        // Get membership data.
-        $params = array(
-          'contact_id' => $contact_id,
-          'membership_type_id' => array('IN' => array("1", "2", "3")),
-          'status_id' => 2,
-        );
-        $result = $spcivi->api('Membership', 'get', $params);
-        if (spbellen_check_result($result, 'lidmaatschapsinformatie', 'get', $params)) {
-          if (!empty($result['values'])) {
-            $contact_data['is_lid'] = 1;
-          }
-          else {
-            $contact_data['is_lid'] = 0;
-          }
-        }
-      }
-    }
-    else {
-      return FALSE;
-    }
+    $contact_data = array();
+    $fields = array_keys(spbellen_contact_fields());
+    $fields_list = implode(',', $fields);
+    // Get contact data.
+    $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE civi_contact_id = :contact_id";
+    $result = db_query($query, array(':contact_id' => $contact_id));
+    $contact_data = $result->fetchAssoc();
   }
   return $contact_data;
 }
@@ -1147,6 +1120,26 @@ function spbellen_get_mobile_phone($contact_id) {
   if (spbellen_check_result($result, 'een telefoonnummer', 'get', $params)) {
     if (!empty($result['values'][0]['phone'])) {
       return $result['values'][0]['phone'];
+    }
+  }
+  return FALSE;
+}
+
+function spbellen_is_member($contact_id) {
+  $spcivi = \SPCivi::getInstance();
+  // Get membership data.
+  $params = array(
+    'contact_id' => $contact_id,
+    'membership_type_id' => array('IN' => array("1", "2", "3")),
+    'status_id' => 2,
+  );
+  $result = $spcivi->api('Membership', 'get', $params);
+  if (spbellen_check_result($result, 'lidmaatschapsinformatie', 'get', $params)) {
+    if (!empty($result['values'])) {
+      return 1;
+    }
+    else {
+      return 0;
     }
   }
   return FALSE;
