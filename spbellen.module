@@ -525,13 +525,13 @@ function spbellen_contact_search_form($form, &$form_state) {
   if (!empty($webform_id)) {
     $form['contact'] = array(
       '#type' => 'textfield',
-      '#title' => 'Zoek contact',
+      '#title' => '',
       '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $user->name . '/' . $webform_id,
     );
     $form['search'] = array(
       '#type' => 'submit',
       '#name' => 'spbellen_search_contact',
-      '#value' => 'Ga',
+      '#value' => 'Zoek',
     );
   }
   return $form;
