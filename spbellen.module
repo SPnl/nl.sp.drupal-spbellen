@@ -75,6 +75,25 @@ function spbellen_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'spbellen.inc',
   );
+
+  $campaigns = spbellen_get_campaigns();
+  foreach ($campaigns as $campaign) {
+    if (!empty($campaign->open_access)) {
+      $webform_alias = drupal_get_path_alias('node/' . $campaign->webform_id);
+      if (!empty($webform_alias)) {
+        $alias = strrchr($webform_alias, '/');
+        $items['aanmelden/campagne' . $alias] = array(
+          'title' => 'Aanmelden',
+          'page callback' => 'drupal_get_form',
+          'page arguments' => array('spbellen_subscription_form'),
+          'file' => 'spbellen_subscription_form.inc',
+          'access callback' => TRUE,
+          'type' => MENU_CALLBACK,
+        );
+      }
+    }
+  }
+
   return $items;
 }
 
@@ -508,6 +527,7 @@ function spbellen_search_block_content() {
 
 function spbellen_contact_search_form($form, &$form_state) {
   global $user;
+  $caller = user_load($user->uid);
   $form = array();
   if (!empty($form_state['values'])) {
     $values = $form_state['values'];
@@ -526,7 +546,7 @@ function spbellen_contact_search_form($form, &$form_state) {
     $form['contact'] = array(
       '#type' => 'textfield',
       '#title' => '',
-      '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $user->name . '/' . $webform_id,
+      '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $caller->field_contact_id['und'][0]['value'] . '/' . $webform_id,
     );
     $form['search'] = array(
       '#type' => 'submit',
@@ -548,6 +568,7 @@ function spbellen_contact_search_form_validate($form, &$form_state) {
 
 function spbellen_contact_search_form_submit($form, &$form_state) {
   global $user;
+  $caller = user_load($user->uid);
   $values = $form_state['values'];
   $target_id_raw = $values['contact'];
   $target_id = spbellen_parse_id_form_select_value($target_id_raw);
@@ -559,7 +580,7 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
         'date' => time(),
         'caller_id' => NULL,
       ))
-      ->condition('caller_id', $user->name)
+      ->condition('caller_id', $caller->field_contact_id['und'][0]['value'])
       ->condition('occupied', 1)
       ->execute();
 
@@ -568,7 +589,7 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
       ->fields(array(
         'occupied' => 1,
         'date' => time(),
-        'caller_id' => $user->name,
+        'caller_id' => $caller->field_contact_id['und'][0]['value'],
       ))
       ->condition('id', $target_id)
       ->execute();
