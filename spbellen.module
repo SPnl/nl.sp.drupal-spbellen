@@ -79,11 +79,11 @@ function spbellen_menu() {
   $campaigns = spbellen_get_campaigns();
   foreach ($campaigns as $campaign) {
     if (!empty($campaign->open_access)) {
-      $webform_alias = drupal_get_path_alias('node/' . $campaign->webform_id);
-      if (!empty($webform_alias)) {
-        $alias = strrchr($webform_alias, '/');
-        $items['aanmelden/campagne' . $alias] = array(
-          'title' => 'Aanmelden',
+      $webform = node_load($campaign->webform_id);
+      $alias = spbellen_get_campaign_form_alias($campaign->webform_id);
+      if ($alias) {
+        $items['aanmelden/campagne/' . $alias] = array(
+          'title' => 'Aanmelden ' . $webform->title,
           'page callback' => 'drupal_get_form',
           'page arguments' => array('spbellen_subscription_form'),
           'file' => 'spbellen_subscription_form.inc',
@@ -92,6 +92,15 @@ function spbellen_menu() {
         );
       }
     }
+
+    $items['aanmelden/bevestig/%'] = array(
+      'title' => 'Aanmelden ' . $webform->title,
+      'page callback' => 'spbellen_confirm_account',
+      'page arguments' => array(2),
+      'file' => 'spbellen_subscription_form.inc',
+      'access callback' => TRUE,
+      'type' => MENU_CALLBACK,
+    );
   }
 
   return $items;
@@ -157,6 +166,17 @@ function spbellen_entity_info() {
     'fieldable' => FALSE,
   );
 
+  $info['local_access'] = array(
+    'label' => 'Local access',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'spbellen_local_access',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+    'fieldable' => FALSE,
+  );
+
   return $info;
 }
 
@@ -170,6 +190,7 @@ function campaign_entity_property_info_alter(&$info) {
     'target',
     'action',
     'contact_data',
+    'local_access',
   );
   foreach ($tables as $table) {
     $properties = &$info[$table]['properties'];
@@ -267,7 +288,7 @@ function spbellen_webform_submission_insert($node, $submission) {
   if (spbellen_is_spbellen_form($node->nid)) {
     if (spbellen_campaign_form_access($node->nid)) {
       $caller = user_load($user->uid);
-      $caller_id = $caller->field_contact_id['und'][0]['value'];
+      $caller_id = $caller->name;
       $campaign_id = spbellen_get_campaign_id($node->nid);
       $map = spbellen_component_key_id_map($node);
 
@@ -349,8 +370,9 @@ function spbellen_user_login($edit, $account) {
   // Store caller campaign access in session.
   $caller_civi_groups = array();
   $call_groups = array();
-  // Check if civicrm id for user is set.
+  // Check if civicrm id for user is set, then civigroup access.
   if (!empty($account->field_contact_id)) {
+    // Civi account login.
     // Get caller civi groups.
     set_time_limit(0);
     $spcivi = \SPCivi::getInstance();
@@ -377,6 +399,17 @@ function spbellen_user_login($edit, $account) {
     $caller_call_groups = array_intersect($call_groups, $caller_civi_groups);
     // Store caller call groups in session.
     $_SESSION['spbellen']['call_groups'] = $caller_call_groups;
+  }
+  else {
+    // Local access.
+    $query = "SELECT ca.webform_id, la.campaign_id FROM {spbellen_local_access} la INNER JOIN {spbellen_campaign} ca ON la.campaign_id = ca.id WHERE la.uid = :uid";
+    $results = db_query($query, array(':uid' => $account->uid));
+    if ($results) {
+      while ($row = $results->fetchAssoc()) {
+        $local_access[$row['webform_id']] = $row['campaign_id'];
+      }
+      $_SESSION['spbellen']['local_access'] = $local_access;
+    }
   }
 }
 
@@ -478,8 +511,8 @@ function spbellen_contact_block_content() {
   $node = menu_get_object();
   if (spbellen_is_spbellen_form($node->nid)) {
     $caller = user_load($user->uid);
-    if (!empty($caller->field_contact_id)) {
-      $caller_id = $caller->field_contact_id['und'][0]['value'];
+    if (!empty($caller->name)) {
+      $caller_id = $caller->name;
       $campaign_id = spbellen_get_campaign_id($node->nid);
 
       $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
@@ -546,7 +579,7 @@ function spbellen_contact_search_form($form, &$form_state) {
     $form['contact'] = array(
       '#type' => 'textfield',
       '#title' => '',
-      '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $caller->field_contact_id['und'][0]['value'] . '/' . $webform_id,
+      '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $caller->name . '/' . $webform_id,
     );
     $form['search'] = array(
       '#type' => 'submit',
@@ -580,7 +613,7 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
         'date' => time(),
         'caller_id' => NULL,
       ))
-      ->condition('caller_id', $caller->field_contact_id['und'][0]['value'])
+      ->condition('caller_id', $caller->name)
       ->condition('occupied', 1)
       ->execute();
 
@@ -589,7 +622,7 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
       ->fields(array(
         'occupied' => 1,
         'date' => time(),
-        'caller_id' => $caller->field_contact_id['und'][0]['value'],
+        'caller_id' => $caller->name,
       ))
       ->condition('id', $target_id)
       ->execute();
@@ -690,7 +723,7 @@ function spbellen_custom_webform_validate($form, &$form_state) {
     // Disassign target from caller.
     global $user;
     $caller = user_load($user->uid);
-    $caller_id = $caller->field_contact_id['und'][0]['value'];
+    $caller_id = $caller->name;
     $result = db_update('spbellen_targets')
       ->fields(array(
         'occupied' => 0,
@@ -741,6 +774,21 @@ function spbellen_mail($key, &$message, $params) {
     $message['body'][] = 'Passen jullie het telefoonnummer indien nodig aan in CiviCRM?';
     $message['body'][] = 'Thx, SP Webteam';
     $message['body'][] = '(Dit is een automatisch gegenereerd bericht)';
+    break;
+  case 'register_confirmation_required':
+    $message['subject'] = 'Bevestig je aanmelding voor: ' . $params['webform_title'];
+    $message['body'][] = '<p>Beste ' . $params['name'] . ',</p>';
+    $message['body'][] = '<p>Klik op de onderstaande link om je aanmelding te bevestigen.</p>';
+    $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
+    $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
+    break;
+  case 'register_confirmation_success':
+    $message['subject'] = 'Je aanmelding voor ' . $params['webform_title'] . ' is bevestigd';
+    $message['body'][] = '<p>Beste ' . $params['name'] . ',</p>';
+    $message['body'][] = '<p>Je aanmelding voor de belcampagne is bevestigd. Vanaf nu kan je je direct aanmelden op de onderstaande pagina.</p>';
+    $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
+    $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
+    watchdog('test', '<pre>'.print_r($message['body'], TRUE) . '</pre>');
     break;
   }
 }

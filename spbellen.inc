@@ -898,11 +898,10 @@ function spbellen_assign_target($campaign_id) {
   $caller = user_load($user->uid);
   // Check if is logged in via spoauth.
   if (
-    user_is_logged_in() &&
-    !empty($caller->field_contact_id)
+    user_is_logged_in()
   ) {
     // Check if existing target exists.
-    $caller_id = $caller->field_contact_id['und'][0]['value'];
+    $caller_id = $caller->name;
     $query = "SELECT ta.civi_contact_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
       ':cid' => $campaign_id,
@@ -994,6 +993,9 @@ function spbellen_check_result($result, $dataname, $action, $data = NULL, $submi
 function spbellen_campaign_form_access($form_nid) {
   // Check session for call groups.
   if (!empty($_SESSION['spbellen']['call_groups'][$form_nid])) {
+    return TRUE;
+  }
+  if (!empty($_SESSION['spbellen']['local_access'][$form_nid])) {
     return TRUE;
   }
   return FALSE;
@@ -1153,4 +1155,15 @@ function spbellen_get_active_campaign() {
     }
   }
   return FALSE;
+}
+
+function spbellen_get_campaign_form_alias($webform_id) {
+  $webform = node_load($webform_id);
+  if (!empty($webform)) {
+    $webform_alias = drupal_get_path_alias('node/' . $webform_id);
+    if (!empty($webform_alias)) {
+      $alias = str_replace('/', '', strrchr($webform_alias, '/'));
+      return $alias;
+    }
+  }
 }

@@ -156,6 +156,18 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['open_access']) ? array() : array('enabled'),
       );
 
+      $form['campaign_code'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Campagne code',
+        '#description' => 'Alleen gebruikers met deze code kunnen zich aanmelden, laat leeg indien iedereen zich moet kunnen aanmelden.',
+        '#default_value' => empty($storage['campaign_code']) ? '' : $storage['campaign_code'],
+        '#states' => array(
+          'visible' => array(
+            ':input[name="open_access[enabled]"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+
       $form['submit'] = array(
         '#type' => 'submit',
         '#value' => 'Sla op',
@@ -209,6 +221,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
           $storage['webform'] = $campaign->webform_id;
           $storage['disabled'] = $campaign->disabled;
           $storage['open_access'] = $campaign->open_access;
+          $storage['campaign_code'] = $campaign->campaign_code;
           $campaign_groups = array();
           $query = new EntityFieldQuery();
 
@@ -292,6 +305,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         }
       }
       cache_clear_all('spbellen_forms', 'cache');
+      menu_rebuild();
       break;
     case 'delete':
       // Delete campaign.
@@ -361,6 +375,7 @@ function spbellen_store_campaign($storage, $values) {
       'webform_id' => $values['webform'],
       'disabled' => $values['disabled']['disabled'],
       'open_access' => $values['open_access']['enabled'],
+      'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
     );
     $campaign = entity_create('campaign', $properties);
@@ -370,6 +385,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->webform_id = $values['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
     $campaign->open_access = empty($values['open_access']['enabled']) ? 0 : 1;
+    $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
   }
   $result = entity_save('campaign', $campaign);
 

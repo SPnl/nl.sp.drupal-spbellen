@@ -47,6 +47,11 @@ function spbellen_schema() {
         'default' => 0,
         'not null' => TRUE,
       ),
+      'campaign_code' => array(
+        'description' => 'Campaign code.',
+        'type' => 'varchar',
+        'length' => '255',
+      ),
       'intro_text' => array(
         'description' => 'Campaign caller introduction text.',
         'type' => 'text',
@@ -150,8 +155,8 @@ function spbellen_schema() {
       ),
       'caller_id' => array(
         'description' => 'The civicrm id of the caller.',
-        'type' => 'int',
-        'size' => 'big',
+        'type' => 'varchar',
+        'length' => '255',
       ),
       'contact_data_id' => array(
         'description' => 'The id of the contact data.',
@@ -187,8 +192,8 @@ function spbellen_schema() {
       ),
       'caller_id' => array(
         'description' => 'The user id performing te action.',
-        'type' => 'int',
-        'size' => 'big',
+        'type' => 'varchar',
+        'length' => '255',
         'not null' => TRUE,
       ),
       'timestamp' => array(
@@ -295,6 +300,38 @@ function spbellen_schema() {
         'description' => 'Membership status',
         'type' => 'int',
         'size' => 'tiny',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+
+  $schema['spbellen_local_access'] = array(
+    'description' => 'Local account campaign access.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'Local account user id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'campaign_id' => array(
+        'description' => 'Campaign id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'hash' => array(
+        'description' => 'Hash',
+        'type' => 'varchar',
+        'length' => '255',
       ),
     ),
     'primary key' => array(
@@ -418,7 +455,7 @@ function spbellen_update_7004() {
 }
 
 /**
- * Add open_access to  {spbellen_campaigns} table.
+ * Add open_access to  {spbellen_campaign} table.
  */
 function spbellen_update_7005() {
   $spec = array(
@@ -429,4 +466,73 @@ function spbellen_update_7005() {
     'not null' => TRUE,
   );
   db_add_field( 'spbellen_campaign', 'open_access', $spec);
+}
+
+/**
+ * Add campaign code to  {spbellen_campaign} table.
+ */
+function spbellen_update_7006() {
+  $spec = array(
+    'description' => 'Campaign code.',
+    'type' => 'varchar',
+    'length' => '255',
+  );
+  db_add_field( 'spbellen_campaign', 'campaign_code', $spec);
+}
+
+
+/**
+ * Add local {spbellen_local_access} table.
+ */
+function spbellen_update_7007() {
+  $table = array(
+    'description' => 'Local account campaign access.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'Local account user id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'campaign_id' => array(
+        'description' => 'Campaign id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'hash' => array(
+        'description' => 'Hash',
+        'type' => 'varchar',
+        'length' => '255',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+  db_create_table('spbellen_local_access', $table);
+}
+
+/**
+ * modify caller_id column type from integer to varchar.
+ */
+function spbellen_update_7008() {
+  db_change_field('spbellen_targets', 'caller_id', 'caller_id',
+    array(
+      'type' => 'varchar',
+      'length' => '255',
+    )
+  );
+  db_change_field('spbellen_action', 'caller_id', 'caller_id',
+    array(
+      'type' => 'varchar',
+      'length' => '255',
+    )
+  );
 }
