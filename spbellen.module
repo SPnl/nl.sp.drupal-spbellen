@@ -94,7 +94,7 @@ function spbellen_menu() {
     }
 
     $items['aanmelden/bevestig/%'] = array(
-      'title' => 'Aanmelden ' . $webform->title,
+      'title' => 'Aanmelding bevestigen',
       'page callback' => 'spbellen_confirm_account',
       'page arguments' => array(2),
       'file' => 'spbellen_subscription_form.inc',
