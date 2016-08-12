@@ -1,11 +1,13 @@
-.password-strength {
+#spbellen-subscription-form .password-strength {
   display: none;
 }
 
-.password-suggestions {
+#spbellen-subscription-form .password-suggestions {
   visibility: hidden;
+  font-size: 0;
 }
 
-.password-suggestions ul {
+#spbellen-subscription-form .password-suggestions ul {
   visibility: visible;
+  font-size: 1em;
 }
