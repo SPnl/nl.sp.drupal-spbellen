@@ -13,6 +13,7 @@ function spbellen_subscription_form($form, &$form_state) {
     $webform_id = arg(1, $webform_path);
     $webform = node_load($webform_id);
     $campaign = spbellen_get_campaign($webform_id);
+    $form_sate['campaign_alias'] = $campaign_alias;
     $form_state['webform_alias'] = $webform_alias;
     $form_state['campaign'] = $campaign;
     $form_state['webform'] = $webform;
@@ -97,6 +98,12 @@ function spbellen_subscription_form($form, &$form_state) {
           '#required' => TRUE,
         );
 
+        $form['back_account_data'] = array(
+          '#type' => 'submit',
+          '#value' => 'Terug',
+          '#name' => 'back_account_data',
+        );
+
         $form['submit_account_data'] = array(
           '#type' => 'submit',
           '#value' => 'Verder',
@@ -109,6 +116,13 @@ function spbellen_subscription_form($form, &$form_state) {
           '#type' => 'password',
           '#title' => 'Wachtwoord',
         );
+
+        $form['back_account_pass'] = array(
+          '#type' => 'submit',
+          '#value' => 'Terug',
+          '#name' => 'back_account_pass',
+        );
+
         $form['submit_account_pass'] = array(
           '#type' => 'button',
           '#value' => 'Verder',
@@ -164,6 +178,9 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         $form_state['has_account'] = 0;
       }
       break;
+    case 'back_account_pass':
+      drupal_goto(request_path());
+      break;
     case 'submit_account_pass':
       $form_state['values']['account_pass'] = trim($values['account_pass']);
       $account = $form_state['account'];
@@ -189,6 +206,10 @@ function spbellen_subscription_form_validate($form, &$form_state) {
           return;
         }
       }
+      break;
+    case 'back_account_data':
+      unset($_SESSION['messages']['error']);
+      drupal_goto(request_path());
       break;
     case 'submit_account_data':
       $fields_to_trim = array(
