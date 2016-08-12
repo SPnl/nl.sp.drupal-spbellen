@@ -98,17 +98,18 @@ function spbellen_subscription_form($form, &$form_state) {
           '#required' => TRUE,
         );
 
-        $form['back_account_data'] = array(
-          '#type' => 'submit',
-          '#value' => 'Terug',
-          '#name' => 'back_account_data',
-        );
-
         $form['submit_account_data'] = array(
           '#type' => 'submit',
           '#value' => 'Verder',
           '#name' => 'submit_account_data',
         );
+
+        $form['back_account_data'] = array(
+          '#type' => 'button',
+          '#value' => 'Terug',
+          '#name' => 'back_account_data',
+        );
+
       }
       else {
         // Check pass.
@@ -117,16 +118,16 @@ function spbellen_subscription_form($form, &$form_state) {
           '#title' => 'Wachtwoord',
         );
 
-        $form['back_account_pass'] = array(
-          '#type' => 'submit',
-          '#value' => 'Terug',
-          '#name' => 'back_account_pass',
-        );
-
         $form['submit_account_pass'] = array(
-          '#type' => 'button',
+          '#type' => 'submit',
           '#value' => 'Verder',
           '#name' => 'submit_account_pass',
+        );
+
+        $form['back_account_pass'] = array(
+          '#type' => 'button',
+          '#value' => 'Terug',
+          '#name' => 'back_account_pass',
         );
       }
     }
