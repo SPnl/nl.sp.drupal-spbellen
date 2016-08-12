@@ -259,6 +259,14 @@ function spbellen_entity_delete($entity, $type) {
   }
 }
 
+function spbellen_form_alter(&$form, &$form_state, $form_id) {
+  switch($form_id) {
+  case 'spbellen_subscription_form':
+    dpm($form);
+    break;
+  }
+}
+
 function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
   // Check if spbellen form.
   if (!empty($form['#node'])) {

@@ -18,6 +18,11 @@ function spbellen_subscription_form($form, &$form_state) {
     $form_state['webform'] = $webform;
   }
 
+  // Attach css.
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'spbellen') . '/css/spbellen_subscription_form.css',
+  );
+
   // Feedback element.
   if (!empty($form_state['feedback'])) {
     $form['feedback'] = array(
@@ -83,7 +88,7 @@ function spbellen_subscription_form($form, &$form_state) {
         );
 
         $form['account_pass'] = array(
-          '#type' => 'password',
+          '#type' => 'password_confirm',
           '#title' => 'Kies een wachtwoord',
           '#required' => TRUE,
         );
@@ -215,6 +220,29 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         $error = TRUE;
       }
 
+      // Validate password.
+      $regex_tests = array(
+        '[0-9]+' => 'Gebruik tenminste één cijfer in het wachtwoord',
+        '[a-z]+' => 'Gebruik tenminste één kleine letter in het wachtwoord',
+        '[A-Z]+' => 'Gebruik tenminste één hoofdletter in het wachtwoord',
+        '\W+' => 'Gebruik tenminste één teken (bijv. !?+-= e.d.) in het wachtwoord',
+      );
+      foreach ($regex_tests as $regex => $feedback) {
+        if (!preg_match('/' . $regex . '/', $values['account_pass'])) {
+          $pass_feedback_array[] = $feedback;
+          $error = TRUE;
+          $pass_error = TRUE;
+        }
+      }
+      if (strlen($values['account_pass'] < 6)) {
+        $pass_feedback_array[] = 'Het wachtwoord moet minimaal 6 tekens lang zijn';
+        $error = TRUE;
+        $pass_error = TRUE;
+      }
+      if (!empty($pass_error)) {
+        $pass_feedback = implode('<br/>', $pass_feedback_array);
+        form_set_error('account_pass', $pass_feedback);
+      }
       if (!empty($error)) {
         return;
       }

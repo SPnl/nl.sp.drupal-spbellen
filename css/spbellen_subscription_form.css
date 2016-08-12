@@ -1,0 +1,11 @@
+.password-strength {
+  display: none;
+}
+
+.password-suggestions {
+  visibility: hidden;
+}
+
+.password-suggestions ul {
+  visibility: visible;
+}
