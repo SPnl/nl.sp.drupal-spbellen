@@ -64,6 +64,10 @@ function spbellen_subscription_form($form, &$form_state) {
       // Has no account.
       if ($form_state['has_account'] === 0) {
 
+        $form['first_time'] = array(
+          '#markup' => '<p>Welkom!</p><p>Je meld je voor het eerst aan voor een belcampagne, daarom vragen we nu een aantal gegevens.</p>',
+        );
+
         $form['first_name'] = array(
           '#type' => 'textfield',
           '#title' => 'Voornaam',
@@ -234,7 +238,7 @@ function spbellen_subscription_form_validate($form, &$form_state) {
           $pass_error = TRUE;
         }
       }
-      if (strlen($values['account_pass'] < 6)) {
+      if (strlen($values['account_pass']) < 6) {
         $pass_feedback_array[] = 'Het wachtwoord moet minimaal 6 tekens lang zijn';
         $error = TRUE;
         $pass_error = TRUE;
