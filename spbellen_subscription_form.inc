@@ -24,111 +24,140 @@ function spbellen_subscription_form($form, &$form_state) {
     drupal_get_path('module', 'spbellen') . '/css/spbellen_subscription_form.css',
   );
 
-  // Feedback element.
-  if (!empty($form_state['feedback'])) {
-    $form['feedback'] = array(
-      '#markup' => $form_state['feedback'],
-    );
-  }
-
-  if (empty($form_state['success'])) {
-    // Email field.
-    $form['email'] = array(
-      '#type' => 'textfield',
-      '#title' => 'E-mail',
-      '#default_value' => empty($form_state['values']['email']) ? '' : $form_state['values']['email'],
-      '#required' => TRUE,
-      '#disabled' => isset($form_state['has_account']),
-    );
-
-    // Campaign code field.
-    if (!empty($form_state['campaign']->campaign_code)) {
-      $form['campaign_code'] = array(
-        '#type' => 'password',
-        '#title' => 'Campagne code',
-        '#default_value' => empty($form_state['values']['campaign_code']) ? '' : $form_state['values']['campaign_code'],
-        '#required' => TRUE,
-        '#disabled' => isset($form_state['has_account']),
-        '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
-      );
-    }
-
-    // Submit for account check.
-    if (!isset($form_state['has_account'])) {
-      $form['submit_has_account'] = array(
-        '#type' => 'button',
-        '#value' => 'Verder',
-        '#name' => 'submit_has_account',
-      );
+  // User already logged in?
+  global $user;
+  if ($user->uid !== 0) {
+    if (spbellen_campaign_form_access($webform_id)) {
+      drupal_goto($webform_alias);
     }
     else {
-      // Has no account.
-      if ($form_state['has_account'] === 0) {
+      $form['feedback'] = array(
+        '#markup' => '<p>Je bent reeds aangemeld, klik hieronder om opnieuw aan te melden.</p>',
+      );
 
-        $form['first_time'] = array(
-          '#markup' => '<p>Welkom!</p><p>Je meld je voor het eerst aan voor een belcampagne, daarom vragen we nu een aantal gegevens.</p>',
-        );
+      $form['logout'] = array(
+        '#type' => 'button',
+        '#name' => 'logout',
+        '#value' => 'Opnieuw aanmelden',
+      );
+    }
+  }
+  else {
 
-        $form['first_name'] = array(
-          '#type' => 'textfield',
-          '#title' => 'Voornaam',
+    // Feedback element.
+    if (!empty($form_state['feedback'])) {
+      $form['feedback'] = array(
+        '#markup' => $form_state['feedback'],
+      );
+    }
+
+    if (empty($form_state['success'])) {
+      // Email field.
+      $form['email'] = array(
+        '#type' => 'textfield',
+        '#title' => 'E-mail',
+        '#default_value' => empty($form_state['values']['email']) ? '' : $form_state['values']['email'],
+        '#required' => TRUE,
+        '#disabled' => isset($form_state['has_account']),
+      );
+
+      // Campaign code field.
+      if (!empty($form_state['campaign']->campaign_code)) {
+        $form['campaign_code'] = array(
+          '#type' => 'password',
+          '#title' => 'Campagne code',
+          '#default_value' => empty($form_state['values']['campaign_code']) ? '' : $form_state['values']['campaign_code'],
           '#required' => TRUE,
+          '#disabled' => isset($form_state['has_account']),
+          '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
         );
+      }
 
-        $form['middle_name'] = array(
-          '#type' => 'textfield',
-          '#title' => 'Tussenvoegsel',
-        );
-
-        $form['last_name'] = array(
-          '#type' => 'textfield',
-          '#title' => 'Achternaam',
-          '#required' => TRUE,
-        );
-
-        $form['phone'] = array(
-          '#type' => 'textfield',
-          '#title' => '06-nummer',
-          '#required' => TRUE,
-        );
-
-        $form['account_pass'] = array(
-          '#type' => 'password_confirm',
-          '#title' => 'Kies een wachtwoord',
-          '#required' => TRUE,
-        );
-
-        $form['submit_account_data'] = array(
-          '#type' => 'submit',
-          '#value' => 'Verder',
-          '#name' => 'submit_account_data',
-        );
-
-        $form['back_account_data'] = array(
+      // Submit for account check.
+      if (!isset($form_state['has_account'])) {
+        $form['submit_has_account'] = array(
           '#type' => 'button',
-          '#value' => 'Terug',
-          '#name' => 'back_account_data',
+          '#value' => 'Verder',
+          '#name' => 'submit_has_account',
         );
-
       }
       else {
-        // Check pass.
-        $form['account_pass'] = array(
-          '#type' => 'password',
-          '#title' => 'Wachtwoord',
-        );
+        // Has no account.
+        if ($form_state['has_account'] === 0) {
 
-        $form['submit_account_pass'] = array(
-          '#type' => 'submit',
-          '#value' => 'Verder',
-          '#name' => 'submit_account_pass',
-        );
+          $form['first_time'] = array(
+            '#markup' => '<p>Welkom!</p><p>Je meld je voor het eerst aan voor een belcampagne, daarom vragen we nu een aantal gegevens.</p>',
+          );
 
-        $form['back_account_pass'] = array(
-          '#type' => 'button',
-          '#value' => 'Terug',
-          '#name' => 'back_account_pass',
-        );
+          $form['first_name'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Voornaam',
+            '#required' => TRUE,
+          );
+
+          $form['middle_name'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Tussenvoegsel',
+          );
+
+          $form['last_name'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Achternaam',
+            '#required' => TRUE,
+          );
+
+          $form['phone'] = array(
+            '#type' => 'textfield',
+            '#title' => '06-nummer',
+            '#required' => TRUE,
+          );
+
+          $form['account_pass'] = array(
+            '#type' => 'password_confirm',
+            '#title' => 'Kies een wachtwoord',
+            '#required' => TRUE,
+          );
+
+          $form['submit_account_data'] = array(
+            '#type' => 'submit',
+            '#value' => 'Verder',
+            '#name' => 'submit_account_data',
+          );
+
+          $form['back_account_data'] = array(
+            '#type' => 'button',
+            '#value' => 'Terug',
+            '#name' => 'back_account_data',
+          );
+
+        }
+        else {
+          // Check pass.
+          $form['account_pass'] = array(
+            '#type' => 'password',
+            '#title' => 'Wachtwoord',
+          );
+
+          $form['submit_account_pass'] = array(
+            '#type' => 'submit',
+            '#value' => 'Verder',
+            '#name' => 'submit_account_pass',
+          );
+
+          if (isset($form_state['account_pass_error'])) {
+            $form['submit_pass_reset'] = array(
+              '#type' => 'submit',
+              '#value' => 'Wachtwoord aanpassen',
+              '#name' => 'submit_pass_reset',
+            );
+          }
+
+          $form['back_account_pass'] = array(
+            '#type' => 'button',
+            '#value' => 'Terug',
+            '#name' => 'back_account_pass',
+          );
+        }
       }
     }
   }
@@ -145,6 +174,12 @@ function spbellen_subscription_form_validate($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
+    case 'logout':
+      watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
+      module_invoke_all('user_logout', $user);
+      // Destroy the current session, and reset $user to the anonymous user.
+      session_destroy();
+      break;
     case 'submit_has_account':
       // Trim fields.
       $form_state['values']['email'] = trim($values['email']);
@@ -182,6 +217,9 @@ function spbellen_subscription_form_validate($form, &$form_state) {
     case 'back_account_pass':
       drupal_goto(request_path());
       break;
+    case 'submit_pass_reset':
+      drupal_goto('user/password');
+      break;
     case 'submit_account_pass':
       $form_state['values']['account_pass'] = trim($values['account_pass']);
       $account = $form_state['account'];
@@ -203,8 +241,8 @@ function spbellen_subscription_form_validate($form, &$form_state) {
           drupal_goto($form_state['webform_alias']);
         }
         else {
-          form_set_error('account_pass', 'Het wachtwoord is niet correct');
-          return;
+          $form_state['account_pass_error'] = TRUE;
+          drupal_set_message('Het wachtwoord is niet correct', 'error');
         }
       }
       break;
