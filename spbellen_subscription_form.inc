@@ -51,7 +51,7 @@ function spbellen_subscription_form($form, &$form_state) {
       );
     }
 
-    if (empty($form_state['success'])) {
+    if (empty($form_state['finish'])) {
       // Email field.
       $form['email'] = array(
         '#type' => 'textfield',
@@ -174,12 +174,6 @@ function spbellen_subscription_form_validate($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'logout':
-      watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
-      module_invoke_all('user_logout', $user);
-      // Destroy the current session, and reset $user to the anonymous user.
-      session_destroy();
-      break;
     case 'submit_has_account':
       // Trim fields.
       $form_state['values']['email'] = trim($values['email']);
@@ -213,6 +207,14 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       else {
         $form_state['has_account'] = 0;
       }
+
+      // Store variables for flood control.
+      $form_state['values']['name'] = $values['email'];
+      // Register flood event.
+      // Custom stripped pass check function based on user_login_authenticate_validate.
+      spbellen_custom_login_authenticate_validate($form, $form_state);
+      // Custom stripped function based on user_login_final_validate, no pass check.
+      spbellen_custom_login_final_validate($form, $form_state);
       break;
     case 'back_account_pass':
       drupal_goto(request_path());
@@ -221,30 +223,14 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       drupal_goto('user/password');
       break;
     case 'submit_account_pass':
-      $form_state['values']['account_pass'] = trim($values['account_pass']);
-      $account = $form_state['account'];
-      if (!empty($account)) {
-        if (user_check_password($values['account_pass'], $account)) {
-          global $user;
-          $user = user_load($account->uid);
-          user_login_finalize($account);
-          $query = new EntityFieldQuery;
-          $result = $query
-            ->entityCondition('entity_type', 'local_access')
-            ->propertyCondition('uid', $account->uid)
-            ->propertyCondition('campaign_id', $campaign->id)
-            ->execute();
-          if (empty($result)) {
-            $local_access = entity_create('local_access', array('uid' => $account->uid, 'campaign_id' => $campaign->id));
-            entity_save('local_access', $local_access);
-          }
-          drupal_goto($form_state['webform_alias']);
-        }
-        else {
-          $form_state['account_pass_error'] = TRUE;
-          drupal_set_message('Het wachtwoord is niet correct', 'error');
-        }
-      }
+      // Store variables for flood control.
+      $form_state['values']['name'] = $values['email'];
+      $form_state['values']['pass'] = $values['account_pass'];
+
+      // Flood control and check if user password is ok.
+      user_login_authenticate_validate($form, $form_state);
+      user_login_final_validate($form, $form_state);
+      return;
       break;
     case 'back_account_data':
       unset($_SESSION['messages']['error']);
@@ -307,47 +293,89 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         $pass_feedback = implode('<br/>', $pass_feedback_array);
         form_set_error('account_pass', $pass_feedback);
       }
-      if (!empty($error)) {
-        return;
-      }
-      else {
-        // Create new account.
-        $user = array(
-          'name' => $values['email'],
-          'mail' => $values['email'],
-          'pass' => $values['account_pass'],
-          'status' => 0,
-          'field_first_name' => array(LANGUAGE_NONE => array(array('value' => $values['first_name']))),
-          'field_middle_name' => array(LANGUAGE_NONE => array(array('value' => $values['middle_name']))),
-          'field_last_name' => array(LANGUAGE_NONE => array(array('value' => $values['last_name']))),
-          'field_phone_primary' => array(LANGUAGE_NONE => array(array('value' => $values['phone']))),
-          'field_email_primary' => array(LANGUAGE_NONE => array(array('value' => $values['email']))),
-          'access' => REQUEST_TIME,
-          'roles' => array(),
-        );
-        $account = user_save('', $user);
-        if (!empty($account)) {
-          global $base_url;
-          $hash = md5(uniqid(rand(), true));
-          $url = $base_url . '/aanmelden/bevestig/' . $hash;
-          $site_email = variable_get('site_mail', '');
-          $params = array(
-            'name' => $values['first_name'],
-            'url' => $url,
-            'webform_title' => $webform->title,
-          );
-          $result = drupal_mail('spbellen', 'register_confirmation_required', $account->mail, user_preferred_language($account), $params, $site_email);
-          $local_access = entity_create('local_access', array(
-            'uid' => $account->uid,
-            'campaign_id' => $campaign->id,
-            'hash' => $hash,
-          ));
-          entity_save('local_access', $local_access);
-          $form_state['success'] = TRUE;
-          $form_state['feedback'] = '<p>Er is een account aangemaakt, en een e-mail verzonden met instructies om je account te activeren.</p>';
+      return;
+      break;
+    }
+  }
+  $form_state['rebuild'] = TRUE;
+}
+
+function spbellen_subscription_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $campaign = $form_state['campaign'];
+  $webform = $form_state['webform'];
+
+  if (!empty($form_state['triggering_element']['#name'])) {
+    // Check fixed name buttons.
+    $trigger = $form_state['triggering_element']['#name'];
+    switch ($trigger) {
+    case 'logout':
+      watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
+      module_invoke_all('user_logout', $user);
+      // Destroy the current session, and reset $user to the anonymous user.
+      session_destroy();
+      break;
+    case 'submit_account_pass':
+      $form_state['values']['account_pass'] = trim($values['account_pass']);
+      $account = $form_state['account'];
+      if (!empty($account)) {
+        if (user_check_password($values['account_pass'], $account)) {
+          global $user;
+          $user = user_load($account->uid);
+          user_login_finalize($account);
+          $query = new EntityFieldQuery;
+          $result = $query
+            ->entityCondition('entity_type', 'local_access')
+            ->propertyCondition('uid', $account->uid)
+            ->propertyCondition('campaign_id', $campaign->id)
+            ->execute();
+          if (empty($result)) {
+            $local_access = entity_create('local_access', array('uid' => $account->uid, 'campaign_id' => $campaign->id));
+            entity_save('local_access', $local_access);
+          }
+          drupal_goto($form_state['webform_alias']);
+        }
+        else {
+          $form_state['account_pass_error'] = TRUE;
+          drupal_set_message('Het wachtwoord is niet correct', 'error');
         }
       }
-      break;
+    case 'submit_account_data':
+      // Create new account.
+      $user = array(
+        'name' => $values['email'],
+        'mail' => $values['email'],
+        'pass' => $values['account_pass'],
+        'status' => 0,
+        'field_first_name' => array(LANGUAGE_NONE => array(array('value' => $values['first_name']))),
+        'field_middle_name' => array(LANGUAGE_NONE => array(array('value' => $values['middle_name']))),
+        'field_last_name' => array(LANGUAGE_NONE => array(array('value' => $values['last_name']))),
+        'field_phone_primary' => array(LANGUAGE_NONE => array(array('value' => $values['phone']))),
+        'field_email_primary' => array(LANGUAGE_NONE => array(array('value' => $values['email']))),
+        'access' => REQUEST_TIME,
+        'roles' => array(),
+      );
+      $account = user_save('', $user);
+      if (!empty($account)) {
+        global $base_url;
+        $hash = md5(uniqid(rand(), true));
+        $url = $base_url . '/aanmelden/bevestig/' . $hash;
+        $site_email = variable_get('site_mail', '');
+        $params = array(
+          'name' => $values['first_name'],
+          'url' => $url,
+          'webform_title' => $webform->title,
+        );
+        $result = drupal_mail('spbellen', 'register_confirmation_required', $account->mail, user_preferred_language($account), $params, $site_email);
+        $local_access = entity_create('local_access', array(
+          'uid' => $account->uid,
+          'campaign_id' => $campaign->id,
+          'hash' => $hash,
+        ));
+        entity_save('local_access', $local_access);
+        $form_state['finish'] = TRUE;
+        $form_state['feedback'] = '<p>Er is een account aangemaakt, en een e-mail verzonden met instructies om je account te activeren.</p>';
+      }
     }
   }
   $form_state['rebuild'] = TRUE;
@@ -391,4 +419,59 @@ function spbellen_confirm_account($hash) {
   }
   drupal_set_message('Het was niet mogelijk de aanmelding te bevestigen', 'error');
   drupal_goto('/bellen/error');
+}
+
+function spbellen_custom_login_authenticate_validate($form, &$form_state) {
+  if (!empty($form_state['values']['name'])) {
+    // Do not allow any login from the current user's IP if the limit has been
+    // reached. Default is 50 failed attempts allowed in one hour. This is
+    // independent of the per-user limit to catch attempts from one IP to log
+    // in to many different user accounts.  We have a reasonably high limit
+    // since there may be only one apparent IP for all users at an institution.
+    if (!flood_is_allowed('failed_login_attempt_ip', variable_get('user_failed_login_ip_limit', 50), variable_get('user_failed_login_ip_window', 3600))) {
+      $form_state['flood_control_triggered'] = 'ip';
+      return;
+    }
+    $account = db_query("SELECT * FROM {users} WHERE name = :name AND status = 1", array(':name' => $form_state['values']['name']))->fetchObject();
+    if ($account) {
+      if (variable_get('user_failed_login_identifier_uid_only', FALSE)) {
+        // Register flood events based on the uid only, so they apply for any
+        // IP address. This is the most secure option.
+        $identifier = $account->uid;
+      }
+      else {
+        // The default identifier is a combination of uid and IP address. This
+        // is less secure but more resistant to denial-of-service attacks that
+        // could lock out all users with public user names.
+        $identifier = $account->uid . '-' . ip_address();
+      }
+      $form_state['flood_control_user_identifier'] = $identifier;
+
+      // Don't allow login if the limit for this user has been reached.
+      // Default is to allow 5 failed attempts every 6 hours.
+      if (!flood_is_allowed('failed_login_attempt_user', variable_get('user_failed_login_user_limit', 5), variable_get('user_failed_login_user_window', 21600), $identifier)) {
+        $form_state['flood_control_triggered'] = 'user';
+        return;
+      }
+    }
+  }
+}
+
+function spbellen_custom_login_final_validate($form, &$form_state) {
+  // Always register an IP-based failed login event.
+  flood_register_event('failed_login_attempt_ip', variable_get('user_failed_login_ip_window', 3600));
+  // Register a per-user failed login event.
+  if (isset($form_state['flood_control_user_identifier'])) {
+    flood_register_event('failed_login_attempt_user', variable_get('user_failed_login_user_window', 21600), $form_state['flood_control_user_identifier']);
+  }
+
+  if (isset($form_state['flood_control_triggered'])) {
+    if ($form_state['flood_control_triggered'] == 'user') {
+      form_set_error('name', format_plural(variable_get('user_failed_login_user_limit', 5), 'Sorry, there has been more than one failed login attempt for this account. It is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', 'Sorry, there have been more than @count failed login attempts for this account. It is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', array('@url' => url('user/password'))));
+    }
+    else {
+      // We did not find a uid, so the limit is IP-based.
+      form_set_error('name', t('Sorry, too many failed login attempts from your IP address. This IP address is temporarily blocked. Try again later or <a href="@url">request a new password</a>.', array('@url' => url('user/password'))));
+    }
+  }
 }

@@ -411,7 +411,9 @@ function spbellen_user_login($edit, $account) {
       while ($row = $results->fetchAssoc()) {
         $local_access[$row['webform_id']] = $row['campaign_id'];
       }
-      $_SESSION['spbellen']['local_access'] = $local_access;
+      if (!empty($local_access)) {
+        $_SESSION['spbellen']['local_access'] = $local_access;
+      }
     }
   }
 }
