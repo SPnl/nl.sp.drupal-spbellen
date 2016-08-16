@@ -11,3 +11,12 @@
   visibility: visible;
   font-size: 1em;
 }
+
+#spbellen-subscription-form .form-disabled {
+  color: #ccc;
+}
+
+#spbellen-subscription-form .form-disabled input {
+  background-color: #eee;
+  color: #aaa;
+}
