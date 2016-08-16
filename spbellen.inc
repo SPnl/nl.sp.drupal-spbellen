@@ -726,8 +726,14 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
 }
 
 function spbellen_get_targets($campaign) {
+  $tids_civi = array();
+  $tids_db = array();
+  $tids_no_contact_data = array();
+
   $fields = array_keys(spbellen_contact_fields());
   $fields_list = implode(', ', $fields);
+
+  // Get targets from CiviCRM.
   // Get campaign target groups.
   $query = new EntityFieldQuery();
   $result = $query
@@ -736,11 +742,9 @@ function spbellen_get_targets($campaign) {
     ->propertyCondition('group_type', 'target_group')
     ->execute();
   if (isset($result['campaign_groups'])) {
-    $tids_civi = array();
-    $tids_db = array();
     $campaign_groups_ids = array_keys($result['campaign_groups']);
     $campaign_groups = entity_load('campaign_groups', $campaign_groups_ids);
-    // Get targets from CiviCRM.
+
     $tids_civi = array();
     set_time_limit(0);
     $spcivi = \SPCivi::getInstance();
@@ -788,50 +792,51 @@ function spbellen_get_targets($campaign) {
       else {
         return FALSE;
       }
-      // Get targets from database.
-      $tids_db = array();
-      $query = new EntityFieldQuery();
+    }
+  }
 
-      $results = $query
-        ->entityCondition('entity_type', 'target')
-        ->propertyCondition('campaign_id', $campaign->id)
-        ->execute();
-
-      if (!empty($results['target'])) {
-        $tids = array_keys($results['target']);
-        $targets = entity_load('target', $tids);
-        foreach ($targets as $target) {
-          $tids_db[$target->civi_contact_id] = $target->civi_contact_id;
-        }
+  // Get targets from database.
+  $query = "SELECT civi_contact_id, cd.id AS contact_data_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE campaign_id = :campaign_id";
+  $result = db_query($query, array(':campaign_id' => $campaign->id));
+  if ($result) {
+    while ($row = $result->fetchAssoc()) {
+      if (empty($row['contact_data_id'])) {
+        $tids_no_contact_data[$row['civi_contact_id']] = $row['civi_contact_id'];
+      }
+      else {
+        $tids_db[$row['civi_contact_id']] = $row['civi_contact_id'];
       }
     }
-    // Get new and deleted targets.
-    $tids_new = array_diff($tids_civi, $tids_db);
-    $tids_del = array_diff($tids_db, $tids_civi);
+  }
 
-    // Store new ids.
-    foreach ($tids_new as $tid) {
-      foreach ($fields as $field) {
-        $values[$field] = $data[$tid][$field];
-      }
-      $contact_data_id = db_insert('spbellen_contact_data')
-        ->fields($values)
-        ->execute();
-      $result = db_insert('spbellen_targets')
-        ->fields(array(
-          'civi_contact_id' => $tid,
-          'campaign_id' => $campaign->id,
-          'occupied' => 0,
-          'contact_data_id' => $contact_data_id,
-        ))
-        ->execute();
-    }
+  // Get new and deleted targets.
+  $tids_new = array_diff($tids_civi, $tids_db);
+  $tids_del = array_diff($tids_db + $tids_no_contact_data, $tids_civi);
 
-    // Delete removed targets in database.
-    foreach ($tids_del as $tid) {
-      $query = "DELETE ta, cd FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE civi_contact_id = :target_id AND campaign_id = :campaign_id";
-      db_query($query, array(':target_id' => $tid, ':campaign_id' => $campaign->id));
+  // Store new target data.
+  foreach ($tids_new as $tid) {
+    foreach ($fields as $field) {
+      $values[$field] = $data[$tid][$field];
     }
+    // Add target contact data.
+    $contact_data_id = db_insert('spbellen_contact_data')
+      ->fields($values)
+      ->execute();
+    // Add target.
+    $result = db_merge('spbellen_targets')
+      ->key(array('civi_contact_id' => $tid))
+      ->fields(array(
+        'campaign_id' => $campaign->id,
+        'occupied' => 0,
+        'contact_data_id' => $contact_data_id,
+      ))
+      ->execute();
+  }
+
+  // Delete removed targets in database.
+  foreach ($tids_del as $tid) {
+    $query = "DELETE ta, cd FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE civi_contact_id = :target_id AND campaign_id = :campaign_id";
+    db_query($query, array(':target_id' => $tid, ':campaign_id' => $campaign->id));
   }
 }
 
