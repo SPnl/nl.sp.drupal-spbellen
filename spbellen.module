@@ -4,6 +4,8 @@
   module_load_include('inc', 'webform', 'includes/webform.submissions');
   module_load_include('inc', 'pathauto', 'pathauto');
 
+  variable_set('user_mail_status_activated_notify', FALSE);
+
 /**
  *  * Implements hook_menu().
  *   */
