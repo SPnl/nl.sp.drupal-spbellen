@@ -1,7 +1,8 @@
 <?php
 
 function spbellen_campaign_form($form, &$form_state) {
-  $groups = spbellen_get_civi_groups();
+  $form_state['groups_all'] = spbellen_get_all_civi_groups();
+  $form_state['groups_all_but_smart'] = spbellen_get_all_but_smart_civi_groups();
   $campaigns_list = spbellen_get_campaigns_list();
   $webforms_list = spbellen_get_webforms_list();
   $storage = !empty($form_state['storage']) ? $form_state['storage'] : array();
@@ -69,12 +70,13 @@ function spbellen_campaign_form($form, &$form_state) {
         '#markup' => '<p><strong>Leeg de Drupal cache als een CiviCRM groep niet te vinden is!</strong></p>',
       );
 
-      // Add group selections.
-      $form_state['groups'] = $groups;
-
       $group_types = array(
         'call_group' => 'belgroep',
         'target_group' => 'doelgroep',
+      );
+      $filters = array(
+        'call_group' => 'all',
+        'target_group' => 'all_but_smart',
       );
 
       foreach ($group_types as $type_key => $type_name) {
@@ -105,8 +107,11 @@ function spbellen_campaign_form($form, &$form_state) {
         $form[$type_key.'_select'][$type_key] = array(
           '#type' => 'textfield',
           '#title' => 'Selecteer een '.$type_name,
-          '#autocomplete_path' => 'spbellen/group/autocomplete',
+          '#autocomplete_path' => 'spbellen/group/autocomplete/' . $filters[$type_key],
         );
+        if ($type_key == 'target_group') {
+          $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van smart groepen mogelijk.'; 
+        }
 
         $form[$type_key.'_select']['add_'.$type_key] = array(
           '#type' => 'button',
@@ -125,7 +130,7 @@ function spbellen_campaign_form($form, &$form_state) {
           '#title' => 'Synchronizeer de doelgroep met CiviCRM',
         );
         $form['sync']['sync_targets'] = array(
-          '#type' => 'button',
+          '#type' => 'submit',
           '#name' => 'sync_targets',
           '#value' => 'Sync',
           '#prefix' => '<p>Indien groepen gewijzigd zijn, eerst opslaan.</p>',
@@ -200,16 +205,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
     case 'sync_targets':
-      $campaign = entity_load_single('campaign', $storage['campaign']);
-      if (!empty($campaign)) {
-        $result = spbellen_get_targets($campaign);
-        if ($result !== FALSE) {
-          drupal_set_message('Doelgroep is gesynchronizeerd.');
-        }
-        else {
-          drupal_set_message('Doelgroep kon niet worden gesynchronizeerd.', 'error');
-        }
-      }
+      return;
       break;
     case 'select_campaign':
       // Store selected campaign.
@@ -265,7 +261,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
     // Add buttons.
     preg_match('/^add_(call_group|target_group)$/', $trigger, $matches);
     if (!empty($matches[1])) {
-      $groups = spbellen_get_civi_groups();
+      $groups = $form_state['groups_all'];
       $group_raw = $values[$matches[1]];
       $group = spbellen_parse_id_form_select_value($group_raw);
       $storage[$matches[1].'s'][$group] = $groups[$group];
@@ -288,14 +284,10 @@ function spbellen_campaign_form_submit($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'submit':
-      // Store campaign in database.
-      $campaign = spbellen_store_campaign($storage, $values);
-      // Add spbellen intro form to campaign form.
-      if ($storage['campaign'] === 'new') {
-        spbellen_create_campaign_form($campaign);
-      }
+    case 'sync_targets':
+      $campaign = entity_load_single('campaign', $storage['campaign']);
       if (!empty($campaign)) {
+        /*
         $result = spbellen_get_targets($campaign);
         if ($result !== FALSE) {
           drupal_set_message('Doelgroep is gesynchronizeerd.');
@@ -303,6 +295,50 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         else {
           drupal_set_message('Doelgroep kon niet worden gesynchronizeerd.', 'error');
         }
+        */
+        // Create operation for each CiviCRM target group for the campaign.
+        //
+        // Get sync_id.
+        $query = "SELECT MAX(sync_id) AS old_sync_id FROM spbellen_targets";
+        $sync_id = (db_query($query)->fetchField() + 1);
+
+        // Get campaign target groups.
+        $query = new EntityFieldQuery();
+        $result = $query
+          ->entityCondition('entity_type', 'campaign_groups')
+          ->propertyCondition('campaign_id', $campaign->id)
+          ->propertyCondition('group_type', 'target_group')
+          ->execute();
+        if (isset($result['campaign_groups'])) {
+          $operations = array();
+          $campaign_groups_ids = array_keys($result['campaign_groups']);
+          $campaign_groups = entity_load('campaign_groups', $campaign_groups_ids);
+          foreach ($campaign_groups as $campaign_group) {
+            // Add operation for each campaign group.
+            $operations[] = array(
+              'spbellen_get_targets_batch',
+              array($campaign->id, $campaign_group, $sync_id),
+            );
+          }
+          $batch = array(
+            'operations' => $operations,
+            'finished' => 'spbellen_get_targets_batch_finished',
+            'title' => 'Ophalen contacten',
+            'init_message' => '',
+            'progress_message' => '',
+            'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
+          );
+          batch_set($batch);
+        }
+      }
+      return;
+      break;
+    case 'submit':
+      // Store campaign in database.
+      $campaign = spbellen_store_campaign($storage, $values);
+      // Add spbellen intro form to campaign form.
+      if ($storage['campaign'] === 'new') {
+        spbellen_create_campaign_form($campaign);
       }
       cache_clear_all('spbellen_forms', 'cache');
       menu_rebuild();

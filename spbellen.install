@@ -158,19 +158,14 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => '255',
       ),
-      'contact_data_id' => array(
-        'description' => 'The id of the contact data.',
-        'type' => 'int',
-        'size' => 'big',
-      ),
     ),
     'primary key' => array(
       'id',
     ),
     'unique keys' => array(
       'campaign_target' => array(
-        'campaign_id',
         'civi_contact_id',
+        'campaign_id',
       ),
     ),
   );
@@ -250,11 +245,10 @@ function spbellen_schema() {
   $schema['spbellen_contact_data'] = array(
     'description' => 'Contact data.',
     'fields' => array(
-      'id' => array(
-        'description' => 'Data id.',
-        'type' => 'serial',
+      'contact_id' => array(
+        'description' => 'Contact id',
+        'type' => 'int',
         'size' => 'big',
-        'not null' => TRUE,
       ),
       'phone' => array(
         'description' => 'Contact phone number.',
@@ -286,11 +280,6 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
       ),
-      'contact_id' => array(
-        'description' => 'Contact id',
-        'type' => 'int',
-        'size' => 'big',
-      ),
       'gender' => array(
         'description' => 'Gender',
         'type' => 'varchar',
@@ -303,7 +292,7 @@ function spbellen_schema() {
       ),
     ),
     'primary key' => array(
-      'id',
+      'contact_id',
     ),
   );
 
@@ -385,21 +374,14 @@ function spbellen_update_7003() {
  * Add target data to table {spbellen_contact_data} table.
  */
 function spbellen_update_7004() {
-  $spec = array(
-    'description' => 'The id of the contact data.',
-    'type' => 'int',
-    'size' => 'big',
-  );
-  db_add_field( 'spbellen_targets', 'contact_data_id', $spec);
 
   $table = array(
     'description' => 'Contact data.',
     'fields' => array(
-      'id' => array(
-        'description' => 'Data id.',
-        'type' => 'serial',
+      'contact_id' => array(
+        'description' => 'Contact id',
+        'type' => 'int',
         'size' => 'big',
-        'not null' => TRUE,
       ),
       'phone' => array(
         'description' => 'Contact phone number.',
@@ -431,11 +413,6 @@ function spbellen_update_7004() {
         'type' => 'varchar',
         'length' => 255,
       ),
-      'contact_id' => array(
-        'description' => 'Contact id',
-        'type' => 'int',
-        'size' => 'big',
-      ),
       'gender' => array(
         'description' => 'Gender',
         'type' => 'varchar',
@@ -448,7 +425,7 @@ function spbellen_update_7004() {
       ),
     ),
     'primary key' => array(
-      'id',
+      'contact_id',
     ),
   );
   db_create_table('spbellen_contact_data', $table);
@@ -535,4 +512,17 @@ function spbellen_update_7008() {
       'length' => '255',
     )
   );
+}
+
+/**
+ * Add sync_id {spbellen_targets} table.
+ */
+function spbellen_update_7009() {
+  $spec = array(
+    'description' => 'Sync id.',
+    'type' => 'int',
+    'size' => 'big',
+    'not null' => FALSE,
+  ); 
+  db_add_field( 'spbellen_targets', 'sync_id', $spec);
 }

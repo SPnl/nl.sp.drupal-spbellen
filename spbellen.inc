@@ -79,57 +79,92 @@ function spbellen_get_campaigns_list() {
   return $campaigns_list;
 }
 
-function spbellen_get_civi_groups($sync = TRUE) {
-  if ($sync) {
-    $groups = &drupal_static(__FUNCTION__);
-    if (!isset($groups)) {
+function spbellen_get_all_civi_groups() {
+  $groups = &drupal_static(__FUNCTION__);
+  if (!isset($groups)) {
 
-      if ($cache = cache_get('spbellen_civi_groups')) {
-        $groups = $cache->data;
-      }
-      else {
-        $groups = array();
-        set_time_limit(0);
-        $spcivi = \SPCivi::getInstance();
-        $params = array(
-          'sequential'            => 1,
-          'option.limit'          => 9999,
-        );
-        $groups_results = $spcivi->api('Group', 'get', $params);
-        if (spbellen_check_result($groups_results, 'groepen', 'get', $params)) {
-          if (!empty($groups_results['values'])) {
-            foreach ($groups_results['values'] as $value) {
-              if (
-                empty($value['group_type']) || 
-                (array_key_exists(0, $value['group_type']) && empty($value['group_type'][0])) || 
-                in_array('2', $value['group_type'])
-              ) {
-              $groups[$value['id']] = $value['title'];
-              }
-            }
-            asort($groups);
-            variable_set('spbellen_civi_groups', $groups);
-          }
-          else {
-            drupal_set_message('Error syncing civicrm groups, using saved data.', 'warning');
-          }
-        }
-      }
-      $groups = variable_get('spbellen_civi_groups', array());
-      cache_set('spbellen_civi_groups', $groups, 'cache', time() + 3600);
+    if ($cache = cache_get('spbellen_all_civi_groups')) {
+      $groups = $cache->data;
     }
-    return $groups;
+    else {
+      $groups = spbellen_get_civi_groups('all');
+      cache_set('spbellen_all_civi_groups', $groups, 'cache', time() + 3600);
+    }
   }
-  $groups = variable_get('spbellen_civi_groups', array());
   return $groups;
 }
 
-function spbellen_group_autocomplete($string) {
+function spbellen_get_all_but_smart_civi_groups() {
+  $groups = &drupal_static(__FUNCTION__);
+  if (!isset($groups)) {
+
+    if ($cache = cache_get('spbellen_all_but_smart_civi_groups')) {
+      $groups = $cache->data;
+    }
+    else {
+      $groups = spbellen_get_civi_groups('all_but_smart');
+      cache_set('spbellen_all_but_smart_civi_groups', $groups, 'cache', time() + 3600);
+    }
+  }
+  return $groups;
+}
+
+function spbellen_get_civi_groups($smartgroups = 'all') {
+  $groups = array();
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'sequential'            => 1,
+    'option.limit'          => 9999,
+    'is_active'             => 1,
+  );
+  $groups_results = $spcivi->api('Group', 'get', $params);
+  if (spbellen_check_result($groups_results, 'groepen', 'get', $params)) {
+    if (!empty($groups_results['values'])) {
+      foreach ($groups_results['values'] as $value) {
+        if (
+          (
+            empty($value['group_type']) || 
+            (array_key_exists(0, $value['group_type']) && empty($value['group_type'][0])) || 
+            in_array('2', $value['group_type'])
+          ) &&
+          (
+            (
+              $smartgroups == 'all_but_smart' &&
+              isset($value['where_clause']) &&
+              strpos($value['where_clause'], 'civicrm_group_contact_cache_') === FALSE
+            ) ||
+            (
+              $smartgroups == 'all' 
+            )
+          )
+        ) {
+        $groups[$value['id']] = $value['title'];
+        }
+      }
+      asort($groups);
+      variable_set('spbellen_civi_groups', $groups);
+    }
+    else {
+      drupal_set_message('Error syncing civicrm groups, using saved data.', 'warning');
+    }
+  }
+  return $groups;
+}
+
+function spbellen_group_autocomplete($filter, $string) {
   $string = strtolower($string);
   $matches = array();
   if (strlen($string) > 2) {
     $matches = array();
-    $groups = spbellen_get_civi_groups();
+    switch ($filter) {
+    case 'all':
+      $groups = spbellen_get_all_civi_groups();
+      break;
+    case 'all_but_smart':
+      $groups = spbellen_get_all_but_smart_civi_groups();
+      break;
+    }
 
     foreach ($groups as $key => $group) {
       if (strpos(strtolower($group), $string) !== FALSE) {
@@ -725,118 +760,134 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
   return $options;
 }
 
-function spbellen_get_targets($campaign) {
-  $tids_civi = array();
-  $tids_db = array();
-  $tids_no_contact_data = array();
+function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$context) {
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  if (empty($context['sandbox'])) {
+    // Get total number of contacts.
+    $number_of_contacts = 0;
+    $params = array(
+      'group' => $campaign_group->civi_group_id,
+      'is_deleted' => 0,
+      'do_not_phone' => 0,
+      'status' => 'Added',
+    );
+    $results = $spcivi->api('Contact', 'getcount', $params);
+    if (spbellen_check_result($results, 'contacten', 'get', $params)) {
+      $number_of_contacts = $results['result'];
+    }
+
+    $context['sandbox'] = array();
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['current_contact'] = 0;
+    $context['sandbox']['max'] = $number_of_contacts;
+  }
+
+  // Process by chunks.
+  $chunk_size = 50;
 
   $fields = array_keys(spbellen_contact_fields());
   $fields_list = implode(', ', $fields);
 
-  // Get targets from CiviCRM.
-  // Get campaign target groups.
-  $query = new EntityFieldQuery();
-  $result = $query
-    ->entityCondition('entity_type', 'campaign_groups')
-    ->propertyCondition('campaign_id', $campaign->id)
-    ->propertyCondition('group_type', 'target_group')
-    ->execute();
-  if (isset($result['campaign_groups'])) {
-    $campaign_groups_ids = array_keys($result['campaign_groups']);
-    $campaign_groups = entity_load('campaign_groups', $campaign_groups_ids);
-
-    $tids_civi = array();
-    set_time_limit(0);
-    $spcivi = \SPCivi::getInstance();
-    foreach ($campaign_groups as $campaign_group) {
-      $params = array(
-        'option.limit' => 9999,
-        'filter.group_id' => array(0 => $campaign_group->civi_group_id),
-        'is_deleted' => 0,
-        'do_not_phone' => 0,
-        'return' => $fields_list,
-        'status' => 'Added',
-      );
-      $results = $spcivi->api('Contact', 'get', $params);
-      if (spbellen_check_result($results, 'contacten', 'get', $params)) {
-        // Current targets from CiviCRM.
-        if (!empty($results['values'])) {
-          foreach ($results['values'] as $result) {
-            $contact_id = $result['contact_id'];
-            // Check if has phonenumer.
-            if (!empty($result['phone'])) {
-              $tids_civi[$contact_id] = $contact_id;
-              // Get mobile phone.
-              $phonenumber = $result['phone'];
-              if (strpos($result['phone'], '06') !== 0) {
-                $mobile_phone = spbellen_get_mobile_phone($contact_id);
-                if (!empty($mobile_phone)) {
-                  $phonenumber = $mobile_phone;
-                }
-              }
-              $result['phone'] = preg_replace('/[^0-9]/', '', $phonenumber);
-
-              // Get membership data.
-              $membership = spbellen_is_member($contact_id);
-              if ($membership !== FALSE) {
-                $result['is_lid'] = spbellen_is_member($contact_id);
-              }
-              // Store data.
-              foreach ($fields as $field) {
-                $data[$contact_id][$field] = $result[$field];
-              }
+  $params = array(
+    'option.limit' => $chunk_size,
+    'option.offset' => ($context['sandbox']['progress']),
+    'filter.group_id' => array(0 => $campaign_group->civi_group_id),
+    'is_deleted' => 0,
+    'do_not_phone' => 0,
+    'status' => 'Added',
+    'return' => $fields_list,
+  );
+  $results = $spcivi->api('Contact', 'get', $params);
+  if (spbellen_check_result($results, 'contacten', 'get', $params)) {
+    if (!empty($results['values'])) {
+      foreach ($results['values'] as $result) {
+        // Process contact.
+        $contact_id = $result['contact_id'];
+        // Check if has phonenumer.
+        if (!empty($result['phone'])) {
+          // Get mobile phone.
+          $phonenumber = $result['phone'];
+          if (strpos($result['phone'], '06') !== 0) {
+            $mobile_phone = spbellen_get_mobile_phone($contact_id);
+            if (!empty($mobile_phone)) {
+              $phonenumber = $mobile_phone;
             }
           }
+          $result['phone'] = preg_replace('/[^0-9]/', '', $phonenumber);
+
+          // Get membership data.
+          $membership = spbellen_is_member($contact_id);
+          if ($membership !== FALSE) {
+            $result['is_lid'] = spbellen_is_member($contact_id);
+          }
+          $context['results']['count'] ++;
+          spbellen_get_targets_process_target($campaign_id, $result, $sync_id);
         }
-      }
-      else {
-        return FALSE;
-      }
-    }
-  }
 
-  // Get targets from database.
-  $query = "SELECT civi_contact_id, cd.id AS contact_data_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE campaign_id = :campaign_id";
-  $result = db_query($query, array(':campaign_id' => $campaign->id));
-  if ($result) {
-    while ($row = $result->fetchAssoc()) {
-      if (empty($row['contact_data_id'])) {
-        $tids_no_contact_data[$row['civi_contact_id']] = $row['civi_contact_id'];
-      }
-      else {
-        $tids_db[$row['civi_contact_id']] = $row['civi_contact_id'];
+        // Stats.
+        $context['results']['sync_id'] = $sync_id;
+        $context['results']['campaign_id'] = $campaign_id;
+
+        // Update our progress information.
+        $context['sandbox']['progress']++;
+        $context['sandbox']['current_contact'] = $contact_id;
+
       }
     }
-  }
-
-  // Get new and deleted targets.
-  $tids_new = array_diff($tids_civi, $tids_db);
-  $tids_del = array_diff($tids_db + $tids_no_contact_data, $tids_civi);
-
-  // Store new target data.
-  foreach ($tids_new as $tid) {
-    foreach ($fields as $field) {
-      $values[$field] = $data[$tid][$field];
+    else {
+      $context['finished'] = 1;
+      return;
     }
-    // Add target contact data.
-    $contact_data_id = db_insert('spbellen_contact_data')
-      ->fields($values)
-      ->execute();
-    // Add target.
-    $result = db_merge('spbellen_targets')
-      ->key(array('civi_contact_id' => $tid))
-      ->fields(array(
-        'campaign_id' => $campaign->id,
-        'occupied' => 0,
-        'contact_data_id' => $contact_data_id,
-      ))
-      ->execute();
+  }
+  $context['finished'] = ($context['sandbox']['progress'] / $context['sandbox']['max']);
+}
+
+function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
+  $fields = array_keys(spbellen_contact_fields());
+  foreach ($fields as $field) {
+    $values[$field] = $result[$field];
   }
 
-  // Delete removed targets in database.
-  foreach ($tids_del as $tid) {
-    $query = "DELETE ta, cd FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE civi_contact_id = :target_id AND campaign_id = :campaign_id";
-    db_query($query, array(':target_id' => $tid, ':campaign_id' => $campaign->id));
+  $contact_id = $values['contact_id'];
+  unset($values['contact_id']);
+
+  // Add target contact data.
+  db_merge('spbellen_contact_data')
+    ->key(array('contact_id' => $contact_id))
+    ->fields($values)
+    ->execute();
+  // Add target.
+  db_merge('spbellen_targets')
+    ->key(array('civi_contact_id' => $contact_id))
+    ->fields(array(
+      'campaign_id' => $campaign_id,
+      'occupied' => 0,
+      'sync_id' => $sync_id,
+    ))
+    ->execute();
+}
+
+function spbellen_get_targets_batch_finished($success, $results, $operations) {
+  if ($success) {
+    drupal_set_message('Aantal opgehaalde contacten: ' . $results['count']);
+    // To do: cleanup old syncs.
+    $sync_id = $results['sync_id'];
+    $campaign_id = $results['campaign_id'];
+    $query = "DELETE ta, cd FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE sync_id < :sync_id AND campaign_id = :campaign_id";
+    $result = db_query($query, array(':sync_id' => $sync_id, ':campaign_id' => $campaign_id));
+  }
+  else {
+    $error_operation = reset($operations);
+    drupal_set_message(
+      t('An error occurred while processing @operation with arguments : @args',
+        array(
+          '@operation' => $error_operation[0],
+          '@args' => print_r($error_operation[0], TRUE),
+        )
+      ),
+      'error'
+    );
   }
 }
 
@@ -1060,7 +1111,7 @@ function spbellen_get_contact_data($contact_id) {
     $fields = array_keys(spbellen_contact_fields());
     $fields_list = implode(',', $fields);
     // Get contact data.
-    $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_data_id = cd.id WHERE civi_contact_id = :contact_id";
+    $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE civi_contact_id = :contact_id";
     $result = db_query($query, array(':contact_id' => $contact_id));
     $contact_data = $result->fetchAssoc();
   }

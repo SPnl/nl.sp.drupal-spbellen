@@ -61,9 +61,10 @@ function spbellen_menu() {
     'weight' => '2',
   );
 
-  $items['spbellen/group/autocomplete'] = array(
+  $items['spbellen/group/autocomplete/%'] = array(
     'title' => 'SP bellen autocomplete',
     'page callback' => 'spbellen_group_autocomplete',
+    'page arguments' => array(3),
     'access callback' => 'sprbs_access_check',
     'type' => MENU_CALLBACK,
     'file' => 'spbellen.inc',
