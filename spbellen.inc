@@ -859,9 +859,11 @@ function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
     ->execute();
   // Add target.
   db_merge('spbellen_targets')
-    ->key(array('civi_contact_id' => $contact_id))
-    ->fields(array(
+    ->key(array(
+      'civi_contact_id' => $contact_id,
       'campaign_id' => $campaign_id,
+    ))
+    ->fields(array(
       'occupied' => 0,
       'sync_id' => $sync_id,
     ))
