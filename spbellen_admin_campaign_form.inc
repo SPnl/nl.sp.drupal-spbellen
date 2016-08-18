@@ -303,6 +303,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         $sync_id = (db_query($query, array(':campaign_id' => $campaign->id))->fetchField() + 1);
 
         // Get campaign target groups.
+        $all_but_smart_groups = spbellen_get_all_but_smart_civi_groups();
         $query = new EntityFieldQuery();
         $result = $query
           ->entityCondition('entity_type', 'campaign_groups')
@@ -314,6 +315,10 @@ function spbellen_campaign_form_submit($form, &$form_state) {
           $campaign_groups_ids = array_keys($result['campaign_groups']);
           $campaign_groups = entity_load('campaign_groups', $campaign_groups_ids);
           foreach ($campaign_groups as $campaign_group) {
+            if (empty($all_but_smart_groups[$campaign_group->civi_group_id])) {
+              drupal_set_message('Kan niet gesynced worden, smart group aanwezig.', 'error');
+              return;
+            }
             // Add operation for each campaign group.
             $operations[] = array(
               'spbellen_get_targets_batch',
