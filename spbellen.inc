@@ -761,6 +761,9 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
 }
 
 function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$context) {
+  // Process by chunks.
+  $chunk_size = 10;
+
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
   if (empty($context['sandbox'])) {
@@ -781,10 +784,8 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['current_contact'] = 0;
     $context['sandbox']['max'] = $number_of_contacts;
+    $context['sandbox']['current_chunk'] = 0;
   }
-
-  // Process by chunks.
-  $chunk_size = 50;
 
   $fields = array_keys(spbellen_contact_fields());
   $fields_list = implode(', ', $fields);
@@ -840,6 +841,8 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
       return;
     }
   }
+  $context['sandbox']['current_chunk'] ++;
+  $context['message'] = ($context['sandbox']['current_chunk'] * $chunk_size) . '/' . $context['sandbox']['max'];
   $context['finished'] = ($context['sandbox']['progress'] / $context['sandbox']['max']);
 }
 
@@ -876,7 +879,7 @@ function spbellen_get_targets_batch_finished($success, $results, $operations) {
     // To do: cleanup old syncs.
     $sync_id = $results['sync_id'];
     $campaign_id = $results['campaign_id'];
-    $query = "DELETE ta, cd FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE sync_id < :sync_id AND campaign_id = :campaign_id";
+    $query = "DELETE ta, cd FROM {spbellen_targets} ta LEFT JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ( sync_id < :sync_id OR sync_id IS NULL ) AND campaign_id = :campaign_id";
     $result = db_query($query, array(':sync_id' => $sync_id, ':campaign_id' => $campaign_id));
   }
   else {

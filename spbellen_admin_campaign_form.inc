@@ -299,8 +299,8 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         // Create operation for each CiviCRM target group for the campaign.
         //
         // Get sync_id.
-        $query = "SELECT MAX(sync_id) AS old_sync_id FROM spbellen_targets";
-        $sync_id = (db_query($query)->fetchField() + 1);
+        $query = "SELECT MAX(sync_id) AS old_sync_id FROM spbellen_targets WHERE campaign_id = :campaign_id";
+        $sync_id = (db_query($query, array(':campaign_id' => $campaign->id))->fetchField() + 1);
 
         // Get campaign target groups.
         $query = new EntityFieldQuery();
@@ -324,7 +324,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
             'operations' => $operations,
             'finished' => 'spbellen_get_targets_batch_finished',
             'title' => 'Ophalen contacten',
-            'init_message' => '',
+            'init_message' => '0',
             'progress_message' => '',
             'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
           );
