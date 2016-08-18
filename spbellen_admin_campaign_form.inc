@@ -325,7 +325,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
             'finished' => 'spbellen_get_targets_batch_finished',
             'title' => 'Ophalen contacten',
             'init_message' => '0',
-            'progress_message' => '',
+            'progress_message' => 'Groep @current van @total',
             'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
           );
           batch_set($batch);

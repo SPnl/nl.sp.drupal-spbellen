@@ -763,6 +763,7 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
 function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$context) {
   // Process by chunks.
   $chunk_size = 10;
+  $group_id = $campaign_group->civi_group_id;
 
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
@@ -770,7 +771,7 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
     // Get total number of contacts.
     $number_of_contacts = 0;
     $params = array(
-      'group' => $campaign_group->civi_group_id,
+      'group' => $group_id,
       'is_deleted' => 0,
       'do_not_phone' => 0,
       'status' => 'Added',
@@ -793,7 +794,7 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
   $params = array(
     'option.limit' => $chunk_size,
     'option.offset' => ($context['sandbox']['progress']),
-    'filter.group_id' => array(0 => $campaign_group->civi_group_id),
+    'filter.group_id' => array(0 => $group_id),
     'is_deleted' => 0,
     'do_not_phone' => 0,
     'status' => 'Added',
@@ -822,7 +823,7 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
           if ($membership !== FALSE) {
             $result['is_lid'] = spbellen_is_member($contact_id);
           }
-          $context['results']['count'] ++;
+          $context['results']['count'][$group_id] ++;
           spbellen_get_targets_process_target($campaign_id, $result, $sync_id);
         }
 
@@ -875,7 +876,7 @@ function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
 
 function spbellen_get_targets_batch_finished($success, $results, $operations) {
   if ($success) {
-    drupal_set_message('Aantal opgehaalde contacten: ' . $results['count']);
+    drupal_set_message('Aantal opgehaalde contacten: ' . array_sum($results['count']));
     // To do: cleanup old syncs.
     $sync_id = $results['sync_id'];
     $campaign_id = $results['campaign_id'];
