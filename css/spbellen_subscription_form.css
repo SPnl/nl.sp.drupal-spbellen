@@ -8,6 +8,7 @@
 }
 
 #spbellen-subscription-form .password-suggestions ul {
+  color: red;
   visibility: visible;
   font-size: 1em;
 }

@@ -13,7 +13,7 @@ function spbellen_subscription_form($form, &$form_state) {
     $webform_id = arg(1, $webform_path);
     $webform = node_load($webform_id);
     $campaign = spbellen_get_campaign($webform_id);
-    $form_sate['campaign_alias'] = $campaign_alias;
+    $form_state['campaign_alias'] = $campaign_alias;
     $form_state['webform_alias'] = $webform_alias;
     $form_state['campaign'] = $campaign;
     $form_state['webform'] = $webform;
@@ -32,7 +32,7 @@ function spbellen_subscription_form($form, &$form_state) {
     }
     else {
       $form['feedback'] = array(
-        '#markup' => '<p>Je bent reeds aangemeld, klik hieronder om opnieuw aan te melden.</p>',
+        '#markup' => '<p>Je bent reeds aangemeld voor een andere campagne, klik hieronder om uit te loggen zodat je je kan aanmelden voor deze campagne.</p>',
       );
 
       $form['logout'] = array(
@@ -174,6 +174,14 @@ function spbellen_subscription_form_validate($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
+    case 'logout':
+      $alias = $form_state['campaign_alias'];
+      watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
+      module_invoke_all('user_logout', $user);
+      // Destroy the current session, and reset $user to the anonymous user.
+      session_destroy();
+      drupal_goto('aanmelden/campagne' . $alias);
+      break;
     case 'submit_has_account':
       // Trim fields.
       $form_state['values']['email'] = trim($values['email']);
@@ -309,20 +317,11 @@ function spbellen_subscription_form_submit($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'logout':
-      watchdog('user', 'Session closed for %name.', array('%name' => $user->name));
-      module_invoke_all('user_logout', $user);
-      // Destroy the current session, and reset $user to the anonymous user.
-      session_destroy();
-      break;
     case 'submit_account_pass':
       $form_state['values']['account_pass'] = trim($values['account_pass']);
       $account = $form_state['account'];
       if (!empty($account)) {
         if (user_check_password($values['account_pass'], $account)) {
-          global $user;
-          $user = user_load($account->uid);
-          user_login_finalize($account);
           $query = new EntityFieldQuery;
           $result = $query
             ->entityCondition('entity_type', 'local_access')
@@ -333,6 +332,9 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             $local_access = entity_create('local_access', array('uid' => $account->uid, 'campaign_id' => $campaign->id));
             entity_save('local_access', $local_access);
           }
+          global $user;
+          $user = user_load($account->uid);
+          user_login_finalize($account);
           drupal_goto($form_state['webform_alias']);
         }
         else {

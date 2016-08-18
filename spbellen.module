@@ -647,15 +647,15 @@ function spbellen_campaign_selection_form($form, &$form_state) {
   $campaign_list = array();
   foreach ($campaigns as $campaign) {
     if (!empty($campaign->webform_id) && $campaign->disabled == 0) {
-      if (spbellen_campaign_form_access($campaign->webform_id)) {
-        $webform = entity_load_single('node', $campaign->webform_id);
-        $campaign_list[$campaign->webform_id] = $webform->title;
-      }
+      $webform = entity_load_single('node', $campaign->webform_id);
+      $campaign_list[$campaign->webform_id] = $webform->title;
     }
   }
   // If only one campaign, go there directly.
   if (count($campaign_list) === 1) {
-    $path = drupal_get_path_alias('node/' . key($campaign_list));
+    $webform_id = key($campaign_list);
+    $alias = spbellen_get_campaign_form_alias($webform_id);
+    $path = 'aanmelden/campagne/' . $alias;
     drupal_goto($path);
   }
   // Otherwise show selection form.
@@ -680,7 +680,9 @@ function spbellen_campaign_selection_form($form, &$form_state) {
 }
 
 function spbellen_campaign_selection_form_submit($form, &$form_state) {
-  $path = drupal_get_path_alias('node/' . $form_state['values']['campaign']);
+  $webform_id = $form_state['values']['campaign'];
+  $alias = spbellen_get_campaign_form_alias($webform_id);
+  $path = 'aanmelden/campagne/' . $alias;
   drupal_goto($path);
 }
 
