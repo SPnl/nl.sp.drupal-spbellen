@@ -183,6 +183,17 @@ function spbellen_entity_info() {
     'fieldable' => FALSE,
   );
 
+  $info['caller'] = array(
+    'label' => 'Caller data',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'base table' => 'spbellen_caller',
+    'entity keys' => array(
+      'id' => 'caller_id',
+    ),
+    'fieldable' => FALSE,
+  );
+
   return $info;
 }
 
@@ -197,6 +208,7 @@ function campaign_entity_property_info_alter(&$info) {
     'action',
     'contact_data',
     'local_access',
+    'caller',
   );
   foreach ($tables as $table) {
     $properties = &$info[$table]['properties'];
@@ -800,5 +812,29 @@ function spbellen_mail($key, &$message, $params) {
     $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
     watchdog('test', '<pre>'.print_r($message['body'], TRUE) . '</pre>');
     break;
+  }
+}
+
+function spbellen_user_update(&$edit, $account, $category) {
+  if (strpos($account->init, 'spoauth_') !== FALSE) {
+    // SPNET account.
+    $account_wrapped = entity_metadata_wrapper('user', $account);
+    $display_name = $account_wrapped->field_first_name->value();
+    $display_name .= !empty($account_wrapped->field_middle_name->value()) ? ' ' . $account_wrapped->field_middle_name->value() : '';
+    $display_name .= !empty($account_wrapped->field_last_name->value()) ? ' ' . $account_wrapped->field_last_name->value() : '';
+    db_merge('spbellen_caller')
+      ->key(array(
+        'caller_id' => $account->uid,
+      ))
+      ->fields(array(
+        'access_type' => 'spnet',
+        'first_name' => $account_wrapped->field_first_name->value(),
+        'middle_name' => $account_wrapped->field_middle_name->value(),
+        'last_name' => $account_wrapped->field_last_name->value(),
+        'display_name' => $display_name,
+        'phone' => preg_replace('/[^0-9]/', '', $account_wrapped->field_phone_primary->value()),
+      ))
+      ->execute();
+
   }
 }

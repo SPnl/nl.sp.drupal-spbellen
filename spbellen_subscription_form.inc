@@ -274,7 +274,7 @@ function spbellen_subscription_form_validate($form, &$form_state) {
 
       // Validatie 06-nummer.
       if (!preg_match('/^(((\\+31|0|0031)6){1}[1-9]{1}[0-9]{7})$/i', $values['phone'])) {
-        form_set_error('phone', 'Vul een geldig 06-nummer in!');
+        form_set_error('phone', 'Vul een geldig 06-nummer in (bijv. 0612345678)!');
         $error = TRUE;
       }
 
@@ -349,11 +349,6 @@ function spbellen_subscription_form_submit($form, &$form_state) {
         'mail' => $values['email'],
         'pass' => $values['account_pass'],
         'status' => 0,
-        'field_first_name' => array(LANGUAGE_NONE => array(array('value' => $values['first_name']))),
-        'field_middle_name' => array(LANGUAGE_NONE => array(array('value' => $values['middle_name']))),
-        'field_last_name' => array(LANGUAGE_NONE => array(array('value' => $values['last_name']))),
-        'field_phone_primary' => array(LANGUAGE_NONE => array(array('value' => $values['phone']))),
-        'field_email_primary' => array(LANGUAGE_NONE => array(array('value' => $values['email']))),
         'access' => REQUEST_TIME,
         'roles' => array(),
       );
@@ -369,12 +364,33 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           'webform_title' => $webform->title,
         );
         $result = drupal_mail('spbellen', 'register_confirmation_required', $account->mail, user_preferred_language($account), $params, $site_email);
+        // Save local access.
         $local_access = entity_create('local_access', array(
           'uid' => $account->uid,
           'campaign_id' => $campaign->id,
           'hash' => $hash,
         ));
         entity_save('local_access', $local_access);
+        // Save caller data.
+        $fields = array('first_name', 'middle_name', 'last_name');
+        $name_parts = array();
+        foreach ($fields as $field) {
+          if (!empty($values[$field])) {
+            $name_parts[$field] = $values[$field];
+          }
+        }
+        $display_name = implode(' ', $name_parts);
+        $caller = entity_create('caller', array(
+          'caller_id' => $account->uid,
+          'access_type' => 'local',
+          'first_name' => $values['first_name'],
+          'middle_name' => $values['middle_name'],
+          'last_name' => $values['last_name'],
+          'display_name' => $display_name,
+          'phone' => $values['phone'],
+
+        ));
+        entity_save('caller', $caller);
         $form_state['finish'] = TRUE;
         $form_state['feedback'] = '<p>Er is een account aangemaakt, en een e-mail verzonden met instructies om je account te activeren.</p>';
       }

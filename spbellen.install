@@ -328,6 +328,69 @@ function spbellen_schema() {
     ),
   );
 
+  $schema['spbellen_caller'] = array(
+    'description' => 'Local account campaign access.',
+    'fields' => array(
+      'caller_id' => array(
+        'description' => 'Caller account id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'access_type' => array(
+        'description' => 'Caller access type.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'state' => array(
+        'description' => 'Caller state.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => 'registered',
+      ),
+      'first_name' => array(
+        'description' => 'First name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'middle_name' => array(
+        'description' => 'Middle name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'last_name' => array(
+        'description' => 'Last name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'display_name' => array(
+        'description' => 'Display name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'phone' => array(
+        'description' => 'Display name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array(
+      'caller_id',
+    ),
+    'unique keys' => array(
+      'caller_access' => array(
+        'caller_id',
+        'access_type',
+      ),
+    ),
+  );
+
   return $schema;
 }
 
@@ -525,4 +588,125 @@ function spbellen_update_7009() {
     'not null' => FALSE,
   ); 
   db_add_field( 'spbellen_targets', 'sync_id', $spec);
+}
+
+/**
+ * Add caller {spbellen_caller} table.
+ */
+function spbellen_update_7010() {
+  $table = array(
+    'description' => 'Local account campaign access.',
+    'fields' => array(
+      'caller_id' => array(
+        'description' => 'Caller account id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'access_type' => array(
+        'description' => 'Caller access type.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'state' => array(
+        'description' => 'Caller state.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+        'default' => 'registered',
+      ),
+      'first_name' => array(
+        'description' => 'First name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'middle_name' => array(
+        'description' => 'Middle name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'last_name' => array(
+        'description' => 'Last name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'display_name' => array(
+        'description' => 'Display name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'phone' => array(
+        'description' => 'Display name',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array(
+      'caller_id',
+    ),
+    'unique keys' => array(
+      'caller_access' => array(
+        'caller_id',
+        'access_type',
+      ),
+    ),
+  );
+
+  db_create_table('spbellen_caller', $table);
+
+  // Transfer data for existing users.
+  $users = entity_load('user');
+  if (!empty($users)) {
+    foreach ($users as $account) {
+      $sync = FALSE;
+      if (
+        strpos($account->init, 'spoauth_') !== FALSE
+      ) {
+        // SPNET access.
+        $sync = TRUE;
+        $type = 'spnet';
+      }
+      else {
+        // Check if local access.
+        $query = new entityFieldQuery();
+        $result = $query
+          ->entityCondition('entity_type', 'local_access')
+          ->propertyCondition('uid', $account->uid)
+          ->execute();
+        if (isset($result['local_access'])) {
+          $sync = TRUE;
+          $type = 'local';
+        }
+      }
+      if ($sync) {
+        $account_wrapped = entity_metadata_wrapper('user', $account);
+        $fields = array('field_first_name', 'field_middle_name', 'field_last_name');
+        $name_parts = array();
+        foreach ($fields as $field) {
+          if (isset($account_wrapped->$field) && !empty($account_wrapped->$field->value())) {
+            $name_parts[$field] = $account_wrapped->$field->value();
+          }
+        }
+        $display_name = implode(' ', $name_parts);
+        db_merge('spbellen_caller')
+          ->key(array(
+                'caller_id' => $account->uid,
+                ))
+          ->fields(array(
+                'access_type' => $type,
+                'first_name' => !empty($account_wrapped->field_first_name) && !empty($account_wrapped->field_first_name->value()) ? $account_wrapped->field_first_name->value() : '',
+                'middle_name' => !empty($account_wrapped->field_middle_name) && !empty($account_wrapped->field_middle_name->value()) ? $account_wrapped->field_middle_name->value() : '',
+                'last_name' => !empty($account_wrapped->field_last_name) && !empty($account_wrapped->field_last_name->value()) ? $account_wrapped->field_last_name->value() : '',
+                'display_name' => $display_name,
+                'phone' => !empty($account_wrapped->field_phone_primary) && !empty($account_wrapped->field_phone_primary->value()) ? preg_replace('/[^0-9]/', '', $account_wrapped->field_phone_primary->value()) : '',
+                ))
+          ->execute();
+      }
+    }
+  }
 }
