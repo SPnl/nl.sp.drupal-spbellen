@@ -52,6 +52,13 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => '255',
       ),
+      'caller_check' => array(
+        'description' => 'Wether to check the caller or not.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
       'intro_text' => array(
         'description' => 'Campaign caller introduction text.',
         'type' => 'text',
@@ -710,3 +717,19 @@ function spbellen_update_7010() {
     }
   }
 }
+
+/**
+ * Add caller_check  {spbellen_campaign} table.
+ */
+function spbellen_update_7011() {
+  $spec = array(
+    'description' => 'Wether to check the caller or not.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'not null' => TRUE,
+  );
+  db_add_field( 'spbellen_campaign', 'caller_check', $spec);
+}
+
+

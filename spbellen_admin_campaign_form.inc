@@ -173,6 +173,15 @@ function spbellen_campaign_form($form, &$form_state) {
         ),
       );
 
+      $form['caller_check'] = array(
+        '#type' => 'checkboxes',
+        '#title' => 'Bellers controleren',
+        '#description' => 'Bellers worden dienen gecontroleerd te worden alvorens ze met contacten kunnen bellen.',
+        '#name' => 'caller_check',
+        '#options' => array('enabled' => 'Bellers controleren'),
+        '#default_value' => empty($storage['caller_check']) ? array() : array('enabled'),
+      );
+
       $form['submit'] = array(
         '#type' => 'submit',
         '#value' => 'Sla op',
@@ -218,6 +227,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
           $storage['disabled'] = $campaign->disabled;
           $storage['open_access'] = $campaign->open_access;
           $storage['campaign_code'] = $campaign->campaign_code;
+          $storage['caller_check'] = $campaign->caller_check;
           $campaign_groups = array();
           $query = new EntityFieldQuery();
 
@@ -416,6 +426,7 @@ function spbellen_store_campaign($storage, $values) {
       'webform_id' => $values['webform'],
       'disabled' => $values['disabled']['disabled'],
       'open_access' => $values['open_access']['enabled'],
+      'caller_check' => $values['caller_check']['enabled'],
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
     );
@@ -426,6 +437,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->webform_id = $values['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
     $campaign->open_access = empty($values['open_access']['enabled']) ? 0 : 1;
+    $campaign->caller_check = empty($values['caller_check']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
   }
   $result = entity_save('campaign', $campaign);
