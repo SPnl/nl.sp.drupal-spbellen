@@ -422,8 +422,9 @@ function spbellen_confirm_account($hash) {
       $webform = node_load('webform', $campaign->webform_id);
       $alias = spbellen_get_campaign_form_alias($campaign->webform_id);
       $site_email = variable_get('site_mail', '');
+      $caller = entity_load_single('caller', $user->uid);
       $params = array(
-        'name' => $user->field_first_name['und'][0]['value'],
+        'name' => $caller->first_name,
         'url' => $base_url . '/aanmelden/campagne/' . $alias,
         'webform_title' => $webform->title,
       );
