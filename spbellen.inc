@@ -1229,3 +1229,9 @@ function spbellen_get_campaign_form_alias($webform_id) {
     }
   }
 }
+
+function spbellen_form_ajax_callback($form, &$form_state) {
+  return $form;
+}
+
+

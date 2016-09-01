@@ -23,7 +23,7 @@ function spbellen_campaign_form($form, &$form_state) {
         '#empty_option' => 'Kies:',
         '#ajax' => array(
           'wrapper' => 'spbellen_ajax_form',
-          'callback' => 'spbellen_campaign_form_ajax_callback',
+          'callback' => 'spbellen_form_ajax_callback',
         ),
       );
     }
@@ -61,7 +61,7 @@ function spbellen_campaign_form($form, &$form_state) {
         '#disabled' => $disabled,
         '#ajax' => array(
           'wrapper' => 'spbellen_ajax_form',
-          'callback' => 'spbellen_campaign_form_ajax_callback',
+          'callback' => 'spbellen_form_ajax_callback',
         ),
       );
 
@@ -98,7 +98,7 @@ function spbellen_campaign_form($form, &$form_state) {
               '#suffix' => ' '.$group_name.'<br/>',
               '#ajax' => array(
                 'wrapper' => 'spbellen_ajax_form',
-                'callback' => 'spbellen_campaign_form_ajax_callback',
+                'callback' => 'spbellen_form_ajax_callback',
                 '#default_value' => empty($storage[$type_key.'s']) ? array() : $storage[$type_key.'s'],
               ),
             );
@@ -119,7 +119,7 @@ function spbellen_campaign_form($form, &$form_state) {
           '#name' => 'add_'.$type_key,
           '#ajax' => array(
             'wrapper' => 'spbellen_ajax_form',
-            'callback' => 'spbellen_campaign_form_ajax_callback',
+            'callback' => 'spbellen_form_ajax_callback',
           ),
         );
       }
@@ -180,6 +180,11 @@ function spbellen_campaign_form($form, &$form_state) {
         '#name' => 'caller_check',
         '#options' => array('enabled' => 'Bellers controleren'),
         '#default_value' => empty($storage['caller_check']) ? array() : array('enabled'),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="open_access[enabled]"]' => array('checked' => TRUE),
+          ),
+        ),
       );
 
       $form['submit'] = array(
@@ -366,10 +371,6 @@ function spbellen_campaign_form_submit($form, &$form_state) {
     // Clear spbellen_forms cache.
     cache_clear_all('spbellen_forms', 'cache');
   }
-}
-
-function spbellen_campaign_form_ajax_callback($form, &$form_state) {
-  return $form;
 }
 
 function spbellen_store_campaign_groups($storage, $campaign) {

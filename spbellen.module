@@ -26,19 +26,45 @@ function spbellen_menu() {
     'access callback' => TRUE,
   );
 
+  $items['admin/bellen/coach'] = array(
+    'title' => 'Belcoach overzicht',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_coach_overview_form'),
+    'file' => 'spbellen_coach_overview_form.inc',
+    'access arguments' => array('spbellen administer callers'),
+  );
+
+  $items['admin/bellen/coach/overview'] = array(
+    'title' => 'Belcoach overzicht',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => '0',
+    'access arguments' => array('spbellen administer callers'),
+  );
+
+  $items['admin/bellen/coach/subscriptions'] = array(
+    'title' => 'Aanmeldingen verwerken',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_coach_subscriptions_form'),
+    'file' => 'spbellen_coach_subscriptions_form.inc',
+    'weight' => '1',
+    'access arguments' => array('spbellen administer callers'),
+  );
+
   $items['admin/config/sp/spbellen'] = array(
     'title' => 'SP bellen',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'spbellen_overview',
     'file' => 'spbellen_admin_overview.inc',
-    'access callback' => 'user_is_logged_in',
+    'access arguments' => array('spbellen view results'),
   );
 
   $items['admin/config/sp/spbellen/overview'] = array(
     'title' => 'Overzicht',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => '0',
-    'access callback' => 'user_is_logged_in',
+    'access arguments' => array('spbellen view results'),
   );
 
   $items['admin/config/sp/spbellen/campaign'] = array(
@@ -110,6 +136,22 @@ function spbellen_menu() {
   }
 
   return $items;
+}
+
+/*
+ * Implements hook_permission().
+ */
+function spbellen_permission() {
+  return array(
+    'spbellen administer callers' => array(
+      'title' => 'Beheer bellers',
+      'description' => 'Neem contact op met bellers, pas de rechten van bellers aan e.d.',
+    ),
+    'spbellen view results' => array(
+      'title' => 'Bekijk resultaten belcampagnes',
+      'description' => 'Bekijk de resultaten van belcampagnes.',
+    ),
+  );
 }
 
 /**
@@ -364,6 +406,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       // Send mail with corrected values.
       $corrections_email = variable_get('spbellen_corrections_email_address', '');
       if ($correction && !empty($corrections_email)) {
+        
         $params['contact_id'] = $data[$map['spbellen_hidden_contact_id']][0];
         drupal_mail('spbellen', 'spbellen_correct', $corrections_email, language_default(), $params, 'webmaster@sp.nl');
       }
