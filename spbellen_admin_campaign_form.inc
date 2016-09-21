@@ -301,15 +301,6 @@ function spbellen_campaign_form_submit($form, &$form_state) {
     case 'sync_targets':
       $campaign = entity_load_single('campaign', $storage['campaign']);
       if (!empty($campaign)) {
-        /*
-        $result = spbellen_get_targets($campaign);
-        if ($result !== FALSE) {
-          drupal_set_message('Doelgroep is gesynchronizeerd.');
-        }
-        else {
-          drupal_set_message('Doelgroep kon niet worden gesynchronizeerd.', 'error');
-        }
-        */
         // Create operation for each CiviCRM target group for the campaign.
         //
         // Get sync_id.
@@ -438,8 +429,8 @@ function spbellen_store_campaign($storage, $values) {
     // Create campaign.
     $properties = array(
       'webform_id' => $values['webform'],
-      'disabled' => $values['disabled']['disabled'],
-      'open_access' => $values['open_access']['enabled'],
+      'disabled' => empty($values['disabled']['disabled']) ? 0 : 1,
+      'open_access' => empty($values['open_access']['enabled']) ? 0 : 1,
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
       'title' => $values['title'],
