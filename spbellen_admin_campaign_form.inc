@@ -48,21 +48,25 @@ function spbellen_campaign_form($form, &$form_state) {
         foreach ($campaigns as $campaign) {
           unset($webforms_list[$campaign->webform_id]);
         }
+        $form['webform'] = array(
+          '#type' => 'select',
+          '#title' => 'Kies het belscript webformulier',
+          '#name' => 'webform',
+          '#options' => $webforms_list,
+          '#empty_option' => 'Kies:',
+          '#required' => TRUE,
+          '#default_value' => empty($storage['webform']) ? array() : $storage['webform'],
+          '#ajax' => array(
+            'wrapper' => 'spbellen_ajax_form',
+            'callback' => 'spbellen_campaign_form_ajax_callback',
+          ),
+        );
       }
-      $disabled = ($storage['campaign'] === 'new') ? FALSE : TRUE;
-      $form['webform'] = array(
-        '#type' => 'select',
-        '#title' => 'Kies het belscript webformulier',
-        '#name' => 'webform',
-        '#options' => $webforms_list,
-        '#empty_option' => 'Kies:',
-        '#required' => TRUE,
-        '#default_value' => empty($storage['webform']) ? array() : $storage['webform'],
-        '#disabled' => $disabled,
-        '#ajax' => array(
-          'wrapper' => 'spbellen_ajax_form',
-          'callback' => 'spbellen_campaign_form_ajax_callback',
-        ),
+
+      $form['title'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Titel',
+        '#default_value' => empty($storage['title']) ? '' : $storage['title'],
       );
 
       // Show message.
@@ -213,11 +217,18 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         $storage['campaign'] = $values['select_campaign'];
         // Preset stored campaign values.
         $campaign = entity_load_single('campaign', $storage['campaign']);
+        $webform = entity_load_single('node', $campaign->webform_id);
         if (!empty($campaign)) {
           $storage['webform'] = $campaign->webform_id;
           $storage['disabled'] = $campaign->disabled;
           $storage['open_access'] = $campaign->open_access;
           $storage['campaign_code'] = $campaign->campaign_code;
+          if (!empty($campaign->title)) {
+            $storage['title'] = $campaign->title;
+          }
+          else {
+            $storage['title'] = $webform->title;
+          }
           $campaign_groups = array();
           $query = new EntityFieldQuery();
 
@@ -251,6 +262,9 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         if (empty($storage[$type_key.'s'])) {
           form_set_error($type_key, 'Selecteer minimaal één '.$type_name.'.');
         }
+      }
+      if (empty($values['title'])) {
+        form_set_error('title', 'Kies een titel voor de campaigne.');
       }
       return;
       break;
@@ -345,6 +359,16 @@ function spbellen_campaign_form_submit($form, &$form_state) {
       if ($storage['campaign'] === 'new') {
         spbellen_create_campaign_form($campaign);
       }
+      else {
+        if (!empty($campaign->title)) {
+          // Save campaign form title.
+          $webform = node_load($campaign->webform_id);
+          $webform->title = $campaign->title;
+          $webform->path['pathauto'] = 0;
+          $webform->path['alias'] = 'bellen/campagne/'.pathauto_cleanstring($webform->title);
+          node_save($webform);
+        }
+      }
       cache_clear_all('spbellen_forms', 'cache');
       menu_rebuild();
       break;
@@ -418,15 +442,17 @@ function spbellen_store_campaign($storage, $values) {
       'open_access' => $values['open_access']['enabled'],
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
+      'title' => $values['title'],
     );
     $campaign = entity_create('campaign', $properties);
   }
   else {
     $campaign = entity_load_single('campaign', $storage['campaign']);
-    $campaign->webform_id = $values['webform'];
+    $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
     $campaign->open_access = empty($values['open_access']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
+    $campaign->title = empty($values['title']) ? '' : $values['title'];
   }
   $result = entity_save('campaign', $campaign);
 

@@ -690,7 +690,12 @@ function spbellen_create_campaign_form($campaign) {
     $joined_form = new stdClass();
     $joined_form->type = 'webform';
     node_object_prepare($joined_form);
-    $joined_form->title = 'Campagne: '.$campaign_webform->title;
+    if (!empty($campaign->title)) {
+      $joined_form->title = $campaign->title;
+    }
+    else {
+      $joined_form->title = 'Campagne: '.$campaign_webform->title;
+    }
     $joined_form->language = $campaign_webform->language;
     $joined_form->uid = $campaign_webform->uid;
     $joined_form->promote = 0;
