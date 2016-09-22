@@ -243,9 +243,26 @@ function spbellen_create_campaign_form($campaign) {
     // Create new campaign webform.
  
     $joined_component_id = 1;
+    $parent = 0;
+
+    // Add test component to check for double submissions.
+    $joined_components[$joined_component_id] = array(
+      'pid' => $parent,
+      'form_key' => 'valid_test',
+      'name' => 'Valid test',
+      'type' => 'textfield',
+      'value' => '',
+      'extra' => array(
+        'private' => 0,
+        'analysis' => FALSE,
+      ),
+      'required' => 0,
+      'weight' => $joined_component_id,
+      'page_num' => 1,
+    );
+    $joined_component_id ++;
 
     // Add contact components.
-    $parent = 0;
     $contact_fields = spbellen_contact_fields();
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
@@ -673,7 +690,12 @@ function spbellen_create_campaign_form($campaign) {
     $joined_form = new stdClass();
     $joined_form->type = 'webform';
     node_object_prepare($joined_form);
-    $joined_form->title = 'Campagne: '.$campaign_webform->title;
+    if (!empty($campaign->title)) {
+      $joined_form->title = $campaign->title;
+    }
+    else {
+      $joined_form->title = 'Campagne: '.$campaign_webform->title;
+    }
     $joined_form->language = $campaign_webform->language;
     $joined_form->uid = $campaign_webform->uid;
     $joined_form->promote = 0;

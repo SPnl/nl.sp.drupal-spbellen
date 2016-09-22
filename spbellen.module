@@ -321,10 +321,15 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
   if (!empty($form['#node'])) {
     $nid = $form['#node']->nid;
     if (spbellen_is_spbellen_form($nid)) {
+      // Attach css.
+      $form['#attached']['css'] = array(
+        drupal_get_path('module', 'spbellen') . '/css/spbellen_webform_form.css',
+      );
       $campaign_id = spbellen_get_campaign_id($nid);
       // Assign target.
       $contact_data = spbellen_assign_target($campaign_id);
       // Fill data.
+      $form['submitted']['valid_test']['#default_value'] = $contact_data['contact_id'];
       $contact_fields = spbellen_contact_fields();
       foreach ($contact_fields as $key => $name) {
         // Set form field values.
@@ -332,7 +337,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
         $form['submitted']['contact_data']['spbellen_'.$key]['#default_value'] = $contact_data[$key];
       }
       // Add custom submit and validation function.
-      $form['#validate'][] = 'spbellen_custom_webform_validate';
+      array_unshift($form['#validate'], 'spbellen_custom_webform_validate');
       // Add next button.
       $form['actions']['spbellen_next']  = array(
         '#type' => 'button',
@@ -340,6 +345,16 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
         '#attributes' => array('style' => array('float: right')),
       );
     }
+  }
+}
+
+function spbellen_webform_submission_presave($node, &$submission) {
+  $map = spbellen_component_key_id_map($node);
+  if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
+    drupal_set_message('De inzending is niet opgeslagen. Komt dit vaak voor geef dit dan door aan webmaster@sp.nl', 'error');
+    $alias = spbellen_get_campaign_form_alias($node->nid);
+    $path = 'aanmelden/campagne/' . $alias;
+    drupal_goto($path);
   }
 }
 
@@ -800,10 +815,7 @@ function spbellen_custom_webform_validate($form, &$form_state) {
     $path = drupal_get_path_alias('node/' . $form['#node']->nid);
     drupal_goto($path);
   }
-  else if (
-    !empty($form_state['triggering_element']['#value']) &&
-    $form_state['triggering_element']['#value'] === 'Verder'
-  ) {
+  else {
     // Submit button.
     // Check if value is selected for 'call_answered'.
     if (empty($form_state['values']['submitted']['call_answered'])) {
