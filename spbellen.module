@@ -283,7 +283,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
         $form['submitted']['contact_data']['spbellen_'.$key]['#default_value'] = $contact_data[$key];
       }
       // Add custom submit and validation function.
-      $form['#validate'][] = 'spbellen_custom_webform_validate';
+      array_unshift($form['#validate'], 'spbellen_custom_webform_validate');
       // Add next button.
       $form['actions']['spbellen_next']  = array(
         '#type' => 'button',
@@ -760,10 +760,7 @@ function spbellen_custom_webform_validate($form, &$form_state) {
     $path = drupal_get_path_alias('node/' . $form['#node']->nid);
     drupal_goto($path);
   }
-  else if (
-    !empty($form_state['triggering_element']['#value']) &&
-    $form_state['triggering_element']['#value'] === 'Verder'
-  ) {
+  else {
     // Submit button.
     // Check if value is selected for 'call_answered'.
     if (empty($form_state['values']['submitted']['call_answered'])) {
