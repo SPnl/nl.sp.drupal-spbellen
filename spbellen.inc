@@ -1171,7 +1171,12 @@ function spbellen_get_campaign_stats($campaign_id) {
     $record = $result->fetchAssoc();
     foreach ($record as $key => $value) {
       $stats[$campaign_id][$key] = empty($value) ? 0 : $value;
-      $stats[$campaign_id][$key.'_percentage'] = floor(100 * $value / $record['total']);
+      if ($record['total'] != 0) {
+        $stats[$campaign_id][$key.'_percentage'] = floor(100 * $value / $record['total']);
+      }
+      else {
+        $stats[$campaign_id][$key.'_percentage'] = 0;
+      }
     }
     $stats[$campaign_id]['title'] = $webform->title;
   }
