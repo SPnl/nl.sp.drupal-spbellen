@@ -143,6 +143,10 @@ function spbellen_menu() {
  */
 function spbellen_permission() {
   return array(
+    'spbellen administer campaigns' => array(
+      'title' => 'Beheer belcampagnes',
+      'description' => 'Maak nieuwe belcampagnes aan, en bewerk bestaande campagnes.',
+    ),
     'spbellen administer callers' => array(
       'title' => 'Beheer bellers',
       'description' => 'Neem contact op met bellers, pas de rechten van bellers aan e.d.',
@@ -501,7 +505,7 @@ function spbellen_node_access($node, $op, $account) {
         // Check if spbellen form.
         if (spbellen_is_spbellen_form($node->nid)) {
           // Allow beheerders.
-          if (in_array('beheerder', $user->roles)) {
+          if (in_array('beheerder', $user->roles) || in_array('beheerder (resultaten)', $user->roles)) {
             return NODE_ACCESS_ALLOW;
           }
           // Check session for call groups.
