@@ -738,6 +738,7 @@ function spbellen_update_7011() {
 }
 
 
+/*
  * Add campaign title to  {spbellen_campaign} table.
  */
 function spbellen_update_7012() {
