@@ -64,12 +64,15 @@ function spbellen_subscription_form($form, &$form_state) {
       // Campaign code field.
       if (!empty($form_state['campaign']->campaign_code)) {
         $form['campaign_code'] = array(
-          '#type' => 'password',
+          '#type' => 'textfield',
           '#title' => 'Campagne code',
           '#default_value' => empty($form_state['values']['campaign_code']) ? '' : $form_state['values']['campaign_code'],
           '#required' => TRUE,
           '#disabled' => isset($form_state['has_account']),
           '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
+          '#attributes' => array(
+            'autocomplete' => 'off',
+          ),
         );
       }
 
