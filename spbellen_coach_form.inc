@@ -1,30 +1,5 @@
 <?php
 
-function spbellen_coach_add_select_campaign_form(&$form) {
-  $campaigns_list = spbellen_get_campaigns_list();
-  if (!empty($campaigns_list)) {
-    // Select campaign.
-    // ----------------------------------------------------------
-    $form['select_campaign'] = array(
-      '#type' => 'select',
-      '#title' => 'Kies een belcampagne.',
-      '#name' => 'select_campaign',
-      '#options' => $campaigns_list,
-      '#default_value' => empty($_SESSION['spbellen']['coach_selected_campaign']) ? array() : $_SESSION['spbellen']['coach_selected_campaign'],
-      '#empty_option' => 'Kies:',
-      '#ajax' => array(
-        'wrapper' => 'spbellen_ajax_form',
-        'callback' => 'spbellen_form_ajax_callback',
-      ),
-    );
-  }
-  else {
-    $form['no_campaigns'] = array(
-      '#markup' => '<p>Er zijn nog geen campagnes aangemaakt.</p>',
-    );
-  }
-}
-
 function spbellen_coach_add_select_campaign_form_validate(&$form_state) {
   $values = $form_state['values'];
 

@@ -52,6 +52,51 @@ function spbellen_subscription_form($form, &$form_state) {
     }
 
     if (empty($form_state['finish'])) {
+
+      // Introduction text.
+      if (!isset($form_state['has_account'])) {
+        // First step login.
+        if (empty($form_state['campaign']->campaign_code)) {
+          // No campaign code needed.
+          $intro = variable_get('spbellen_login_intro_no_campaign_code', NULL);
+          if (!empty($intro['value'])) {
+            $form['spbellen_login_intro_no_campaign_code'] = array(
+              '#markup' => check_markup($intro['value'], $intro['format']),
+            );
+          }
+        }
+        else {
+          // Campaign code needed.
+          $intro = variable_get('spbellen_login_intro_campaign_code', NULL);
+          if (!empty($intro['value'])) {
+            $form['spbellen_login_intro_campaign_code'] = array(
+              '#markup' => check_markup($intro['value'], $intro['format']),
+            );
+          }
+        }
+      }
+      else {
+        // Second step login.
+        if ($form_state['has_account'] === 0) {
+          // Has no account.
+          $intro = variable_get('spbellen_login_intro_first_visit', NULL);
+          if (!empty($intro['value'])) {
+            $form['spbellen_login_intro_first_visit'] = array(
+              '#markup' => check_markup($intro['value'], $intro['format']),
+            );
+          }
+        }
+        else {
+          // Has account.
+          $intro = variable_get('spbellen_login_intro_password', NULL);
+          if (!empty($intro['value'])) {
+            $form['spbellen_login_intro_password'] = array(
+              '#markup' => check_markup($intro['value'], $intro['format']),
+            );
+          }
+        }
+      }
+
       // Email field.
       $form['email'] = array(
         '#type' => 'textfield',
@@ -87,10 +132,6 @@ function spbellen_subscription_form($form, &$form_state) {
       else {
         // Has no account.
         if ($form_state['has_account'] === 0) {
-
-          $form['first_time'] = array(
-            '#markup' => '<p>Welkom!</p><p>Je meld je voor het eerst aan voor een belcampagne, daarom vragen we nu een aantal gegevens.</p>',
-          );
 
           $form['first_name'] = array(
             '#type' => 'textfield',
