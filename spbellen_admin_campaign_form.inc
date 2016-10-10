@@ -143,7 +143,8 @@ function spbellen_campaign_form($form, &$form_state) {
 
       $form['campaign_start_page_text'] = array(
         '#type' => 'textarea',
-        '#title' => 'Introductietekst voor beller op startpagina na keuze belcampagne',
+        '#title' => 'Campagne introductietekst',
+        '#description' => 'Deze tekst wordt getoond na het inloggen, vóór het belscript wordt gestart.
         '#format' => 'filtered_html',
         '#default_value' => empty($storage['campaign_start_page_text']) ? '' : $storage['campaign_start_page_text'],
       );
@@ -151,7 +152,8 @@ function spbellen_campaign_form($form, &$form_state) {
       if ($storage['campaign'] === 'new') {
         $form['intro_text'] = array(
           '#type' => 'textarea',
-          '#title' => 'Introductietekst voor beller in het belformulier',
+          '#title' => 'Hulptekst voor beller in het belscript',
+          '#description' => 'Deze tekst wordt aan het begin van het belscript getoond, alvorens de vragen beginnen.',
           '#format' => 'filtered_html',
         );
       }
