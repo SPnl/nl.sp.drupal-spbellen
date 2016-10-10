@@ -39,8 +39,8 @@ function spbellen_settings_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => 'Tekst instellingen',
   );
-  $default = variable_get('spbellen_intro_page', '');
-  $form['spbellen_text_settings']['spbellen_intro_page'] = array(
+  $default = variable_get('spbellen_general_start_page', '');
+  $form['spbellen_text_settings']['spbellen_general_start_page'] = array(
     '#type' => 'text_format',
     '#title' => 'Entree pagina',
     '#format' => isset($default['format']) ? $default['format'] : NULL,

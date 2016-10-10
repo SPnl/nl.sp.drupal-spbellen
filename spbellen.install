@@ -70,6 +70,12 @@ function spbellen_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
+      'start_page_text' => array(
+        'description' => 'Campaign start page text.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
     ),
     'primary key' => array(
       'id',
@@ -748,4 +754,17 @@ function spbellen_update_7012() {
     'length' => '255',
   );
   db_add_field( 'spbellen_campaign', 'title', $spec);
+}
+
+/*
+ * Add campaign start page text to {spbellen_campaign} table.
+ */
+function spbellen_update_7013() {
+  $spec = array(
+    'description' => 'Campaign start page text.',
+    'type' => 'text',
+    'size' => 'normal',
+    'not null' => FALSE,
+  );
+  db_add_field( 'spbellen_campaign', 'start_page_text', $spec);
 }

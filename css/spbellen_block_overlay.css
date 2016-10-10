@@ -1,0 +1,14 @@
+/* Default: Do not show the block. */
+#block-spbellen-spbellen-campaign-intro-block {
+  display: none;
+}
+
+/* Show the block only after we assigned our show class. */
+#block-spbellen-spbellen-campaign-intro-block.block-spbellen-spbellen-campaign-intro-block-show {
+  display: block;
+  position: absolute;
+  z-index: 9999;
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+}

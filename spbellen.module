@@ -15,8 +15,8 @@ function spbellen_menu() {
   $items['bellen'] = array(
     'title' => 'SP bellen',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('spbellen_intro_form'),
-    'file' => 'spbellen_intro_form.inc',
+    'page arguments' => array('spbellen_start_page_form'),
+    'file' => 'spbellen_start_page_form.inc',
     'access callback' => TRUE,
   );
 
@@ -553,6 +553,12 @@ function spbellen_block_info() {
     'pages' => "bellen/campagne/*",
     'visibility' => BLOCK_VISIBILITY_LISTED,
   );
+  $blocks['spbellen_campaign_intro_block'] = array(
+    'info' => 'SP Bellen campagne introductie tekst',
+    //'cache' => DRUPAL_NO_CACHE,
+    'pages' => "bellen/campagne/*",
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+  );
   return $blocks;
 }
 
@@ -562,7 +568,7 @@ function spbellen_block_info() {
 function spbellen_block_view($delta = '') {
   $block = array();
 
-  if ($delta === 'spbellen_contact_block' || $delta === 'spbellen_search_block') {
+  if ($delta === 'spbellen_contact_block' || $delta === 'spbellen_search_block' || $delta === 'spbellen_campaign_intro_block') {
     if (arg(0) == 'node' && is_numeric(arg(1)) && is_null(arg(2))) {
       $nid = arg(1);
       if (spbellen_is_spbellen_form($nid)) {
@@ -579,6 +585,45 @@ function spbellen_block_view($delta = '') {
               'subject' => '',
               'content' => spbellen_search_block_content(),
             );
+            break;
+          case 'spbellen_campaign_intro_block':
+            $node = menu_get_object();
+            $campaign_id = spbellen_get_campaign_id($node->nid);
+            $campaign = spbellen_get_campaign($node->nid);
+            $content = check_markup($campaign->start_page_text, 'filtered_html');
+            $intro_block_content = spbellen_campaign_intro_block_content($content);
+            $module_path = drupal_get_path('module', 'spbellen');
+
+            // Use the cookie library.
+            drupal_add_library('system', 'jquery.cookie');
+
+            $setting = array('spbellen' => array(
+              'currentNid' => $nid,
+              'showOverlay' => (!empty($content)) ? TRUE : FALSE,
+            ));
+
+            $block = array(
+              'subject' => '',
+              'content' => array(
+                '#markup' => $intro_block_content,
+                '#attached' => array(
+                  'css' => array(
+                    $module_path . '/css/spbellen_block_overlay.css',
+                  ),
+                  'js' => array(
+                    array(
+                      'type' => 'file',
+                      'data' => $module_path . '/js/spbellen_block_overlay.js',
+                    ),
+                    array(
+                      'data' => $setting,
+                      'type' => 'setting',
+                    ),
+                  ),
+                ),
+              ),
+            );
+
             break;
           }
         }
@@ -633,6 +678,23 @@ function spbellen_contact_block_content() {
     }
   }
   return $output;
+}
+
+function spbellen_campaign_intro_block_content($content) {
+  $form = drupal_get_form('spbellen_campaign_intro_form', $content);
+  $output = drupal_render($form);
+  return $output;
+}
+
+function spbellen_campaign_intro_form($form, &$form_state, $content) {
+  $form['spbellen_campaign_intro_content'] = array(
+    '#markup' => $content,
+  );
+  $form['spbellen_campaign_intro_submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Verder',
+  );
+  return $form;
 }
 
 function spbellen_search_block_content() {

@@ -188,13 +188,14 @@ function spbellen_subscription_form($form, &$form_state) {
             '#name' => 'submit_account_pass',
           );
 
-          if (isset($form_state['account_pass_error'])) {
+          //if (isset($form_state['account_pass_error'])) {
             $form['submit_pass_reset'] = array(
               '#type' => 'submit',
-              '#value' => 'Wachtwoord aanpassen',
+              '#value' => 'Nieuw wachtwoord aanvragen',
               '#name' => 'submit_pass_reset',
+              '#weight' => 10,
             );
-          }
+          //}
 
           $form['back_account_pass'] = array(
             '#type' => 'button',

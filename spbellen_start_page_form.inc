@@ -1,9 +1,9 @@
 <?php
 
-function spbellen_intro_form($form, &$form_state) {
+function spbellen_start_page_form($form, &$form_state) {
   $form = array();
-  $intro = variable_get('spbellen_intro_page', NULL);
-  if (empty($form_state['intro_visited']) && empty($_SESSION['intro_visited']) && !empty($intro['value'])) {
+  $intro = variable_get('spbellen_general_start_page', NULL);
+  if (empty($form_state['general_start_page_visited']) && empty($_SESSION['general_start_page_visited']) && !empty($intro['value'])) {
     $form['intro'] = array(
       '#markup' => check_markup($intro['value'], $intro['format']),
     );
@@ -61,7 +61,7 @@ function spbellen_intro_form($form, &$form_state) {
   return $form;
 }
 
-function spbellen_intro_form_validate($form, &$form_state) {
+function spbellen_start_page_form_validate($form, &$form_state) {
   $values = $form_state['values'];
 
   if (!empty($form_state['triggering_element']['#name'])) {
@@ -69,15 +69,15 @@ function spbellen_intro_form_validate($form, &$form_state) {
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
     case 'submit_intro':
-      $form_state['intro_visited'] = TRUE;
-      $_SESSION['intro_visited'] = TRUE;
+      $form_state['general_start_page_visited'] = TRUE;
+      $_SESSION['general_start_page_visited'] = TRUE;
       $form_state['rebuild'] = TRUE;
       break;
     }
   }
 }
 
-function spbellen_intro_form_submit($form, &$form_state) {
+function spbellen_start_page_form_submit($form, &$form_state) {
   $values = $form_state['values'];
 
   if (!empty($form_state['triggering_element']['#name'])) {
