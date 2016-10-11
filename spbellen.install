@@ -608,10 +608,22 @@ function spbellen_update_7009() {
   db_add_field( 'spbellen_targets', 'sync_id', $spec);
 }
 
+/*
+ * Add campaign title to  {spbellen_campaign} table.
+ */
+function spbellen_update_7012() {
+  $spec = array(
+    'description' => 'Campaign title.',
+    'type' => 'varchar',
+    'length' => '255',
+  );
+  db_add_field( 'spbellen_campaign', 'title', $spec);
+}
+
 /**
  * Add caller {spbellen_caller} table.
  */
-function spbellen_update_7010() {
+function spbellen_update_7013() {
   $table = array(
     'description' => 'Local account campaign access.',
     'fields' => array(
@@ -732,7 +744,7 @@ function spbellen_update_7010() {
 /**
  * Add caller_check  {spbellen_campaign} table.
  */
-function spbellen_update_7011() {
+function spbellen_update_7014() {
   $spec = array(
     'description' => 'Wether to check the caller or not.',
     'type' => 'int',
@@ -745,21 +757,9 @@ function spbellen_update_7011() {
 
 
 /*
- * Add campaign title to  {spbellen_campaign} table.
- */
-function spbellen_update_7012() {
-  $spec = array(
-    'description' => 'Campaign title.',
-    'type' => 'varchar',
-    'length' => '255',
-  );
-  db_add_field( 'spbellen_campaign', 'title', $spec);
-}
-
-/*
  * Add campaign start page text to {spbellen_campaign} table.
  */
-function spbellen_update_7013() {
+function spbellen_update_7015() {
   $spec = array(
     'description' => 'Campaign start page text.',
     'type' => 'text',

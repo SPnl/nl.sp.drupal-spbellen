@@ -144,7 +144,7 @@ function spbellen_campaign_form($form, &$form_state) {
       $form['campaign_start_page_text'] = array(
         '#type' => 'textarea',
         '#title' => 'Campagne introductietekst',
-        '#description' => 'Deze tekst wordt getoond na het inloggen, vóór het belscript wordt gestart.
+        '#description' => 'Deze tekst wordt getoond na het inloggen, vóór het belscript wordt gestart.',
         '#format' => 'filtered_html',
         '#default_value' => empty($storage['campaign_start_page_text']) ? '' : $storage['campaign_start_page_text'],
       );
