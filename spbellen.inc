@@ -130,9 +130,9 @@ function spbellen_get_civi_groups($smartgroups = 'all') {
           ) &&
           (
             (
-              $smartgroups == 'all_but_smart' &&
-              isset($value['where_clause']) &&
-              strpos($value['where_clause'], 'civicrm_group_contact_cache_') === FALSE
+              $smartgroups == 'all_but_smart' //&&
+              //isset($value['where_clause']) &&
+              //strpos($value['where_clause'], 'civicrm_group_contact_cache_') === FALSE
             ) ||
             (
               $smartgroups == 'all' 
