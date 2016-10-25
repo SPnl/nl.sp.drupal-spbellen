@@ -114,7 +114,7 @@ function spbellen_campaign_form($form, &$form_state) {
           '#autocomplete_path' => 'spbellen/group/autocomplete/' . $filters[$type_key],
         );
         if ($type_key == 'target_group') {
-          $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van smart groepen mogelijk.'; 
+          $form[$type_key.'_select'][$type_key]['#description'] = '<strong>Geen selectie van CiviCRM smart groepen toegestaan ivm. batch synchronizatie!</strong>'; 
         }
 
         $form[$type_key.'_select']['add_'.$type_key] = array(
@@ -278,16 +278,32 @@ function spbellen_campaign_form_validate($form, &$form_state) {
       $storage['campaign'] = 'new';
       break;
     case 'submit':
-      // Validate groups before submission.
-      $types = array(
-        'call_group' => 'belgroep',
-        'target_group' => 'doelgroep',
-      );
-      foreach ($types as $type_key => $type_name) {
-        if (empty($storage[$type_key.'s'])) {
-          form_set_error($type_key, 'Selecteer minimaal één '.$type_name.'.');
+      // Validate target groups before submission.
+      if (empty($storage['target_groups'])) {
+        form_set_error('target_groups', 'Selecteer minimaal één doelgroep.');
+      }
+      // Check target group count.
+      set_time_limit(0);
+      $spcivi = \SPCivi::getInstance();
+      foreach ($storage['target_groups'] as $group_id => $group_name) {
+        // Get total number of contacts.
+        $number_of_contacts = 0;
+        $params = array(
+          'group' => $group_id,
+          'is_deleted' => 0,
+          'do_not_phone' => 0,
+          'status' => 'Added',
+        );
+        $results = $spcivi->api('Contact', 'getcount', $params);
+        if (spbellen_check_result($results, 'contacten', 'get', $params)) {
+          $number_of_contacts = $results['result'];
+          if (empty($number_of_contacts)) {
+            form_set_error('target_group', 'Groep ' . $group_name . ' bevat geen contacten (is het misschien een smart groep?).');
+          }
         }
       }
+
+      // Validate title.
       if (empty($values['title'])) {
         form_set_error('title', 'Kies een titel voor de campaigne.');
       }
@@ -405,7 +421,7 @@ function spbellen_store_campaign_groups($storage, $campaign) {
   );
   foreach ($types as $type_key => $type_name) {
     // Update and create campaign_groups.
-    if (!empty($storage[$type_key.'s'])) {
+    if (isset($storage[$type_key.'s'])) {
       // Get stored groups.
       $stored_groups_ids = array();
       $stored_campaign_groups = spbellen_get_stored_campaign_groups($campaign->id, $type_key);
