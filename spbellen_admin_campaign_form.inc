@@ -114,7 +114,12 @@ function spbellen_campaign_form($form, &$form_state) {
           '#autocomplete_path' => 'spbellen/group/autocomplete/' . $filters[$type_key],
         );
         if ($type_key == 'target_group') {
-          $form[$type_key.'_select'][$type_key]['#description'] = '<strong>Geen selectie van CiviCRM smart groepen toegestaan ivm. batch synchronizatie!</strong>'; 
+          $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van CiviCRM smart mogelijk ivm. batch synchronizatie!'; 
+        }
+
+        if ($type_key == 'call_group') {
+          global $base_url;
+          $form[$type_key.'_select'][$type_key]['#description'] = 'Contacten die in een belgroep voorkomen kunnen inloggen in de beltool via SPNET. login url: ' . $base_url . '/aanmelden-spnet'; 
         }
 
         $form[$type_key.'_select']['add_'.$type_key] = array(
@@ -281,26 +286,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
       // Validate target groups before submission.
       if (empty($storage['target_groups'])) {
         form_set_error('target_groups', 'Selecteer minimaal één doelgroep.');
-      }
-      // Check target group count.
-      set_time_limit(0);
-      $spcivi = \SPCivi::getInstance();
-      foreach ($storage['target_groups'] as $group_id => $group_name) {
-        // Get total number of contacts.
-        $number_of_contacts = 0;
-        $params = array(
-          'group' => $group_id,
-          'is_deleted' => 0,
-          'do_not_phone' => 0,
-          'status' => 'Added',
-        );
-        $results = $spcivi->api('Contact', 'getcount', $params);
-        if (spbellen_check_result($results, 'contacten', 'get', $params)) {
-          $number_of_contacts = $results['result'];
-          if (empty($number_of_contacts)) {
-            form_set_error('target_group', 'Groep ' . $group_name . ' bevat geen contacten (is het misschien een smart groep?).');
-          }
-        }
       }
 
       // Validate title.

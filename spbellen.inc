@@ -117,27 +117,19 @@ function spbellen_get_civi_groups($smartgroups = 'all') {
     'sequential'            => 1,
     'option.limit'          => 9999,
     'is_active'             => 1,
+    'return' => "id, title",
   );
+  if ($smartgroups == 'all_but_smart') {
+    $params['saved_search_id'] = array('IS NULL' => 1);
+  }
   $groups_results = $spcivi->api('Group', 'get', $params);
   if (spbellen_check_result($groups_results, 'groepen', 'get', $params)) {
     if (!empty($groups_results['values'])) {
       foreach ($groups_results['values'] as $value) {
         if (
-          (
-            empty($value['group_type']) || 
-            (array_key_exists(0, $value['group_type']) && empty($value['group_type'][0])) || 
-            in_array('2', $value['group_type'])
-          ) &&
-          (
-            (
-              $smartgroups == 'all_but_smart' //&&
-              //isset($value['where_clause']) &&
-              //strpos($value['where_clause'], 'civicrm_group_contact_cache_') === FALSE
-            ) ||
-            (
-              $smartgroups == 'all' 
-            )
-          )
+          empty($value['group_type']) || 
+          (array_key_exists(0, $value['group_type']) && empty($value['group_type'][0])) || 
+          in_array('2', $value['group_type'])
         ) {
         $groups[$value['id']] = $value['title'];
         }
