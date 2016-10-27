@@ -191,6 +191,7 @@ function spbellen_campaign_form($form, &$form_state) {
         ),
       );
 
+      /*
       $form['caller_check'] = array(
         '#type' => 'checkboxes',
         '#title' => 'Bellers controleren',
@@ -204,6 +205,7 @@ function spbellen_campaign_form($form, &$form_state) {
           ),
         ),
       );
+      */
 
       $form['submit'] = array(
         '#type' => 'submit',
@@ -251,7 +253,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
           $storage['disabled'] = $campaign->disabled;
           $storage['open_access'] = $campaign->open_access;
           $storage['campaign_code'] = $campaign->campaign_code;
-          $storage['caller_check'] = $campaign->caller_check;
+          //$storage['caller_check'] = $campaign->caller_check;
           $storage['campaign_start_page_text'] = $campaign->start_page_text;
           if (!empty($campaign->title)) {
             $storage['title'] = $campaign->title;
@@ -451,7 +453,7 @@ function spbellen_store_campaign($storage, $values) {
     // Create campaign.
     $properties = array(
       'webform_id' => $values['webform'],
-      'caller_check' => empty($values['caller_check']['enabled']) ? 0 : 1,
+      //'caller_check' => empty($values['caller_check']['enabled']) ? 0 : 1,
       'disabled' => empty($values['disabled']['disabled']) ? 0 : 1,
       'open_access' => empty($values['open_access']['enabled']) ? 0 : 1,
       'campaign_code' => $values['campaign_code'],
@@ -466,7 +468,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
     $campaign->open_access = empty($values['open_access']['enabled']) ? 0 : 1;
-    $campaign->caller_check = empty($values['caller_check']['enabled']) ? 0 : 1;
+    //$campaign->caller_check = empty($values['caller_check']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];
