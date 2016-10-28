@@ -813,6 +813,17 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
     'do_not_phone' => 0,
     'status' => 'Added',
     'return' => $fields_list,
+    'api.Phone.get' => array(
+      'phone_type_id' => 2,
+      'return' => "phone_numeric"
+    ),
+    'api.Membership.get' => array(
+      'membership_type_id' => array(
+        'IN' => array(1, 2, 3)
+      ),
+      'status_id' => 2,
+      'return' => "id"
+    ),
   );
   $results = $spcivi->api('Contact', 'get', $params);
   if (spbellen_check_result($results, 'contacten', 'get', $params)) {
@@ -820,23 +831,21 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
       foreach ($results['values'] as $result) {
         // Process contact.
         $contact_id = $result['contact_id'];
+
         // Check if has phonenumer.
         if (!empty($result['phone'])) {
           // Get mobile phone.
-          $phonenumber = $result['phone'];
-          if (strpos($result['phone'], '06') !== 0) {
-            $mobile_phone = spbellen_get_mobile_phone($contact_id);
-            if (!empty($mobile_phone)) {
-              $phonenumber = $mobile_phone;
-            }
+          if (!empty($result['api.Phone.get']['values'])) {
+            $result['phone'] = $result['api.Phone.get']['values'][0]['phone_numeric'];
           }
-          $result['phone'] = preg_replace('/[^0-9]/', '', $phonenumber);
-
           // Get membership data.
-          $membership = spbellen_is_member($contact_id);
-          if ($membership !== FALSE) {
-            $result['is_lid'] = spbellen_is_member($contact_id);
+          if (!empty($result['api.Membership.get']['values'])) {
+            $result['is_lid'] = 1;
           }
+          else {
+            $result['is_lid'] = 0;
+          }
+
           $context['results']['count'][$group_id] ++;
           spbellen_get_targets_process_target($campaign_id, $result, $sync_id);
         }
@@ -1189,42 +1198,6 @@ function spbellen_civi_no_calls($contact_id) {
   if (spbellen_check_result($result, 'een contact', 'create', $params)) {
     watchdog('spbellen', 'CiviCRM contact nr. '.$contact_id.' privacy instelling "Niet bellen" ingeschakeld.');
   }
-}
-
-function spbellen_get_mobile_phone($contact_id) {
-  $spcivi = \SPCivi::getInstance();
-  // Get mobile phone if available.
-  $params = array(
-    'contact_id' => $contact_id,
-    'phone_type_id' => 2,
-  );
-  $result = $spcivi->api('Phone', 'get', $params);
-  if (spbellen_check_result($result, 'een telefoonnummer', 'get', $params)) {
-    if (!empty($result['values'][0]['phone'])) {
-      return $result['values'][0]['phone'];
-    }
-  }
-  return FALSE;
-}
-
-function spbellen_is_member($contact_id) {
-  $spcivi = \SPCivi::getInstance();
-  // Get membership data.
-  $params = array(
-    'contact_id' => $contact_id,
-    'membership_type_id' => array('IN' => array("1", "2", "3")),
-    'status_id' => 2,
-  );
-  $result = $spcivi->api('Membership', 'get', $params);
-  if (spbellen_check_result($result, 'lidmaatschapsinformatie', 'get', $params)) {
-    if (!empty($result['values'])) {
-      return 1;
-    }
-    else {
-      return 0;
-    }
-  }
-  return FALSE;
 }
 
 function spbellen_get_active_campaign() {
