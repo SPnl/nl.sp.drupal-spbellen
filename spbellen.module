@@ -689,6 +689,7 @@ function spbellen_campaign_intro_form($form, &$form_state, $content, $nid) {
     $form['spbellen_click2dial_extension'] = array(
       '#type' => 'textfield',
       '#title' => 'Telefoonextensie',
+      '#description' => 'De telefoonextensie bestaat uit drie cijfers. Wanneer gebeld wordt met een vaste telefoon, is dit nummer af te lezen op de display van de telefoon. Indien gebeld wordt vanaf een laptop, dan is het nummer te vinden op een sticker, het zijn dan de laatste drie cijfers. Vul dat nummer in het veld hierboven in.',
     );
   }
 
