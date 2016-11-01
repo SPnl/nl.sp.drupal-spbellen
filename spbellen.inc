@@ -774,20 +774,21 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
   return $options;
 }
 
-function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$context) {
+function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$context) {
   // Process by chunks.
-  $chunk_size = 10;
-  $group_id = $campaign_group->civi_group_id;
+  $chunk_size = 200;
+  $group_id = $group_ids['id'];
+  $group_name = $group_ids['name'];
 
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
+
   if (empty($context['sandbox'])) {
     // Get total number of contacts.
     $number_of_contacts = 0;
     $params = array(
       'group' => $group_id,
       'is_deleted' => 0,
-      'do_not_phone' => 0,
       'status' => 'Added',
     );
     $results = $spcivi->api('Contact', 'getcount', $params);
@@ -802,49 +803,30 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
     $context['sandbox']['current_chunk'] = 0;
   }
 
+
   $fields = array_keys(spbellen_contact_fields());
   $fields_list = implode(', ', $fields);
 
   $params = array(
-    'option.limit' => $chunk_size,
-    'option.offset' => ($context['sandbox']['progress']),
-    'filter.group_id' => array(0 => $group_id),
-    'is_deleted' => 0,
-    'do_not_phone' => 0,
-    'status' => 'Added',
-    'return' => $fields_list,
-    'api.Phone.get' => array(
-      'phone_type_id' => 2,
-      'return' => "phone_numeric"
-    ),
-    'api.Membership.get' => array(
-      'membership_type_id' => array(
-        'IN' => array(1, 2, 3)
-      ),
-      'status_id' => 2,
-      'return' => "id"
-    ),
+    'options' => array('limit' => $chunk_size, 'offset' => $context['sandbox']['progress']),
+    'group' => $group_name,
+    'include_non_menmbers' => 1,
   );
-  $results = $spcivi->api('Contact', 'get', $params);
+  $results = $spcivi->api('Contact', 'getspdata', $params);
   if (spbellen_check_result($results, 'contacten', 'get', $params)) {
     if (!empty($results['values'])) {
-      foreach ($results['values'] as $result) {
+      foreach ($results['values'] as $key => $result) {
         // Process contact.
         $contact_id = $result['contact_id'];
 
-        // Check if has phonenumer.
-        if (!empty($result['phone'])) {
-          // Get mobile phone.
-          if (!empty($result['api.Phone.get']['values'])) {
-            $result['phone'] = $result['api.Phone.get']['values'][0]['phone_numeric'];
+        if (isset($result['phone']) || isset($result['mobile'])) {
+          // Check if has phonenumer.
+          if (!empty($result['mobile'])) {
+              $result['phone'] = $result['mobile'];
           }
-          // Get membership data.
-          if (!empty($result['api.Membership.get']['values'])) {
-            $result['is_lid'] = 1;
-          }
-          else {
-            $result['is_lid'] = 0;
-          }
+
+          $result['phone'] = preg_replace('/\D/', '', $result['phone']);
+          $result['is_lid'] = $result['is_member'];
 
           $context['results']['count'][$group_id] ++;
           spbellen_get_targets_process_target($campaign_id, $result, $sync_id);
@@ -857,8 +839,8 @@ function spbellen_get_targets_batch($campaign_id, $campaign_group, $sync_id, &$c
         // Update our progress information.
         $context['sandbox']['progress']++;
         $context['sandbox']['current_contact'] = $contact_id;
-
       }
+
     }
     else {
       $context['finished'] = 1;
@@ -1226,4 +1208,19 @@ function spbellen_form_ajax_callback($form, &$form_state) {
   return $form;
 }
 
-
+function spbellen_get_group_name($group_id) {
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'id' => $group_id,
+    'return' => 'name',
+  );
+  $result = $spcivi->api('Group', 'get', $params);
+  if (spbellen_check_result($result, 'een groep', 'get', $params)) {
+    if (!empty($result['values'])) {
+      $value = array_shift($result['values']);
+      $group_name = $value['name'];
+      return $group_name;
+    }
+  }
+}

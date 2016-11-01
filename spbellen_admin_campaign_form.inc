@@ -348,15 +348,24 @@ function spbellen_campaign_form_submit($form, &$form_state) {
           $campaign_groups_ids = array_keys($result['campaign_groups']);
           $campaign_groups = entity_load('campaign_groups', $campaign_groups_ids);
           foreach ($campaign_groups as $campaign_group) {
-            if (empty($all_but_smart_groups[$campaign_group->civi_group_id])) {
+            $group_id = $campaign_group->civi_group_id;
+            if (empty($all_but_smart_groups[$group_id])) {
               drupal_set_message('Kan niet gesynced worden, smart group aanwezig.', 'error');
               return;
             }
-            // Add operation for each campaign group.
-            $operations[] = array(
-              'spbellen_get_targets_batch',
-              array($campaign->id, $campaign_group, $sync_id),
+            // Get group name.
+            $group_name = spbellen_get_group_name($group_id);
+            $group_ids = array(
+              'id' => $group_id,
+              'name' => $group_name,
             );
+            if (!empty($group_name)) {
+              // Add operation for each campaign group.
+              $operations[] = array(
+                'spbellen_get_targets_batch',
+                array($campaign->id, $group_ids, $sync_id),
+              );
+            }
           }
           $batch = array(
             'operations' => $operations,

@@ -21,10 +21,8 @@ Drupal.behaviors.spBellenClick2Dial = {
        url: click2dialUrl,
        dataType: "html",
        data: click2dialParams,
-       error: function(request, status, error) {
-         //alert( 'Error: ' + request.responseText );
-       },
-       success: function(msg){ //alert( "Success: " + msg ); }
+       //error: function(request, status, error) { alert( 'Error: ' + request.responseText ); },
+       //success: function(msg){ alert( "Success: " + msg ); }
      }
      );
 
