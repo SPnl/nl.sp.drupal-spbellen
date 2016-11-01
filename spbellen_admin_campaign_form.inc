@@ -58,7 +58,7 @@ function spbellen_campaign_form($form, &$form_state) {
           '#default_value' => empty($storage['webform']) ? array() : $storage['webform'],
           '#ajax' => array(
             'wrapper' => 'spbellen_ajax_form',
-            'callback' => 'spbellen_campaign_form_ajax_callback',
+            'callback' => 'spbellen_form_ajax_callback',
           ),
         );
       }

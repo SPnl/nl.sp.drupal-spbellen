@@ -35,6 +35,18 @@ function spbellen_settings_form($form, &$form_state) {
     '#description' => 'De naam die gebelde ziet.',
     '#default_value' => variable_get('spbellen_click2dial_CallerIDName', ''),
   );
+  $form['spbellen_click2dial']['spbellen_click2dial_location_ip'] = array(
+    '#type' => 'textfield',
+    '#title' => 'IP adres van locatie waar gebeld wordt',
+    '#default_value' => variable_get('spbellen_click2dial_location_ip', ''),
+    '#required' => TRUE,
+  );
+  $form['spbellen_click2dial']['spbellen_click2dial_asterix_ip'] = array(
+    '#type' => 'textfield',
+    '#title' => 'IP adres van telefooncentrale',
+    '#default_value' => variable_get('spbellen_click2dial_asterix_ip', ''),
+    '#required' => TRUE,
+  );
   $form['spbellen_text_settings'] = array(
     '#type' => 'fieldset',
     '#title' => 'Tekst instellingen',

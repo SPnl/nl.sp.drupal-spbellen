@@ -27,6 +27,13 @@ function spbellen_menu() {
     'access callback' => TRUE,
   );
 
+  $items['bellen/extensie/%'] = array(
+    'page callback' => 'spbellen_set_extension',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
   $items['admin/bellen/coach'] = array(
     'title' => 'Belcoach overzicht',
     'type' => MENU_NORMAL_ITEM,
@@ -575,9 +582,38 @@ function spbellen_block_view($delta = '') {
         if (spbellen_campaign_form_access($nid)) {
           switch ($delta) {
           case 'spbellen_contact_block':
+
+            $data = spbellen_contact_block_data();
+
+            // Use the cookie library to add variables to js bel button.
+            drupal_add_library('system', 'jquery.cookie');
+
+            $jsdata = array();
+            if (!empty($data['click2dial'])) {
+              $jsdata = array('spbellen' => array(
+                'click2dial' => $data['click2dial'],
+              ));
+            }
+
+            $markup = theme('spbellen_block_theme', $data);
+            $module_path = drupal_get_path('module', 'spbellen');
             $block = array(
               'subject' => '',
-              'content' => spbellen_contact_block_content(),
+              'content' => array(
+                '#markup' => $markup,
+                '#attached' => array(
+                  'js' => array(
+                    array(
+                      'type' => 'file',
+                      'data' => $module_path . '/js/spbellen_click2dial.js',
+                    ),
+                    array(
+                      'data' => $jsdata,
+                      'type' => 'setting',
+                    ),
+                  ),
+                ),
+              ),
             );
             break;
           case 'spbellen_search_block':
@@ -588,42 +624,43 @@ function spbellen_block_view($delta = '') {
             break;
           case 'spbellen_campaign_intro_block':
             $node = menu_get_object();
-            $campaign_id = spbellen_get_campaign_id($node->nid);
-            $campaign = spbellen_get_campaign($node->nid);
-            $content = check_markup($campaign->start_page_text, 'filtered_html');
-            $intro_block_content = spbellen_campaign_intro_block_content($content);
-            $module_path = drupal_get_path('module', 'spbellen');
-
-            // Use the cookie library.
-            drupal_add_library('system', 'jquery.cookie');
-
-            $setting = array('spbellen' => array(
-              'currentNid' => $nid,
-              'showOverlay' => (!empty($content)) ? TRUE : FALSE,
-            ));
-
-            $block = array(
-              'subject' => '',
-              'content' => array(
-                '#markup' => $intro_block_content,
-                '#attached' => array(
-                  'css' => array(
-                    $module_path . '/css/spbellen_block_overlay.css',
-                  ),
-                  'js' => array(
-                    array(
-                      'type' => 'file',
-                      'data' => $module_path . '/js/spbellen_block_overlay.js',
-                    ),
-                    array(
-                      'data' => $setting,
-                      'type' => 'setting',
+            $nid = $node->nid;
+            $campaign_id = spbellen_get_campaign_id($nid);
+            $campaign = spbellen_get_campaign($nid);
+            $ip_address = ip_address();
+            $location_ip = variable_get('spbellen_click2dial_location_ip', FALSE);
+            // Check if start page needs to be shown.
+            if (
+              // Start page not shown yet.
+              empty($_SESSION['spbellen']['start_page_'.$nid.'_shown']) &&
+              (
+                // Start page text available.
+                !empty($campaign->start_page_text) ||
+                (
+                  // Call2dial location.
+                  ($ip_address === $location_ip) &&
+                  // Extension not set yet.
+                  empty($_SESSION['spbellen']['extension_number'])
+                )
+              )
+            ) {
+              // Show start page block.
+              $module_path = drupal_get_path('module', 'spbellen');
+              $start_page_text = check_markup($campaign->start_page_text, 'filtered_html');
+              $form = drupal_get_form('spbellen_campaign_intro_form', $start_page_text, $nid);
+              $intro_block_content = drupal_render($form);
+              $block = array(
+                'subject' => '',
+                'content' => array(
+                  '#markup' => $intro_block_content,
+                  '#attached' => array(
+                    'css' => array(
+                      $module_path . '/css/spbellen_block_overlay.css',
                     ),
                   ),
                 ),
-              ),
-            );
-
+              );
+            }
             break;
           }
         }
@@ -633,68 +670,54 @@ function spbellen_block_view($delta = '') {
   return $block;
 }
 
-function spbellen_contact_block_content() {
-  global $user;
-  $output = '';
-  $node = menu_get_object();
-  if (spbellen_is_spbellen_form($node->nid)) {
-    $caller = user_load($user->uid);
-    if (!empty($caller->name)) {
-      $caller_id = $caller->name;
-      $campaign_id = spbellen_get_campaign_id($node->nid);
+function spbellen_campaign_intro_form($form, &$form_state, $content, $nid) {
+  $form_state['spbellen_nid'] = $nid;
 
-      $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
-      $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $caller_id))->fetchAssoc();
-      if (!empty($result['civi_contact_id'])) {
-
-        // Contact data.
-        $contact_data = spbellen_get_contact_data($result['civi_contact_id']);
-        $contact_fields = spbellen_contact_fields();
-        foreach ($contact_fields as $key => $name) {
-          $data[$key] = !empty($contact_data[$key]) ? check_plain($contact_data[$key]) : '';
-        }
-
-        //Call history.
-        $translate = spbellen_action_translate();
-        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
-        $result = db_query($query, array(':caller_id' => $caller_id, ':cid' => $campaign_id));
-        if (!empty($result)) {
-          while ($row = $result->fetchAssoc()) {
-            $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
-            $data['history'][] = array(
-              'date' => $date_formatted,
-              'result' => $translate[$row['result']],
-              'caller_message' => check_plain($row['caller_message']),
-            );
-          }
-        }
-
-        // Stats
-        $stats = spbellen_get_campaign_stats($campaign_id);
-        $data['stats'] = $stats;
-
-        $output = theme('spbellen_block_theme', $data);
-      }
-    }
+  // Show intro text.
+  if (!empty($content)) {
+    // Show intro text.
+    $form['spbellen_campaign_intro_content'] = array(
+      '#markup' => $content,
+    );
   }
-  return $output;
-}
 
-function spbellen_campaign_intro_block_content($content) {
-  $form = drupal_get_form('spbellen_campaign_intro_form', $content);
-  $output = drupal_render($form);
-  return $output;
-}
+  // Show extension form.
+  $ip_address = ip_address();
+  $location_ip = variable_get('spbellen_click2dial_location_ip', FALSE);
+  if ($ip_address === $location_ip && empty($_SESSION['spbellen']['extension_number'])) {
+    // Click2dial location.
+    $form['spbellen_click2dial_extension'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Telefoonextensie',
+    );
+  }
 
-function spbellen_campaign_intro_form($form, &$form_state, $content) {
-  $form['spbellen_campaign_intro_content'] = array(
-    '#markup' => $content,
-  );
+  // Submit button.
   $form['spbellen_campaign_intro_submit'] = array(
     '#type' => 'submit',
     '#value' => 'Verder',
   );
   return $form;
+}
+
+function spbellen_campaign_intro_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  $regex = '/^[0-9][0-9][0-9]$/';
+  if (!empty($values['spbellen_click2dial_extension'])) {
+    if (!preg_match($regex, $values['spbellen_click2dial_extension'])) {
+      form_set_error('spbellen_click2dial_extension', 'De ingevulde extensie is ongeldig');
+    }
+  }
+}
+
+function spbellen_campaign_intro_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  if (!empty($values['spbellen_click2dial_extension'])) {
+    // Store extension.
+    $_SESSION['spbellen']['extension_number'] = $values['spbellen_click2dial_extension'];
+  }
+  // Store cookie that start page has been shown.
+  $_SESSION['spbellen']['start_page_'.$form_state['spbellen_nid'].'_shown'] = TRUE;
 }
 
 function spbellen_search_block_content() {
@@ -914,4 +937,98 @@ function spbellen_user_update(&$edit, $account, $category) {
       ->execute();
 
   }
+}
+
+function spbellen_set_extension($extension_number) {
+  if (!empty($extension_number)) {
+    $regex = '/^[0-9][0-9][0-9]$/';
+    if (preg_match($regex, $extension_number)) {
+      $ip_address = ip_address();
+      $location_ip = variable_get('spbellen_click2dial_location_ip', FALSE);
+      if ($ip_address === $location_ip) {
+        $_SESSION['spbellen']['extension_number'] = $extension_number;
+      }
+    }
+  }
+  drupal_goto('/');
+}
+
+function spbellen_contact_block_data() {
+  global $user;
+  $data = array();
+  $node = menu_get_object();
+  if (spbellen_is_spbellen_form($node->nid)) {
+    $caller = user_load($user->uid);
+    if (!empty($caller->name)) {
+      $caller_id = $caller->name;
+      $campaign_id = spbellen_get_campaign_id($node->nid);
+
+      $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
+      $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $caller_id))->fetchAssoc();
+      if (!empty($result['civi_contact_id'])) {
+
+        // Contact data.
+        $contact_data = spbellen_get_contact_data($result['civi_contact_id']);
+        $contact_fields = spbellen_contact_fields();
+        foreach ($contact_fields as $key => $name) {
+          $data[$key] = !empty($contact_data[$key]) ? check_plain($contact_data[$key]) : '';
+        }
+
+        //Call history.
+        $translate = spbellen_action_translate();
+        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
+        $result = db_query($query, array(':caller_id' => $caller_id, ':cid' => $campaign_id));
+        if (!empty($result)) {
+          while ($row = $result->fetchAssoc()) {
+            $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
+            $data['history'][] = array(
+              'date' => $date_formatted,
+              'result' => $translate[$row['result']],
+              'caller_message' => check_plain($row['caller_message']),
+            );
+          }
+        }
+
+        // Stats
+        $stats = spbellen_get_campaign_stats($campaign_id);
+        $data['stats'] = $stats;
+
+        // Call button.
+        $extension = !empty($_SESSION['spbellen']['extension_number']) ? $_SESSION['spbellen']['extension_number'] : FALSE;
+        if ($extension) {
+          $asterix_ip = variable_get('spbellen_click2dial_asterix_ip', FALSE);
+          $shortname = variable_get('spbellen_click2dial_shortname', FALSE);
+          $forceclip = variable_get('spbellen_click2dial_forceclip', '');
+          $callerIDName = variable_get('spbellen_click2dial_CallerIDName', '');
+          $phone = $contact_data['phone'];
+          if (
+            !empty($asterix_ip) &&
+            !empty($shortname) &&
+            !empty($phone)
+          ) {
+            $params = array(
+              'shortname' => $shortname,
+              'dest' => $phone,
+              'extension' => $extension,
+            );
+            // Add optional params.
+            $params_opt = array(
+              'callerIDName',
+              'forceclip',
+            );
+            foreach ($params_opt as $param_opt) {
+              if (!empty($$param_opt)) {
+                $params[$param_opt] = $$param_opt;
+              }
+            }
+
+            $script_url = 'http://' . $asterix_ip . '/ps/call.php';
+            $data['click2dial']['script_params'] = $params;
+            $data['click2dial']['script_url'] = $script_url;
+          }
+        }
+      }
+    }
+  }
+  return $data;
 }

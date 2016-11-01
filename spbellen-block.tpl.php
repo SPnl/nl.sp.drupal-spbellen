@@ -37,18 +37,21 @@
       </div>
     </div>
   </div>
-  <?php if (!empty($history)) : ?>
-    <div class="content right">
+  <div class="content right">
+    <?php if (!empty($history)) : ?>
       <p><strong>Belgeschiedenis</strong></p>
       <ul>
         <?php foreach ($history as $values) : ?> 
-        <li><?php print $values['date']; ?><br/><?php print $values['result']; ?><?php if (!empty($values['caller_message'])) : ?><br/>Opmerking: "<?php print $values['caller_message']; ?>"<?php endif; ?></li>
+          <li><?php print $values['date']; ?><br/><?php print $values['result']; ?><?php if (!empty($values['caller_message'])) : ?><br/>Opmerking: "<?php print $values['caller_message']; ?>"<?php endif; ?></li>
         <?php endforeach; ?> 
       </ul>
-    </div>
-  <?php else : ?>
-    <div class="content right">
-      <p>Er is nog niet eerder gebeld</p>
-    </div>
-  <?php endif; ?>
+    <?php else : ?>
+        <p>Er is nog niet eerder gebeld</p>
+    <?php endif; ?>
+    <?php if (!empty($click2dial)) : ?>
+      <div>
+        <a id="spbellen-click2dial-button" href="#">Bel</a>
+      </div>
+    <?php endif; ?>
+  </div>
 </div>
