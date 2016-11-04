@@ -239,6 +239,11 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         form_set_error('email', 'Vul een geldig e-mailadres in!');
         $error = TRUE;
       }
+      $result = _sp_email_verify_check($values['email']);
+      if ($result !== NULL) {
+        form_set_error('email', t('%item is geen bestaand e-mailadres. Controleer op tikfouten. Weet je zeker dat het e-mailadres correct is, geef dit dan door aan webmaster@sp.nl', array('%item' => $values['email'])));
+        watchdog('spwebform_email_verify', $result, array(), WATCHDOG_NOTICE);
+      }
 
       // Check campaign code.
       if (!empty($campaign->campaign_code)) {
