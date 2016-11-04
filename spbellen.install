@@ -308,6 +308,11 @@ function spbellen_schema() {
         'type' => 'int',
         'size' => 'tiny',
       ),
+      'chapter' => array(
+        'description' => 'Chapter',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
     ),
     'primary key' => array(
       'contact_id',
@@ -396,6 +401,16 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
         'default' => '',
+      ),
+      'postal_code' => array(
+        'description' => 'Postal code',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'chapter' => array(
+        'description' => 'Chapter',
+        'type' => 'varchar',
+        'length' => 255,
       ),
     ),
     'primary key' => array(
@@ -767,4 +782,31 @@ function spbellen_update_7015() {
     'not null' => FALSE,
   );
   db_add_field( 'spbellen_campaign', 'start_page_text', $spec);
+}
+
+/*
+ * Add postal_code and chapter field to {spbellen_caller} table.
+ * Add chapter field to {spbellen_contact_data} table.
+ */
+function spbellen_update_7016() {
+  $spec = array(
+    'description' => 'Postal code',
+    'type' => 'varchar',
+    'length' => 255,
+  );
+  db_add_field( 'spbellen_caller', 'postal_code', $spec);
+
+  $spec = array(
+    'description' => 'Chapter',
+    'type' => 'varchar',
+    'length' => 255,
+  );
+  db_add_field( 'spbellen_caller', 'chapter', $spec);
+
+  $spec = array(
+    'description' => 'Chapter',
+    'type' => 'varchar',
+    'length' => 255,
+  );
+  db_add_field( 'spbellen_contact_data', 'chapter', $spec);
 }

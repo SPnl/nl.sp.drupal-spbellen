@@ -156,6 +156,12 @@ function spbellen_subscription_form($form, &$form_state) {
             '#required' => TRUE,
           );
 
+          $form['postal_code'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Postcode',
+            '#required' => TRUE,
+          );
+
           $form['account_pass'] = array(
             '#type' => 'password_confirm',
             '#title' => 'Kies een wachtwoord',
@@ -176,6 +182,15 @@ function spbellen_subscription_form($form, &$form_state) {
 
         }
         else {
+
+          if (empty($form_state['caller_data']->chapter)) {
+            $form['postal_code'] = array(
+              '#type' => 'textfield',
+              '#title' => 'Postcode',
+              '#required' => TRUE,
+            );
+          }
+
           // Check pass.
           $form['account_pass'] = array(
             '#type' => 'password',
@@ -188,14 +203,12 @@ function spbellen_subscription_form($form, &$form_state) {
             '#name' => 'submit_account_pass',
           );
 
-          //if (isset($form_state['account_pass_error'])) {
-            $form['submit_pass_reset'] = array(
-              '#type' => 'submit',
-              '#value' => 'Nieuw wachtwoord aanvragen',
-              '#name' => 'submit_pass_reset',
-              '#weight' => 10,
-            );
-          //}
+          $form['submit_pass_reset'] = array(
+            '#type' => 'submit',
+            '#value' => 'Nieuw wachtwoord aanvragen',
+            '#name' => 'submit_pass_reset',
+            '#weight' => 10,
+          );
 
           $form['back_account_pass'] = array(
             '#type' => 'button',
@@ -261,6 +274,9 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       if (!empty($account)) {
         $form_state['account'] = $account;
         $form_state['has_account'] = 1;
+        // Get caller data.
+        $caller_data = entity_load_single('caller', $account->uid);
+        $form_state['caller_data'] = $caller_data;
       }
       else {
         $form_state['has_account'] = 0;
@@ -281,6 +297,14 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       drupal_goto('user/password');
       break;
     case 'submit_account_pass':
+      if (empty($form_state['caller_data']->postal_code)) {
+        // Verify postal code.
+        if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
+          form_set_error('phone', 'Vul een geldige postcode in!');
+          $error = TRUE;
+        }
+        return;
+      }
       // Store variables for flood control.
       $form_state['values']['name'] = $values['email'];
       $form_state['values']['pass'] = $values['account_pass'];
@@ -300,6 +324,7 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         'middle_name',
         'last_name',
         'phone',
+        'postal_code',
         'email',
         'account_pass',
       );
@@ -324,7 +349,13 @@ function spbellen_subscription_form_validate($form, &$form_state) {
 
       // Validatie 06-nummer.
       if (!preg_match('/^(((\\+31|0|0031)6){1}[1-9]{1}[0-9]{7})$/i', $values['phone'])) {
-        form_set_error('phone', 'Vul een geldig 06-nummer in (bijv. 0612345678)!');
+        form_set_error('phone', 'Vul een geldig 06-nummer in!');
+        $error = TRUE;
+      }
+
+      // Validatie postcode.
+      if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
+        form_set_error('phone', 'Vul een geldige postcode in!');
         $error = TRUE;
       }
 
@@ -382,6 +413,14 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             $local_access = entity_create('local_access', array('uid' => $account->uid, 'campaign_id' => $campaign->id));
             entity_save('local_access', $local_access);
           }
+          // Store postal_code and chapter caller data.
+          $caller = $form_state['caller_data'];
+          $caller->postal_code = $values['postal_code'];
+          $chapter = spbellen_get_chapter($values['postal_code']);
+          $caller->chapter = $chapter;
+          entity_save('caller', $caller);
+ 
+          // Finalize login.
           global $user;
           $user = user_load($account->uid);
           user_login_finalize($account);
@@ -430,7 +469,9 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           }
         }
         $display_name = implode(' ', $name_parts);
-        $caller = entity_create('caller', array(
+        // Get afdeling.
+        $chapter = spbellen_get_chapter($values['postal_code']);
+        $caller_fields = array(
           'caller_id' => $account->uid,
           'access_type' => 'local',
           'first_name' => $values['first_name'],
@@ -438,8 +479,10 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           'last_name' => $values['last_name'],
           'display_name' => $display_name,
           'phone' => $values['phone'],
-
-        ));
+          'postal_code' => $values['postal_code'],
+          'chapter' => $chapter,
+        );
+        $caller = entity_create('caller', $caller_fields);
         entity_save('caller', $caller);
         $form_state['finish'] = TRUE;
         $form_state['feedback'] = '<p>Er is een account aangemaakt, en een e-mail verzonden met instructies om je account te activeren.</p>';

@@ -1224,3 +1224,19 @@ function spbellen_get_group_name($group_id) {
     }
   }
 }
+
+function spbellen_get_chapter($postal_code) {
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'name' => $postal_code,
+  );
+  $result = $spcivi->api('Geostelsel', 'getafdeling', $params);
+  if (spbellen_check_result($result, 'afdelingsinformatie', 'get', $params)) {
+    if (!empty($result['values'])) {
+      $value = array_shift($result['values']);
+      $chapter_name = $value['display_name'];
+      return $chapter_name;
+    }
+  }
+}

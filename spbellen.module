@@ -934,6 +934,7 @@ function spbellen_user_update(&$edit, $account, $category) {
         'last_name' => $account_wrapped->field_last_name->value(),
         'display_name' => $display_name,
         'phone' => preg_replace('/[^0-9]/', '', $account_wrapped->field_phone_primary->value()),
+        'chapter' => $account_wrapped->field_afdeling->value(),
       ))
       ->execute();
 
