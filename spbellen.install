@@ -308,8 +308,8 @@ function spbellen_schema() {
         'type' => 'int',
         'size' => 'tiny',
       ),
-      'chapter' => array(
-        'description' => 'Chapter',
+      'afdeling' => array(
+        'description' => 'Afdeling',
         'type' => 'varchar',
         'length' => 255,
       ),
@@ -407,8 +407,8 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
       ),
-      'chapter' => array(
-        'description' => 'Chapter',
+      'afdeling' => array(
+        'description' => 'Afdeling',
         'type' => 'varchar',
         'length' => 255,
       ),
@@ -785,8 +785,8 @@ function spbellen_update_7015() {
 }
 
 /*
- * Add postal_code and chapter field to {spbellen_caller} table.
- * Add chapter field to {spbellen_contact_data} table.
+ * Add postal_code and afdeling field to {spbellen_caller} table.
+ * Add afdeling field to {spbellen_contact_data} table.
  */
 function spbellen_update_7016() {
   $spec = array(
@@ -801,12 +801,20 @@ function spbellen_update_7016() {
     'type' => 'varchar',
     'length' => 255,
   );
-  db_add_field( 'spbellen_caller', 'chapter', $spec);
+  db_add_field( 'spbellen_caller', 'afdeling', $spec);
+  db_add_field( 'spbellen_contact_data', 'afdeling', $spec);
+}
 
+/*
+ * Rename chapter column to afdeling.
+ */
+function spbellen_update_7017() {
+  // Rename chapter column.
   $spec = array(
-    'description' => 'Chapter',
+    'description' => 'Afdeling',
     'type' => 'varchar',
     'length' => 255,
   );
-  db_add_field( 'spbellen_contact_data', 'chapter', $spec);
+  db_change_field('spbellen_caller', 'chapter', 'afdeling', $spec);
+  db_change_field('spbellen_contact_data', 'chapter', 'afdeling', $spec);
 }

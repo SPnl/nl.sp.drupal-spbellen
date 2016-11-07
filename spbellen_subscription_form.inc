@@ -183,7 +183,7 @@ function spbellen_subscription_form($form, &$form_state) {
         }
         else {
 
-          if (empty($form_state['caller_data']->chapter)) {
+          if (empty($form_state['caller_data']->afdeling)) {
             $form['postal_code'] = array(
               '#type' => 'textfield',
               '#title' => 'Postcode',
@@ -413,11 +413,11 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             $local_access = entity_create('local_access', array('uid' => $account->uid, 'campaign_id' => $campaign->id));
             entity_save('local_access', $local_access);
           }
-          // Store postal_code and chapter caller data.
+          // Store postal_code and afdeling caller data.
           $caller = $form_state['caller_data'];
           $caller->postal_code = str_replace(' ', '', $values['postal_code']);
-          $chapter = spbellen_get_chapter($values['postal_code']);
-          $caller->chapter = $chapter;
+          $afdeling = spbellen_get_afdeling($values['postal_code']);
+          $caller->afdeling = $afdeling;
           entity_save('caller', $caller);
  
           // Finalize login.
@@ -470,7 +470,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
         }
         $display_name = implode(' ', $name_parts);
         // Get afdeling.
-        $chapter = spbellen_get_chapter($values['postal_code']);
+        $afdeling = spbellen_get_afdeling($values['postal_code']);
         $caller_fields = array(
           'caller_id' => $account->uid,
           'access_type' => 'local',
@@ -480,7 +480,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           'display_name' => $display_name,
           'phone' => $values['phone'],
           'postal_code' => $values['postal_code'],
-          'chapter' => $chapter,
+          'afdeling' => $afdeling,
         );
         $caller = entity_create('caller', $caller_fields);
         entity_save('caller', $caller);

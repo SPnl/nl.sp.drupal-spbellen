@@ -803,10 +803,6 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
     $context['sandbox']['current_chunk'] = 0;
   }
 
-
-  $fields = array_keys(spbellen_contact_fields());
-  $fields_list = implode(', ', $fields);
-
   $params = array(
     'options' => array('limit' => $chunk_size, 'offset' => $context['sandbox']['progress']),
     'group' => $group_name,
@@ -913,6 +909,7 @@ function spbellen_contact_fields() {
     'contact_id' => 'Contact id',
     'gender' => 'Geslacht',
     'is_lid' => 'Is lid',
+    'afdeling' => 'Afdeling',
   );
   return $contact_fields;
 }
@@ -924,6 +921,7 @@ function spbellen_no_correct_contact_fields() {
     'street_address'=> 'Adres',
     'postal_code' => 'Postcode',
     'city' => 'Plaats',
+    'afdeling' => 'Afdeling',
   );
   return $contact_fields;
 }
@@ -1225,7 +1223,7 @@ function spbellen_get_group_name($group_id) {
   }
 }
 
-function spbellen_get_chapter($postal_code) {
+function spbellen_get_afdeling($postal_code) {
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
   $params = array(
@@ -1235,8 +1233,8 @@ function spbellen_get_chapter($postal_code) {
   if (spbellen_check_result($result, 'afdelingsinformatie', 'get', $params)) {
     if (!empty($result['values'])) {
       $value = array_shift($result['values']);
-      $chapter_name = $value['display_name'];
-      return $chapter_name;
+      $afdeling_name = $value['display_name'];
+      return $afdeling_name;
     }
   }
 }
