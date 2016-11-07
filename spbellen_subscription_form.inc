@@ -415,7 +415,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           }
           // Store postal_code and chapter caller data.
           $caller = $form_state['caller_data'];
-          $caller->postal_code = $values['postal_code'];
+          $caller->postal_code = str_replace(' ', '', $values['postal_code']);
           $chapter = spbellen_get_chapter($values['postal_code']);
           $caller->chapter = $chapter;
           entity_save('caller', $caller);
