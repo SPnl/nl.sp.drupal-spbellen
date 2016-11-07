@@ -297,14 +297,6 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       drupal_goto('user/password');
       break;
     case 'submit_account_pass':
-      if (empty($form_state['caller_data']->postal_code)) {
-        // Verify postal code.
-        if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
-          form_set_error('phone', 'Vul een geldige postcode in!');
-          $error = TRUE;
-        }
-        return;
-      }
       // Store variables for flood control.
       $form_state['values']['name'] = $values['email'];
       $form_state['values']['pass'] = $values['account_pass'];
@@ -312,6 +304,14 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       // Flood control and check if user password is ok.
       user_login_authenticate_validate($form, $form_state);
       user_login_final_validate($form, $form_state);
+
+      if (empty($form_state['caller_data']->postal_code)) {
+        // Verify postal code.
+        if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
+          form_set_error('postal_code', 'Vul een geldige postcode in!');
+          $error = TRUE;
+        }
+      }
       return;
       break;
     case 'back_account_data':
