@@ -413,12 +413,14 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             $local_access = entity_create('local_access', array('uid' => $account->uid, 'campaign_id' => $campaign->id));
             entity_save('local_access', $local_access);
           }
-          // Store postal_code and afdeling caller data.
-          $caller = $form_state['caller_data'];
-          $caller->postal_code = str_replace(' ', '', $values['postal_code']);
-          $afdeling = spbellen_get_afdeling($values['postal_code']);
-          $caller->afdeling = $afdeling;
-          entity_save('caller', $caller);
+          if (isset($values['postal_code'])) {
+            // Store postal_code and afdeling caller data.
+            $caller = $form_state['caller_data'];
+            $caller->postal_code = str_replace(' ', '', $values['postal_code']);
+            $afdeling = spbellen_get_afdeling($values['postal_code']);
+            $caller->afdeling = $afdeling;
+            entity_save('caller', $caller);
+          }
  
           // Finalize login.
           global $user;
