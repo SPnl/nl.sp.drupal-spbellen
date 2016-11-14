@@ -1036,3 +1036,11 @@ function spbellen_contact_block_data() {
   }
   return $data;
 }
+
+// Disallow users to edit their account.
+function spbellen_menu_alter(&$items) {
+  $items['user/%user']['access arguments'] = array('access user profiles');
+  $items['user/%user']['access callback'] = 'user_access';
+  $items['user/%user/edit']['access arguments'] = array('administer users');
+  $items['user/%user/edit']['access callback'] = 'user_access';
+}

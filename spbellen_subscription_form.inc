@@ -224,6 +224,9 @@ function spbellen_subscription_form($form, &$form_state) {
 }
 
 function spbellen_subscription_form_validate($form, &$form_state) {
+  if (isset($form_state['values']['email'])) {
+    $form_state['values']['email'] = strtolower(trim($form_state['values']['email']));
+  }
   $values = $form_state['values'];
   $campaign = $form_state['campaign'];
   $webform = $form_state['webform'];
@@ -242,7 +245,6 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       break;
     case 'submit_has_account':
       // Trim fields.
-      $form_state['values']['email'] = trim($values['email']);
       if (!empty($campaign->campaign_code)) {
         $form_state['values']['campaign_code'] = trim($values['campaign_code']);
       }
