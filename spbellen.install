@@ -38,6 +38,13 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
+      'afdeling_filter' => array(
+        'description' => 'Wether caller contacts are filtered on caller afdelingsregion.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
       'disabled' => array(
         'description' => 'Wether the campaign is disabled.',
         'type' => 'int',
@@ -313,6 +320,11 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
       ),
+      'afdeling_id' => array(
+        'description' => 'Afdeling id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
     ),
     'primary key' => array(
       'contact_id',
@@ -411,6 +423,11 @@ function spbellen_schema() {
         'description' => 'Afdeling',
         'type' => 'varchar',
         'length' => 255,
+      ),
+      'afdeling_id' => array(
+        'description' => 'Afdeling id',
+        'type' => 'int',
+        'size' => 'big',
       ),
     ),
     'primary key' => array(
@@ -797,7 +814,7 @@ function spbellen_update_7016() {
   db_add_field( 'spbellen_caller', 'postal_code', $spec);
 
   $spec = array(
-    'description' => 'Chapter',
+    'description' => 'Afdeling',
     'type' => 'varchar',
     'length' => 255,
   );
@@ -815,6 +832,37 @@ function spbellen_update_7017() {
     'type' => 'varchar',
     'length' => 255,
   );
-  db_change_field('spbellen_caller', 'chapter', 'afdeling', $spec);
-  db_change_field('spbellen_contact_data', 'chapter', 'afdeling', $spec);
+  if (db_field_exists('spbellen_caller', 'chapter')) {
+    db_change_field('spbellen_caller', 'chapter', 'afdeling', $spec);
+  }
+  if (db_field_exists('spbellen_contact_data', 'chapter')) {
+    db_change_field('spbellen_contact_data', 'chapter', 'afdeling', $spec);
+  }
+}
+
+/**
+ * Add afdeling_filter to  {spbellen_campaign} table.
+ */
+function spbellen_update_7018() {
+  $spec = array(
+    'description' => 'Wether caller contacts are to be filtered on afdelingsregion.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'not null' => TRUE,
+  );
+  db_add_field( 'spbellen_campaign', 'afdeling_filter', $spec);
+}
+
+/**
+ * Add afdeling_id fields to {spbellen_caller} and {spbellen_contact_data} tables.
+ */
+function spbellen_update_7019() {
+  $spec = array(
+    'description' => 'Afdeling id',
+    'type' => 'int',
+    'size' => 'big',
+  );
+  db_add_field( 'spbellen_caller', 'afdeling_id', $spec);
+  db_add_field( 'spbellen_contact_data', 'afdeling_id', $spec);
 }

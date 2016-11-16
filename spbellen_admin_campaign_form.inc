@@ -114,7 +114,7 @@ function spbellen_campaign_form($form, &$form_state) {
           '#autocomplete_path' => 'spbellen/group/autocomplete/' . $filters[$type_key],
         );
         if ($type_key == 'target_group') {
-          $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van CiviCRM smart mogelijk ivm. batch synchronizatie!'; 
+          $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van CiviCRM smart mogelijk ivm. batch import!'; 
         }
 
         if ($type_key == 'call_group') {
@@ -136,12 +136,12 @@ function spbellen_campaign_form($form, &$form_state) {
       if ($storage['campaign'] !== 'new') {
         $form['sync'] = array(
           '#type' => 'fieldset',
-          '#title' => 'Synchronizeer de doelgroep met CiviCRM',
+          '#title' => 'Importeer de doelgroepen uit CiviCRM',
         );
         $form['sync']['sync_targets'] = array(
           '#type' => 'submit',
           '#name' => 'sync_targets',
-          '#value' => 'Sync',
+          '#value' => 'Importeer',
           '#prefix' => '<p>Indien groepen gewijzigd zijn, eerst opslaan.</p>',
         );
       }
@@ -162,6 +162,15 @@ function spbellen_campaign_form($form, &$form_state) {
           '#format' => 'filtered_html',
         );
       }
+
+      $form['afdeling_filter'] = array(
+        '#type' => 'checkboxes',
+        '#title' => 'Afdelingsfilter',
+        '#description' => 'Contacten in de geselecteerde groepen zonder locatieinformatie worden niet getoond!',
+        '#name' => 'afdeling_filter',
+        '#options' => array('enabled' => 'Toon alleen contacten uit afdeling beller'),
+        '#default_value' => empty($storage['afdeling_filter']) ? array() : array('enabled'),
+      );
 
       $form['disabled'] = array(
         '#type' => 'checkboxes',
@@ -250,6 +259,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         $webform = entity_load_single('node', $campaign->webform_id);
         if (!empty($campaign)) {
           $storage['webform'] = $campaign->webform_id;
+          $storage['afdeling_filter'] = $campaign->afdeling_filter;
           $storage['disabled'] = $campaign->disabled;
           $storage['open_access'] = $campaign->open_access;
           $storage['campaign_code'] = $campaign->campaign_code;
@@ -464,6 +474,7 @@ function spbellen_store_campaign($storage, $values) {
       'webform_id' => $values['webform'],
       //'caller_check' => empty($values['caller_check']['enabled']) ? 0 : 1,
       'disabled' => empty($values['disabled']['disabled']) ? 0 : 1,
+      'afdeling_filter' => empty($values['afdeling_filter']['enabled']) ? 0 : 1,
       'open_access' => empty($values['open_access']['enabled']) ? 0 : 1,
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
@@ -476,6 +487,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign = entity_load_single('campaign', $storage['campaign']);
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
+    $campaign->afdeling_filter = empty($values['afdeling_filter']['enabled']) ? 0 : 1;
     $campaign->open_access = empty($values['open_access']['enabled']) ? 0 : 1;
     //$campaign->caller_check = empty($values['caller_check']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];

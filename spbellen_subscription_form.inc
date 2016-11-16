@@ -183,7 +183,7 @@ function spbellen_subscription_form($form, &$form_state) {
         }
         else {
 
-          if (empty($form_state['caller_data']->afdeling)) {
+          if (empty($form_state['caller_data']->afdeling_id)) {
             $form['postal_code'] = array(
               '#type' => 'textfield',
               '#title' => 'Postcode',
@@ -307,7 +307,7 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       user_login_authenticate_validate($form, $form_state);
       user_login_final_validate($form, $form_state);
 
-      if (empty($form_state['caller_data']->postal_code)) {
+      if (empty($form_state['caller_data']->afdeling_id)) {
         // Verify postal code.
         if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
           form_set_error('postal_code', 'Vul een geldige postcode in!');
@@ -419,8 +419,11 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             // Store postal_code and afdeling caller data.
             $caller = $form_state['caller_data'];
             $caller->postal_code = str_replace(' ', '', $values['postal_code']);
-            $afdeling = spbellen_get_afdeling($values['postal_code']);
-            $caller->afdeling = $afdeling;
+            $afdeling_data = spbellen_get_afdeling($values['postal_code']);
+            if (!empty($afdeling_data)) {
+              $caller->afdeling = $afdeling_data['display_name'];
+              $caller->afdeling_id = $afdeling_data['id'];
+            }
             entity_save('caller', $caller);
           }
  
@@ -473,8 +476,6 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           }
         }
         $display_name = implode(' ', $name_parts);
-        // Get afdeling.
-        $afdeling = spbellen_get_afdeling($values['postal_code']);
         $caller_fields = array(
           'caller_id' => $account->uid,
           'access_type' => 'local',
@@ -484,8 +485,13 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           'display_name' => $display_name,
           'phone' => $values['phone'],
           'postal_code' => $values['postal_code'],
-          'afdeling' => $afdeling,
         );
+        // Get afdeling.
+        $afdeling_data = spbellen_get_afdeling($values['postal_code']);
+        if (!empty($afdeling_data)) {
+          $caller_fields['afdeling'] = $afdeling_data['display_name'];
+          $caller_fields['afdeling_id'] = $afdeling_data['id'];
+        }
         $caller = entity_create('caller', $caller_fields);
         entity_save('caller', $caller);
         $form_state['finish'] = TRUE;

@@ -823,6 +823,7 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
 
           $result['phone'] = preg_replace('/\D/', '', $result['phone']);
           $result['is_lid'] = $result['is_member'];
+          $result['afdeling_id'] = $result['afdeling_code'];
 
           $context['results']['count'][$group_id] ++;
           spbellen_get_targets_process_target($campaign_id, $result, $sync_id);
@@ -910,6 +911,7 @@ function spbellen_contact_fields() {
     'gender' => 'Geslacht',
     'is_lid' => 'Is lid',
     'afdeling' => 'Afdeling',
+    'afdeling_id' => 'Afdeling id',
   );
   return $contact_fields;
 }
@@ -957,8 +959,9 @@ function spbellen_is_spbellen_form_check($nid) {
   return FALSE;
 }
 
-function spbellen_assign_target($campaign_id) {
+function spbellen_assign_target($campaign) {
   global $user;
+  $campaign_id = $campaign->id;
   $caller = user_load($user->uid);
   // Check if is logged in via spoauth.
   if (
@@ -1232,8 +1235,8 @@ function spbellen_get_afdeling($postal_code) {
   if (spbellen_check_result($result, 'afdelingsinformatie', 'get', $params)) {
     if (!empty($result['values'])) {
       $value = array_shift($result['values']);
-      $afdeling_name = $value['display_name'];
-      return $afdeling_name;
+      $afdeling_data = $value;
+      return $value;
     }
   }
 }
