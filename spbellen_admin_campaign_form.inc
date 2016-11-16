@@ -468,7 +468,7 @@ function spbellen_store_campaign($storage, $values) {
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
       'title' => $values['title'],
-      'start_page_text' => $values['campaign_intro_text'],
+      'start_page_text' => !empty($values['campaign_intro_text']) ? $values['campaign_intro_text'] : '',
     );
     $campaign = entity_create('campaign', $properties);
   }
