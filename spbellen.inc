@@ -962,17 +962,15 @@ function spbellen_is_spbellen_form_check($nid) {
 function spbellen_assign_target($campaign) {
   global $user;
   $campaign_id = $campaign->id;
-  $caller = user_load($user->uid);
   // Check if is logged in via spoauth.
   if (
     user_is_logged_in()
   ) {
     // Check if existing target exists.
-    $caller_id = $caller->name;
     $query = "SELECT ta.civi_contact_id FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
       ':cid' => $campaign_id,
-      ':caller_id' => $caller_id,
+      ':caller_id' => $user->uid,
     ))->fetchAssoc();
     if (!$result) {
       // Get new target.
@@ -988,7 +986,7 @@ function spbellen_assign_target($campaign) {
           ->fields(array(
             'occupied' => 1,
             'date' => time(),
-            'caller_id' => $caller_id,
+            'caller_id' => $user->uid,
           ))
           ->condition('id', $result['id'])
           ->execute();

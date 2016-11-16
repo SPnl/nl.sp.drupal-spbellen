@@ -866,3 +866,26 @@ function spbellen_update_7019() {
   db_add_field( 'spbellen_caller', 'afdeling_id', $spec);
   db_add_field( 'spbellen_contact_data', 'afdeling_id', $spec);
 }
+
+/*
+ * Set caller_id to user uid (was user name).
+ */
+function spbellen_update_7020() {
+
+  // Update spbellen_actions table, set caller_id value to user uid.
+  $query = "UPDATE {spbellen_action} ac INNER JOIN {users} us ON ac.caller_id = us.name SET ac.caller_id = us.uid";
+  $result = db_query($query);
+
+  // Update spbellen_targets table, set caller_id value to user uid.
+  $query = "UPDATE {spbellen_targets} ta INNER JOIN {users} us ON ta.caller_id = us.name SET ta.caller_id = us.uid";
+  $result = db_query($query);
+
+  // Change caller_id field type from varchar to integer.
+  $spec = array(
+    'description' => 'Caller uid',
+    'type' => 'int',
+    'size' => 'big',
+  );
+  db_change_field('spbellen_action', 'caller_id', 'caller_id', $spec);
+  db_change_field('spbellen_targets', 'caller_id', 'caller_id', $spec);
+}

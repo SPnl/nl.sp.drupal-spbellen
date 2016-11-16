@@ -375,8 +375,6 @@ function spbellen_webform_submission_insert($node, $submission) {
   global $user;
   if (spbellen_is_spbellen_form($node->nid)) {
     if (spbellen_campaign_form_access($node->nid)) {
-      $caller = user_load($user->uid);
-      $caller_id = $caller->name;
       $campaign_id = spbellen_get_campaign_id($node->nid);
       $map = spbellen_component_key_id_map($node);
 
@@ -408,7 +406,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       else {
         $caller_message = '';
       }
-      $action_id = spbellen_create_action($tid, $caller_id, $result, $submission->sid, $call_back_time, $caller_message);
+      $action_id = spbellen_create_action($tid, $user->uid, $result, $submission->sid, $call_back_time, $caller_message);
 
       if ($result === 'answered_blacklist') {
         spbellen_blacklist($target_contact_id);
@@ -732,7 +730,6 @@ function spbellen_search_block_content() {
 
 function spbellen_contact_search_form($form, &$form_state) {
   global $user;
-  $caller = user_load($user->uid);
   $form = array();
   if (!empty($form_state['values'])) {
     $values = $form_state['values'];
@@ -751,7 +748,7 @@ function spbellen_contact_search_form($form, &$form_state) {
     $form['contact'] = array(
       '#type' => 'textfield',
       '#title' => '',
-      '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $caller->name . '/' . $webform_id,
+      '#autocomplete_path' => 'spbellen/contact_search/autocomplete/' . $user->uid . '/' . $webform_id,
     );
     $form['search'] = array(
       '#type' => 'submit',
@@ -773,7 +770,6 @@ function spbellen_contact_search_form_validate($form, &$form_state) {
 
 function spbellen_contact_search_form_submit($form, &$form_state) {
   global $user;
-  $caller = user_load($user->uid);
   $values = $form_state['values'];
   $target_id_raw = $values['contact'];
   $target_id = spbellen_parse_id_form_select_value($target_id_raw);
@@ -785,7 +781,7 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
         'date' => time(),
         'caller_id' => NULL,
       ))
-      ->condition('caller_id', $caller->name)
+      ->condition('caller_id', $user->uid)
       ->condition('occupied', 1)
       ->execute();
 
@@ -794,7 +790,7 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
       ->fields(array(
         'occupied' => 1,
         'date' => time(),
-        'caller_id' => $caller->name,
+        'caller_id' => $user->uid,
       ))
       ->condition('id', $target_id)
       ->execute();
@@ -851,15 +847,13 @@ function spbellen_custom_webform_validate($form, &$form_state) {
     // Next button.
     // Disassign target from caller.
     global $user;
-    $caller = user_load($user->uid);
-    $caller_id = $caller->name;
     $result = db_update('spbellen_targets')
       ->fields(array(
         'occupied' => 0,
         'date' => time(),
         'caller_id' => NULL,
       ))  
-      ->condition('caller_id', $caller_id)
+      ->condition('caller_id', $user->uid)
       ->execute();
     $path = drupal_get_path_alias('node/' . $form['#node']->nid);
     drupal_goto($path);
@@ -963,13 +957,11 @@ function spbellen_contact_block_data() {
   $data = array();
   $node = menu_get_object();
   if (spbellen_is_spbellen_form($node->nid)) {
-    $caller = user_load($user->uid);
-    if (!empty($caller->name)) {
-      $caller_id = $caller->name;
+    if (!empty($user->uid)) {
       $campaign_id = spbellen_get_campaign_id($node->nid);
 
       $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
-      $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $caller_id))->fetchAssoc();
+      $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $user->uid))->fetchAssoc();
       if (!empty($result['civi_contact_id'])) {
 
         // Contact data.
@@ -982,7 +974,7 @@ function spbellen_contact_block_data() {
         //Call history.
         $translate = spbellen_action_translate();
         $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
-        $result = db_query($query, array(':caller_id' => $caller_id, ':cid' => $campaign_id));
+        $result = db_query($query, array(':caller_id' => $user->uid, ':cid' => $campaign_id));
         if (!empty($result)) {
           while ($row = $result->fetchAssoc()) {
             $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
