@@ -4,7 +4,6 @@ core = 7.x
 package = sprbs
 dependencies[] = sprbs
 dependencies[] = spciviapi
-dependencies[] = sharedemail
 dependencies[] = spwebform_email_verify
 
 scripts[] = js/spbellen.js

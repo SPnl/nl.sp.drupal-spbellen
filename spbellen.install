@@ -889,3 +889,48 @@ function spbellen_update_7020() {
   db_change_field('spbellen_action', 'caller_id', 'caller_id', $spec);
   db_change_field('spbellen_targets', 'caller_id', 'caller_id', $spec);
 }
+
+/*
+ * Removes spnet login accounts that share email with other account.
+ */
+function spbellen_update_7021() {
+  $query = "SELECT uid, name, mail FROM {users} WHERE name > 0";
+  $result = db_query($query);
+  if ($result) {
+    while ($row = $result->fetchAssoc()) {
+      $uid = $row['uid'];
+      $name = $row['name'];
+      $email = $row['mail'];
+      // Find custom login accounts with same email.
+      $query = "SELECT uid, name, mail FROM {users} WHERE mail = :email";
+      $result2 = db_query($query, array('email' => $email));
+      if ($result2) {
+        while ($row2 = $result2->fetchAssoc()) {
+          $uid2 = $row2['uid'];
+          $name2 = $row2['name'];
+          $email2 = $row2['mail'];
+          if ($uid2 !== $uid) {
+
+            drupal_set_message('Moving spnet account to custom login account: ' . $uid . ' => ' . $uid2);
+            // Change spnet account ref to custom login account ref in action table.
+            $query = "UPDATE {spbellen_action} SET caller_id = :uid2 WHERE caller_id = :uid";
+            db_query($query, array('uid' => $uid, 'uid2' => $uid2));
+
+            // Change spnet account ref to custom login account ref in targets table.
+            $query = "UPDATE {spbellen_targets} SET caller_id = :uid2 WHERE caller_id = :uid";
+            db_query($query, array('uid' => $uid, 'uid2' => $uid2));
+
+            // Remove spnet account ref from caller table.
+            $query = "DELETE FROM {spbellen_caller} WHERE caller_id = :uid";
+            db_query($query, array('uid' => $uid));
+
+            // Remove spnet login user account.
+            user_delete($uid);
+            break;
+
+          }
+        }
+      }
+    }
+  }
+}
