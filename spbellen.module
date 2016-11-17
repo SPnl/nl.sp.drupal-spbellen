@@ -1030,10 +1030,22 @@ function spbellen_contact_block_data() {
   return $data;
 }
 
-// Disallow users to edit their account.
-function spbellen_menu_alter(&$items) {
-  $items['user/%user']['access arguments'] = array('access user profiles');
-  $items['user/%user']['access callback'] = 'user_access';
-  $items['user/%user/edit']['access arguments'] = array('administer users');
-  $items['user/%user/edit']['access callback'] = 'user_access';
+function spbellen_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+  if (!user_access('administer users')) {
+    $fields = array(
+      'field_contact_id',
+      'field_first_name',
+      'field_middle_name',
+      'field_last_name',
+      'field_initials',
+      'field_phone_primary',
+      'field_email_primary',
+      'field_afdeling',
+      'locale',
+    );
+    foreach ($fields as $field) {
+      $form[$field]['#access'] = FALSE;
+    }
+    $form['account']['mail']['#access'] = FALSE;
+  }
 }
