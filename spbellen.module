@@ -415,6 +415,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       // Check if contact information was corrected.
       $correction = FALSE;
       $params = array();
+      $params['submission_id'] = $submission->sid;
       $contact_fields =  spbellen_correct_contact_fields();
       $data = $submission->data;
       foreach ($contact_fields as $field_key => $field_name) {
@@ -426,9 +427,8 @@ function spbellen_webform_submission_insert($node, $submission) {
           $data[$map['spbellen_hidden_'.$field_key]][0] !== $data[$map['spbellen_'.$field_key]][0]
         ) {
           $correction = TRUE; 
-          $params['correction_lines'][] = 'Orginele waarde '.$field_name.': '.$data[$map['spbellen_hidden_'.$field_key]][0];
-          $params['correction_lines'][] = 'Gecorrigeerde waarde '.$field_name.': '.$data[$map['spbellen_'.$field_key]][0];
-          $params['correction_lines'][] = '';
+          $params['correction_lines'][] = '<p><strong>'.$field_name.'</strong><br/>';
+          $params['correction_lines'][] = $data[$map['spbellen_hidden_'.$field_key]][0] . ' →  '.$data[$map['spbellen_'.$field_key]][0].'</p>';
         }
       }
       // Send mail with corrected values.
@@ -871,29 +871,29 @@ function spbellen_mail($key, &$message, $params) {
   switch ($key) {
   case 'spbellen_correct':
     $message['subject'] = 'Correctie gegevens CiviCRM contact';
-    $message['body'][] = 'Beste,';
-    $message['body'][] = 'Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven.';
-    $message['body'][] = 'CiviCRM contact id: ' . $params['contact_id'];
-    $message['body'][] = '';
+    $message['body'][] = '<p>Beste,</p>';
+    $message['body'][] = '<p>Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven.</p>';
+    $message['body'][] = '<p>CiviCRM contact id: ' . $params['contact_id'] . '<br/>';
+    $message['body'][] = 'Nr. inzending: ' . $params['submission_id'] . '</p>';
     if (!empty($params['correction_lines'])) {
       foreach ($params['correction_lines'] as $line) {
         $message['body'][] = $line;
       }
     }
-    $message['body'][] = 'Passen jullie deze indien nodig aan in CiviCRM?';
-    $message['body'][] = 'Thx, SP Webteam';
-    $message['body'][] = '(Dit is een automatisch gegenereerd bericht)';
+    $message['body'][] = '<p>Passen jullie deze indien nodig aan in CiviCRM?</p>';
+    $message['body'][] = '<p>Thx, SP Webteam</p>';
+    $message['body'][] = '<p>(Dit is een automatisch gegenereerd bericht)</p>';
     break;
   case 'spbellen_wrong_number':
     $message['subject'] = 'Correctie gegevens CiviCRM contact';
-    $message['body'][] = 'Beste,';
-    $message['body'][] = 'Een belteam vrijwilliger heeft aangegeven dat het telefoonnummer niet correct is.';
-    $message['body'][] = 'CiviCRM contact id: ' . $params['contact_id'];
-    $message['body'][] = 'Telefoonnummer: ' . $params['phone'];
-    $message['body'][] = '';
-    $message['body'][] = 'Passen jullie het telefoonnummer indien nodig aan in CiviCRM?';
-    $message['body'][] = 'Thx, SP Webteam';
-    $message['body'][] = '(Dit is een automatisch gegenereerd bericht)';
+    $message['body'][] = '<p>Beste,</p>';
+    $message['body'][] = '<p>Een belteam vrijwilliger heeft aangegeven dat het telefoonnummer niet correct is.</p>';
+    $message['body'][] = '<p>CiviCRM contact id: ' . $params['contact_id'] . '<br/>';
+    $message['body'][] = 'Submission id: ' . $params['submission_id'] . '</p>';
+    $message['body'][] = '<p>Telefoonnummer: ' . $params['phone'] . '</p>';
+    $message['body'][] = '<p>Passen jullie het telefoonnummer indien nodig aan in CiviCRM?</p>';
+    $message['body'][] = '<p>Thx, SP Webteam</p>';
+    $message['body'][] = '<p>(Dit is een automatisch gegenereerd bericht)</p>';
     break;
   case 'register_confirmation_required':
     $message['subject'] = 'Bevestig je aanmelding voor: ' . $params['webform_title'];
@@ -908,7 +908,6 @@ function spbellen_mail($key, &$message, $params) {
     $message['body'][] = '<p>Je aanmelding voor de belcampagne is bevestigd. Vanaf nu kan je je direct aanmelden op de onderstaande pagina.</p>';
     $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
     $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
-    watchdog('test', '<pre>'.print_r($message['body'], TRUE) . '</pre>');
     break;
   }
 }
