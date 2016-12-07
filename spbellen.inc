@@ -176,7 +176,12 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
     if (spbellen_campaign_form_access($webform_id)) {
       $campaign_id = spbellen_get_campaign_id($webform_id);
       if (!empty($campaign_id)) {
-        $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 5";
+        if (spbellen_click2dial_location()) {
+          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 5";
+        }
+        else {
+          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 5";
+        }
         $substitutions = array(
           ':campaign_id' => $campaign_id,
           ':phonenumber' => "$string%",
@@ -967,14 +972,14 @@ function spbellen_assign_target($campaign) {
     user_is_logged_in()
   ) {
     // Check if existing target exists.
-    $query = "SELECT ta.civi_contact_id FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
+    $query = "SELECT ta.civi_contact_id FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE bl.civi_contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 10 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
       ':cid' => $campaign_id,
       ':caller_id' => $user->uid,
     ))->fetchAssoc();
     if (!$result) {
       // Get new target.
-      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.call_back_time < :current_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
+      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.call_back_time < :current_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
         ':occupied_time' => time() - 1800,
@@ -1006,7 +1011,7 @@ function spbellen_assign_target($campaign) {
     }
     else {
       // Find occupied targets.
-      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (result = 'not_answered' OR result = 'answered_call_back') AND attempts < 3 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
+      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (result = 'not_answered' OR result = 'answered_call_back') AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
       ))->fetchAssoc();
@@ -1237,4 +1242,13 @@ function spbellen_get_afdeling($postal_code) {
       return $value;
     }
   }
+}
+
+function spbellen_click2dial_location() {
+  $ip_address = ip_address();
+  $location_ip = variable_get('spbellen_click2dial_location_ip', FALSE);
+  if ($ip_address === $location_ip) {
+    return TRUE;
+  }
+  return FALSE;
 }
