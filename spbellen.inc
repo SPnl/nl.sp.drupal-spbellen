@@ -1252,3 +1252,16 @@ function spbellen_click2dial_location() {
   }
   return FALSE;
 }
+
+function spbellen_click2dial_call_numbers_list() {
+  $number_list = array();
+  $quantity = variable_get('click2dial_call_numbers_quantity', 2);
+  for ($nr = 1; $nr <= $quantity; $nr ++) {
+    $name = variable_get('spbellen_click2dial_callerIDName_' . $nr, '');
+    $number = variable_get('spbellen_click2dial_forceclip_' . $nr, '');
+    if (!empty($name) && !empty($number)) {
+      $number_list[$number] = $name;
+    }
+  }
+  return $number_list;
+}

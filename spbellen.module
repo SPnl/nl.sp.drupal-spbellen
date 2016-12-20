@@ -984,12 +984,14 @@ function spbellen_contact_block_data() {
         $data['stats'] = $stats;
 
         // Call button.
+        $campaign = entity_load_single('campaign', $campaign_id);
+        $call_number_list = spbellen_click2dial_call_numbers_list();
         $extension = !empty($_SESSION['spbellen']['extension_number']) ? $_SESSION['spbellen']['extension_number'] : FALSE;
         if ($extension) {
           $asterix_ip = variable_get('spbellen_click2dial_asterix_ip', FALSE);
           $shortname = variable_get('spbellen_click2dial_shortname', FALSE);
-          $forceclip = variable_get('spbellen_click2dial_forceclip', '');
-          $callerIDName = variable_get('spbellen_click2dial_CallerIDName', '');
+          $forceclip = $campaign->click2dial_call_number;
+          $callerIDName = $call_number_list[$campaign->click2dial_call_number];
           $phone = $contact_data['phone'];
           if (
             !empty($asterix_ip) &&

@@ -83,6 +83,11 @@ function spbellen_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
+      'click2dial_call_number' => array(
+        'description' => 'Click2dial call number.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
     ),
     'primary key' => array(
       'id',
@@ -933,4 +938,16 @@ function spbellen_update_7021() {
       }
     }
   }
+}
+
+/**
+ * Add click2dial call number to campaign table.
+ */
+function spbellen_update_7022() {
+  $spec = array(
+      'description' => 'Click2dial call number.',
+      'type' => 'varchar',
+      'length' => 255,
+      );
+  db_add_field( 'spbellen_campaign', 'click2dial_call_number', $spec);
 }

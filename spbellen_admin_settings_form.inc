@@ -16,37 +16,50 @@ function spbellen_settings_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => 'Click to dial instellingen',
   );
-  $form['spbellen_click2dial']['spbellen_click2dial_shortname'] = array(
+  $form['spbellen_click2dial']['general'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Algemeen',
+  );
+  $form['spbellen_click2dial']['general']['spbellen_click2dial_shortname'] = array(
     '#type' => 'textfield',
     '#title' => 'Shortname',
     '#description' => 'Verkorte bedrijfsnaam die in de Voclarion gebruikt wordt.',
     '#default_value' => variable_get('spbellen_click2dial_shortname', ''),
     '#required' => TRUE,
   );
-  $form['spbellen_click2dial']['spbellen_click2dial_forceclip'] = array(
-    '#type' => 'textfield',
-    '#title' => 'CallerID',
-    '#description' => 'Dit is het telefoonnummer dat gebelde ziet.',
-    '#default_value' => variable_get('spbellen_click2dial_forceclip', ''),
-  );
-  $form['spbellen_click2dial']['spbellen_click2dial_CallerIDName'] = array(
-    '#type' => 'textfield',
-    '#title' => 'CallerIDName',
-    '#description' => 'De naam die gebelde ziet.',
-    '#default_value' => variable_get('spbellen_click2dial_CallerIDName', ''),
-  );
-  $form['spbellen_click2dial']['spbellen_click2dial_location_ip'] = array(
+  $form['spbellen_click2dial']['general']['spbellen_click2dial_location_ip'] = array(
     '#type' => 'textfield',
     '#title' => 'IP adres van locatie waar gebeld wordt',
     '#default_value' => variable_get('spbellen_click2dial_location_ip', ''),
     '#required' => TRUE,
   );
-  $form['spbellen_click2dial']['spbellen_click2dial_asterix_ip'] = array(
+  $form['spbellen_click2dial']['general']['spbellen_click2dial_asterix_ip'] = array(
     '#type' => 'textfield',
     '#title' => 'IP adres van telefooncentrale',
     '#default_value' => variable_get('spbellen_click2dial_asterix_ip', ''),
     '#required' => TRUE,
   );
+  $form['spbellen_click2dial']['caller_ids'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Belnummers',
+  );
+  $quantity = variable_get('click2dial_call_numbers_quantity', 2);
+  for ($nr = 1; $nr <= $quantity; $nr ++) {
+    $form['spbellen_click2dial']['caller_ids']['caller_id_' . $nr] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Nummer ' . $nr,
+    );
+    $form['spbellen_click2dial']['caller_ids']['caller_id_' . $nr]['spbellen_click2dial_callerIDName_' . $nr] = array(
+      '#type' => 'textfield',
+      '#title' => 'Naam',
+      '#default_value' => variable_get('spbellen_click2dial_callerIDName_' . $nr, ''),
+    );
+    $form['spbellen_click2dial']['caller_ids']['caller_id_' . $nr]['spbellen_click2dial_forceclip_' . $nr] = array(
+      '#type' => 'textfield',
+      '#title' => 'Nummer',
+      '#default_value' => variable_get('spbellen_click2dial_forceclip_' . $nr, ''),
+    );
+  }
   $form['spbellen_text_settings'] = array(
     '#type' => 'fieldset',
     '#title' => 'Tekst instellingen',

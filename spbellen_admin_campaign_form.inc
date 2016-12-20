@@ -69,6 +69,16 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['title']) ? '' : $storage['title'],
       );
 
+      $options = spbellen_click2dial_call_numbers_list();
+      $form['click2dial_call_number'] = array(
+        '#type' => 'select',
+        '#title' => 'Selecteer het telefoonnummer waarmee gebeld gaat worden.',
+        '#description' => 'Laat leeg om anoniem te bellen.',
+        '#options' => $options,
+        '#default_value' => empty($storage['click2dial_call_number']) ? '' : $storage['click2dial_call_number'],
+        '#empty_option' => 'Kies:',
+      );
+
       // Show message.
       $form['message_cache'] = array(
         '#markup' => '<p><strong>Leeg de Drupal cache als een CiviCRM groep niet te vinden is!</strong></p>',
@@ -265,6 +275,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
           $storage['campaign_code'] = $campaign->campaign_code;
           //$storage['caller_check'] = $campaign->caller_check;
           $storage['campaign_start_page_text'] = $campaign->start_page_text;
+          $storage['click2dial_call_number'] = $campaign->click2dial_call_number;
           if (!empty($campaign->title)) {
             $storage['title'] = $campaign->title;
           }
@@ -480,6 +491,7 @@ function spbellen_store_campaign($storage, $values) {
       'intro_text' => $values['intro_text'],
       'title' => $values['title'],
       'start_page_text' => !empty($values['campaign_intro_text']) ? $values['campaign_intro_text'] : '',
+      'click2dial_call_number' => !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '',
     );
     $campaign = entity_create('campaign', $properties);
   }
@@ -493,6 +505,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];
+    $campaign->click2dial_call_number = !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '';
   }
   $result = entity_save('campaign', $campaign);
 
