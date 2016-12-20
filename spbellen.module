@@ -991,7 +991,7 @@ function spbellen_contact_block_data() {
           $asterix_ip = variable_get('spbellen_click2dial_asterix_ip', FALSE);
           $shortname = variable_get('spbellen_click2dial_shortname', FALSE);
           $forceclip = $campaign->click2dial_call_number;
-          $callerIDName = $call_number_list[$campaign->click2dial_call_number];
+          $callerIDName = empty($call_number_list[$forceclip]) ? '' : $call_number_list[$forceclip];
           $phone = $contact_data['phone'];
           if (
             !empty($asterix_ip) &&
