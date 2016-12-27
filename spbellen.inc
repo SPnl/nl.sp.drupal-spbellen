@@ -820,7 +820,14 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
         // Process contact.
         $contact_id = $result['contact_id'];
 
-        if (isset($result['phone']) || isset($result['mobile'])) {
+        if (
+          (
+            isset($result['phone']) ||
+            isset($result['mobile']) 
+          ) &&
+          empty($result['do_not_phone'])
+        )
+        {
           // Check if has phonenumer.
           if (!empty($result['mobile'])) {
               $result['phone'] = $result['mobile'];
@@ -878,6 +885,10 @@ function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
       'occupied' => 0,
       'sync_id' => $sync_id,
     ))
+    ->execute();
+  // Delete contact from blacklist.
+  db_delete('spbellen_blacklist')
+    ->condition('civi_contact_id', $contact_id)
     ->execute();
 }
 
