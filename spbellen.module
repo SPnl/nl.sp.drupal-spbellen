@@ -425,6 +425,7 @@ function spbellen_webform_submission_insert($node, $submission) {
           (
             (
               !empty($data[$map['spbellen_'.$field_key]][0]) &&
+              !empty($data[$map['spbellen_hidden_'.$field_key]][0]) &&
               $data[$map['spbellen_hidden_'.$field_key]][0] !== $data[$map['spbellen_'.$field_key]][0]
             ) ||
             (
@@ -435,7 +436,8 @@ function spbellen_webform_submission_insert($node, $submission) {
         ) {
           $correction = TRUE; 
           $params['correction_lines'][] = '<p><strong>'.$field_name.'</strong><br/>';
-          $params['correction_lines'][] = $data[$map['spbellen_hidden_'.$field_key]][0] . ' →  '.$data[$map['spbellen_'.$field_key]][0].'</p>';
+          $key = !empty($data[$map['spbellen_hidden_'.$field_key]][0]) ? $data[$map['spbellen_hidden_'.$field_key]][0] : '* leeg *';
+          $params['correction_lines'][] = $key . ' →  '.$data[$map['spbellen_'.$field_key]][0].'</p>';
         }
       }
       // Send mail with corrected values.
