@@ -416,6 +416,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       $correction = FALSE;
       $params = array();
       $params['submission_id'] = $submission->sid;
+      $params['campaign_title'] = $node->title;
       $contact_fields =  spbellen_correct_contact_fields();
       $data = $submission->data;
       foreach ($contact_fields as $field_key => $field_name) {
@@ -875,9 +876,9 @@ function spbellen_custom_webform_validate($form, &$form_state) {
 function spbellen_mail($key, &$message, $params) {
   switch ($key) {
   case 'spbellen_correct':
-    $message['subject'] = 'Correctie gegevens CiviCRM contact';
+    $message['subject'] = 'Correctie gegevens CiviCRM contact (' . $params['campaign_title'] . ')';
     $message['body'][] = '<p>Beste,</p>';
-    $message['body'][] = '<p>Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven.</p>';
+    $message['body'][] = '<p>Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven bij het bellen voor de campagne "' . $params['campaign_title'] . '".</p>';
     $message['body'][] = '<p>CiviCRM contact id: ' . $params['contact_id'] . '<br/>';
     $message['body'][] = 'Nr. inzending: ' . $params['submission_id'] . '</p>';
     if (!empty($params['correction_lines'])) {
