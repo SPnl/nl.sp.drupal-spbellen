@@ -413,36 +413,8 @@ function spbellen_webform_submission_insert($node, $submission) {
       }
 
       // Check if contact information was corrected, and create activity in CiviCRM.
-      $correction = FALSE;
-      $params = array();
-      $params['submission_id'] = $submission->sid;
-      $params['campaign_title'] = $node->title;
-      $contact_fields =  spbellen_correct_contact_fields();
-      $data = $submission->data;
-      foreach ($contact_fields as $field_key => $field_name) {
-        if (
-          isset($map['spbellen_hidden_'.$field_key]) &&
-          isset($map['spbellen_'.$field_key]) &&
-          (
-            (
-              !empty($data[$map['spbellen_'.$field_key]][0]) &&
-              !empty($data[$map['spbellen_hidden_'.$field_key]][0]) &&
-              $data[$map['spbellen_hidden_'.$field_key]][0] !== $data[$map['spbellen_'.$field_key]][0]
-            ) ||
-            (
-              empty($data[$map['spbellen_hidden_'.$field_key]][0]) &&
-              !empty($data[$map['spbellen_'.$field_key]][0])
-            )
-          )
-        ) {
-          $correction = TRUE; 
-          $correction_lines[] = '<p><strong>'.$field_name.'</strong><br/>';
-          $key = !empty($data[$map['spbellen_hidden_'.$field_key]][0]) ? $data[$map['spbellen_hidden_'.$field_key]][0] : '* leeg *';
-          $correction_lines[] = $key . ' →  '.$data[$map['spbellen_'.$field_key]][0].'</p>';
-        }
-      }
       // Create activity with corrected values.
-      if ($correction || $result === 'wrong_number') {
+      if ($result === 'wrong_number') {
         global $user;
         $caller = entity_load_single('caller', $user->uid);
         $caller_text = '';
@@ -452,25 +424,9 @@ function spbellen_webform_submission_insert($node, $submission) {
         $caller_text .= 'Telefoon: ' . check_plain($caller->phone) . '<br/>';
         $caller_text .= 'Afdeling: ' . check_plain($caller->afdeling) . '<br/>';
         $caller_text .= '</p>';
-        $contact_id = $data[$map['spbellen_hidden_contact_id']][0];
-      }
-      if ($correction) {
-        // Create activity.
-        $text = '<p>Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven bij het bellen voor de campagne "' . $params['campaign_title'] . '".</p>';
-        $text .= '<p>CiviCRM contact id: ' . $params['contact_id'] . '<br/>';
-        $text .= 'Nr. inzending: ' . $params['submission_id'] . '</p>';
-        if (!empty($correction_lines)) {
-          foreach ($correction_lines as $line) {
-            $text .= $line;
-          }
-        }
-        $text .= $caller_text;
-        spbellen_create_activity($contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Correctie naam contact doorgegeven', $text, 'geen debug info');
-      }
 
-      // Check if wrong number.
-      if ($result === 'wrong_number') {
-        $phone = $data[$map['spbellen_hidden_phone']][0];
+        $contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
+        $phone = $submission->data[$map['spbellen_hidden_phone']][0];
         $text = '<p>Het telefoonnummer ' . $phone . ' is volgens een vrijwilliger van het belteam niet correct.</p>';
         $text .= $caller_text;
         spbellen_create_activity($contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
@@ -892,32 +848,6 @@ function spbellen_custom_webform_validate($form, &$form_state) {
 
 function spbellen_mail($key, &$message, $params) {
   switch ($key) {
-  case 'spbellen_correct':
-    $message['subject'] = 'Correctie gegevens CiviCRM contact (' . $params['campaign_title'] . ')';
-    $message['body'][] = '<p>Beste,</p>';
-    $message['body'][] = '<p>Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven bij het bellen voor de campagne "' . $params['campaign_title'] . '".</p>';
-    $message['body'][] = '<p>CiviCRM contact id: ' . $params['contact_id'] . '<br/>';
-    $message['body'][] = 'Nr. inzending: ' . $params['submission_id'] . '</p>';
-    if (!empty($params['correction_lines'])) {
-      foreach ($params['correction_lines'] as $line) {
-        $message['body'][] = $line;
-      }
-    }
-    $message['body'][] = '<p>Passen jullie deze indien nodig aan in CiviCRM?</p>';
-    $message['body'][] = '<p>Thx, SP Webteam</p>';
-    $message['body'][] = '<p>(Dit is een automatisch gegenereerd bericht)</p>';
-    break;
-  case 'spbellen_wrong_number':
-    $message['subject'] = 'Correctie gegevens CiviCRM contact';
-    $message['body'][] = '<p>Beste,</p>';
-    $message['body'][] = '<p>Een belteam vrijwilliger heeft aangegeven dat het telefoonnummer niet correct is.</p>';
-    $message['body'][] = '<p>CiviCRM contact id: ' . $params['contact_id'] . '<br/>';
-    $message['body'][] = 'Submission id: ' . $params['submission_id'] . '</p>';
-    $message['body'][] = '<p>Telefoonnummer: ' . $params['phone'] . '</p>';
-    $message['body'][] = '<p>Passen jullie het telefoonnummer indien nodig aan in CiviCRM?</p>';
-    $message['body'][] = '<p>Thx, SP Webteam</p>';
-    $message['body'][] = '<p>(Dit is een automatisch gegenereerd bericht)</p>';
-    break;
   case 'register_confirmation_required':
     $message['subject'] = 'Bevestig je aanmelding voor: ' . $params['webform_title'];
     $message['body'][] = '<p>Beste ' . $params['name'] . ',</p>';
