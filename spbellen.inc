@@ -935,10 +935,6 @@ function spbellen_contact_fields() {
 function spbellen_correct_contact_fields() {
   $contact_fields = array(
     'display_name' => 'Weergave naam',
-    'email' => 'E-mail',
-    'street_address'=> 'Adres',
-    'postal_code' => 'Postcode',
-    'city' => 'Plaats',
   );
   return $contact_fields;
 }
@@ -1275,4 +1271,17 @@ function spbellen_click2dial_call_numbers_list() {
     }
   }
   return $number_list;
+}
+
+function spbellen_create_activity($contact_id, $activity_type, $status, $subject, $text, $debug_info) {
+  $spcivi = \SPCivi::getInstance();
+  set_time_limit(60);
+  $params = array( 
+    'activity_type_id' => $activity_type,
+    'subject' => $subject,
+    'target_id' => $contact_id,
+    'details' => $text,
+    'status_id' => $status,                                                                                                                                                                                  
+  );
+  $activity_results = $spcivi->api('Activity', 'create', $params);
 }

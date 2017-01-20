@@ -412,7 +412,7 @@ function spbellen_webform_submission_insert($node, $submission) {
         spbellen_blacklist($target_contact_id);
       }
 
-      // Check if contact information was corrected.
+      // Check if contact information was corrected, and create activity in CiviCRM.
       $correction = FALSE;
       $params = array();
       $params['submission_id'] = $submission->sid;
@@ -436,27 +436,44 @@ function spbellen_webform_submission_insert($node, $submission) {
           )
         ) {
           $correction = TRUE; 
-          $params['correction_lines'][] = '<p><strong>'.$field_name.'</strong><br/>';
+          $correction_lines[] = '<p><strong>'.$field_name.'</strong><br/>';
           $key = !empty($data[$map['spbellen_hidden_'.$field_key]][0]) ? $data[$map['spbellen_hidden_'.$field_key]][0] : '* leeg *';
-          $params['correction_lines'][] = $key . ' →  '.$data[$map['spbellen_'.$field_key]][0].'</p>';
+          $correction_lines[] = $key . ' →  '.$data[$map['spbellen_'.$field_key]][0].'</p>';
         }
       }
-      // Send mail with corrected values.
-      $corrections_email = variable_get('spbellen_corrections_email_address', '');
-      if ($correction && !empty($corrections_email)) {
-        
-        $params['contact_id'] = $data[$map['spbellen_hidden_contact_id']][0];
-        drupal_mail('spbellen', 'spbellen_correct', $corrections_email, language_default(), $params, 'webmaster@sp.nl');
+      // Create activity with corrected values.
+      if ($correction || $result === 'wrong_number') {
+        global $user;
+        $caller = entity_load_single('caller', $user->uid);
+        $caller_text = '';
+        $caller_text .= '<p>Gegevens beller:<br/>';
+        $caller_text .= 'Naam: ' . check_plain($caller->display_name) . '<br/>';
+        $caller_text .= 'Email: ' . check_plain($user->mail) . '<br/>';
+        $caller_text .= 'Telefoon: ' . check_plain($caller->phone) . '<br/>';
+        $caller_text .= 'Afdeling: ' . check_plain($caller->afdeling) . '<br/>';
+        $caller_text .= '</p>';
+        $contact_id = $data[$map['spbellen_hidden_contact_id']][0];
+      }
+      if ($correction) {
+        // Create activity.
+        $text = '<p>Een belteam vrijwilliger heeft een correctie van contactgegevens doorgegeven bij het bellen voor de campagne "' . $params['campaign_title'] . '".</p>';
+        $text .= '<p>CiviCRM contact id: ' . $params['contact_id'] . '<br/>';
+        $text .= 'Nr. inzending: ' . $params['submission_id'] . '</p>';
+        if (!empty($correction_lines)) {
+          foreach ($correction_lines as $line) {
+            $text .= $line;
+          }
+        }
+        $text .= $caller_text;
+        spbellen_create_activity($contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Correctie naam contact doorgegeven', $text, 'geen debug info');
       }
 
       // Check if wrong number.
       if ($result === 'wrong_number') {
-        $corrections_email = variable_get('spbellen_corrections_email_address', '');
-        if (!empty($corrections_email)) {
-          $params['contact_id'] = $data[$map['spbellen_hidden_contact_id']][0];
-          $params['phone'] = $data[$map['spbellen_hidden_phone']][0];
-          drupal_mail('spbellen', 'spbellen_wrong_number', $corrections_email, language_default(), $params, 'webmaster@sp.nl');
-        }
+        $phone = $data[$map['spbellen_hidden_phone']][0];
+        $text = '<p>Het telefoonnummer ' . $phone . ' is volgens een vrijwilliger van het belteam niet correct.</p>';
+        $text .= $caller_text;
+        spbellen_create_activity($contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
       }
 
       // Disassign target.

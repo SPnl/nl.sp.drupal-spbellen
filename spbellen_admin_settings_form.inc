@@ -1,16 +1,6 @@
 <?php
 
 function spbellen_settings_form($form, &$form_state) {
-  // Set e-mail settings.
-  $form['spbellen_email_settings'] = array(
-    '#type' => 'fieldset',
-    '#title' => 'E-mail instellingen',
-  );
-  $form['spbellen_email_settings']['spbellen_corrections_email_address'] = array(
-    '#type' => 'textfield',
-    '#title' => 'Correcties contactgegevens sturen naar:',
-    '#default_value' => variable_get('spbellen_corrections_email_address', ''),
-  );
   // Click2dial Voclarion settings.
   $form['spbellen_click2dial'] = array(
     '#type' => 'fieldset',
