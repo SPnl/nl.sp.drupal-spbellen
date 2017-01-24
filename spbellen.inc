@@ -935,6 +935,11 @@ function spbellen_contact_fields() {
 function spbellen_correct_contact_fields() {
   $contact_fields = array(
     'display_name' => 'Weergave naam',
+    'email' => 'E-mail',
+    'street_address'=> 'Adres',
+    'postal_code' => 'Postcode',
+    'city' => 'Plaats',
+
   );
   return $contact_fields;
 }
