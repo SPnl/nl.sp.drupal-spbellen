@@ -9,6 +9,7 @@ Drupal.behaviors.spBellenClick2Dial = {
      var shortname = click2dialParams.shortname;
      var dest = click2dialParams.dest;
      var extension = click2dialParams.extension;
+     var username = click2dialParams.username;
      $('#spbellen-click2dial-button').click(function( event ) {
        event.preventDefault();
        var click2dial_result = $.ajax({

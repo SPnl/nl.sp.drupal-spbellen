@@ -959,6 +959,7 @@ function spbellen_contact_block_data() {
               'shortname' => $shortname,
               'dest' => $phone,
               'extension' => $extension,
+              'username' => 'T' . $extension,
             );
             // Add optional params.
             $params_opt = array(
