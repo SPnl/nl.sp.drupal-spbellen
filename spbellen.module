@@ -362,12 +362,14 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
 }
 
 function spbellen_webform_submission_presave($node, &$submission) {
-  $map = spbellen_component_key_id_map($node);
-  if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
-    drupal_set_message('De inzending is niet opgeslagen. Komt dit vaak voor geef dit dan door aan webmaster@sp.nl', 'error');
-    $alias = spbellen_get_campaign_form_alias($node->nid);
-    $path = 'aanmelden/campagne/' . $alias;
-    drupal_goto($path);
+  if (spbellen_is_spbellen_form($node->nid)) {
+    $map = spbellen_component_key_id_map($node);
+    if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
+      drupal_set_message('De inzending is niet opgeslagen. Komt dit vaak voor geef dit dan door aan webmaster@sp.nl', 'error');
+      $alias = spbellen_get_campaign_form_alias($node->nid);
+      $path = 'aanmelden/campagne/' . $alias;
+      drupal_goto($path);
+    }
   }
 }
 
