@@ -784,6 +784,7 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
   $chunk_size = 200;
   $group_id = $group_ids['id'];
   $group_name = $group_ids['name'];
+  $context['results']['count'] = array();
 
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
@@ -837,6 +838,9 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
           $result['is_lid'] = $result['is_member'];
           $result['afdeling_id'] = $result['afdeling_code'];
 
+          if (empty($context['results']['count'][$group_id])) {
+            $context['results']['count'][$group_id] = 0;
+          }
           $context['results']['count'][$group_id] ++;
           spbellen_get_targets_process_target($campaign_id, $result, $sync_id);
         }
@@ -864,7 +868,9 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
 function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
   $fields = array_keys(spbellen_contact_fields());
   foreach ($fields as $field) {
-    $values[$field] = $result[$field];
+    if (!empty($result[$field])) {
+      $values[$field] = $result[$field];
+    }
   }
 
   $contact_id = $values['contact_id'];
@@ -1333,10 +1339,12 @@ function spbellen_get_notes($contact_id) {
             }
           }
         }
-        foreach ($note_content_values as $value_key => $value_value) {
-          if (filter_var($value_key, FILTER_VALIDATE_INT)) {
-            if (in_array($value_key, $phone_note_keys)) {
-              $notes[] = $value_value;
+        if (!empty($note_content_values)) {
+          foreach ($note_content_values as $value_key => $value_value) {
+            if (filter_var($value_key, FILTER_VALIDATE_INT)) {
+              if (in_array($value_key, $phone_note_keys)) {
+                $notes[] = $value_value;
+              }
             }
           }
         }
