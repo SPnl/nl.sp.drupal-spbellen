@@ -95,6 +95,16 @@ function spbellen_menu() {
     'weight' => '2',
   );
 
+  $items['admin/config/sp/spbellen/subscribe'] = array(
+    'title' => 'Inschrijven',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_subscription_form'),
+    'file' => 'spbellen_admin_subscribe_form.inc',
+    'access callback' => 'sprbs_access_check',
+    'weight' => '3',
+  );
+
   $items['spbellen/group/autocomplete/%'] = array(
     'title' => 'SP bellen autocomplete',
     'page callback' => 'spbellen_group_autocomplete',
@@ -791,6 +801,7 @@ function spbellen_theme($existing, $type, $theme, $path) {
     $variables[$key] = NULL;
   }
   $variables['history'] = NULL;
+  $variables['notes'] = NULL;
   $registry['spbellen_block_theme'] = array(
     'template' => 'spbellen-block',
     'variables' => $variables,
@@ -921,6 +932,12 @@ function spbellen_contact_block_data() {
         $contact_fields = spbellen_contact_fields();
         foreach ($contact_fields as $key => $name) {
           $data[$key] = !empty($contact_data[$key]) ? check_plain($contact_data[$key]) : '';
+        }
+
+        // Add notes.
+        $data['notes'] = !empty($contact_data['notes']) ? unserialize($contact_data['notes']) : array();
+        foreach ($data['notes'] as $key => $value) {
+          $data['notes'][$key] = check_plain($value);
         }
 
         //Call history.

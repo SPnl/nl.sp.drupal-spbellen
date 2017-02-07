@@ -870,6 +870,13 @@ function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
   $contact_id = $values['contact_id'];
   unset($values['contact_id']);
 
+  // Get notes.
+  $notes = spbellen_get_notes($contact_id);
+  if (!empty($notes)) {
+    $notes_serialized = serialize($notes);
+    $values['notes'] = $notes_serialized;
+  }
+
   // Add target contact data.
   db_merge('spbellen_contact_data')
     ->key(array('contact_id' => $contact_id))
@@ -1137,6 +1144,7 @@ function spbellen_get_contact_data($contact_id) {
     $contact_data = array();
     $fields = array_keys(spbellen_contact_fields());
     $fields_list = implode(',', $fields);
+    $fields_list .=  ',notes';
     // Get contact data.
     $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE civi_contact_id = :contact_id";
     $result = db_query($query, array(':contact_id' => $contact_id));
@@ -1290,4 +1298,50 @@ function spbellen_create_activity($contact_id, $activity_type, $status, $subject
     'status_id' => $status,                                                                                                                                                                                  
   );
   $activity_results = $spcivi->api('Activity', 'create', $params);
+}
+
+function spbellen_get_notes($contact_id) {
+  $notes = array();
+  $civi_note_content_field_id = variable_get('spcivipush_note_content_field');
+  $civi_note_use_field_id = variable_get('spcivipush_note_use_field');
+
+  if (
+    !empty($civi_note_content_field_id) &&
+    !empty($civi_note_use_field_id)
+  ) {
+    set_time_limit(0);
+    $spcivi = \SPCivi::getInstance();
+
+    $params = array(
+      'sequential' => 1,
+      'entity_id' => $contact_id,
+    );
+    $results = $spcivi->api('CustomValue', 'get', $params);
+    if (spbellen_check_result($results, 'customvalues', 'get', $params)) {
+      if (!empty($results['values'])) {
+        foreach ($results['values'] as $value) {
+          if ($value['id'] == $civi_note_content_field_id) {
+            $note_content_values = $value;
+          }
+          if ($value['id'] == $civi_note_use_field_id) {
+            foreach ($value as $value_key => $value_value) {
+              if (filter_var($value_key, FILTER_VALIDATE_INT)) {
+                if (in_array('telefoongesprek', $value_value)) {
+                  $phone_note_keys[$value_key] = $value_key;
+                }
+              }
+            }
+          }
+        }
+        foreach ($note_content_values as $value_key => $value_value) {
+          if (filter_var($value_key, FILTER_VALIDATE_INT)) {
+            if (in_array($value_key, $phone_note_keys)) {
+              $notes[] = $value_value;
+            }
+          }
+        }
+      }
+    }
+  }
+  return $notes;
 }

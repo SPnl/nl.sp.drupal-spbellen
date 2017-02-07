@@ -38,8 +38,8 @@
     </div>
   </div>
   <div class="content right">
+    <p><strong>Belgeschiedenis</strong></p>
     <?php if (!empty($history)) : ?>
-      <p><strong>Belgeschiedenis</strong></p>
       <ul>
         <?php foreach ($history as $values) : ?> 
           <li><?php print $values['date']; ?><br/><?php print $values['result']; ?><?php if (!empty($values['caller_message'])) : ?><br/>Opmerking: "<?php print $values['caller_message']; ?>"<?php endif; ?></li>
@@ -47,6 +47,14 @@
       </ul>
     <?php else : ?>
         <p>Er is nog niet eerder gebeld</p>
+    <?php endif; ?>
+    <?php if (!empty($notes)) : ?>
+      <p><strong>Notities</strong></p>
+      <ul>
+      <?php foreach ($notes as $note) : ?>
+        <li><?php print $note; ?></li>
+      <?php endforeach; ?>
+      </ul>
     <?php endif; ?>
     <?php if (!empty($click2dial)) : ?>
       <div>
