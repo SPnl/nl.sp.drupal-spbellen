@@ -784,7 +784,9 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
   $chunk_size = 200;
   $group_id = $group_ids['id'];
   $group_name = $group_ids['name'];
-  $context['results']['count'] = array();
+  if (empty($context['results']['count'])) {
+    $context['reults']['count'] = array();
+  }
 
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
@@ -836,7 +838,7 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
 
           $result['phone'] = preg_replace('/\D/', '', $result['phone']);
           $result['is_lid'] = $result['is_member'];
-          $result['afdeling_id'] = $result['afdeling_code'];
+          $result['afdeling_id'] = empty($result['afdeling_code']) ? '' : $result['afdeling_code'];
 
           if (empty($context['results']['count'][$group_id])) {
             $context['results']['count'][$group_id] = 0;
