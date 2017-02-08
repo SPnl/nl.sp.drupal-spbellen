@@ -35,28 +35,18 @@ function spbellen_menu() {
   );
 
   $items['admin/bellen/coach'] = array(
-    'title' => 'Belcoach overzicht',
+    'title' => 'Aanmelden bellers',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('spbellen_coach_overview_form'),
-    'file' => 'spbellen_coach_overview_form.inc',
+    'page arguments' => array('spbellen_coach_subscribe_callers_form'),
+    'file' => 'spbellen_coach_subscribe_callers_form.inc',
     'access arguments' => array('spbellen administer callers'),
   );
 
-  $items['admin/bellen/coach/overview'] = array(
-    'title' => 'Belcoach overzicht',
+  $items['admin/bellen/coach/subscribe_callers'] = array(
+    'title' => 'Aanmelden bellers',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => '0',
-    'access arguments' => array('spbellen administer callers'),
-  );
-
-  $items['admin/bellen/coach/subscriptions'] = array(
-    'title' => 'Aanmeldingen verwerken',
-    'type' => MENU_LOCAL_TASK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('spbellen_coach_subscriptions_form'),
-    'file' => 'spbellen_coach_subscriptions_form.inc',
-    'weight' => '1',
     'access arguments' => array('spbellen administer callers'),
   );
 
