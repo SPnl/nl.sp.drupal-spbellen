@@ -938,7 +938,7 @@ function spbellen_contact_block_data() {
         // Add notes.
         $data['notes'] = !empty($contact_data['notes']) ? unserialize($contact_data['notes']) : array();
         foreach ($data['notes'] as $key => $value) {
-          $data['notes'][$key] = check_plain($value);
+          $data['notes'][$key] = nl2br(check_plain($value));
         }
 
         //Call history.
