@@ -1163,12 +1163,36 @@ function spbellen_get_all_stats() {
   $stats = &drupal_static(__FUNCTION__);
   if (!isset($stats)) {
     $stats = array();
+    // Add campaign stats.
     $campaigns = spbellen_get_campaigns();
     if (!empty($campaigns)) {
       foreach ($campaigns as $campaign_id => $campaign) {
-        $stats[$campaign_id] = spbellen_get_campaign_stats($campaign_id);
+        $stats['campaign_stats'][$campaign_id] = spbellen_get_campaign_stats($campaign_id);
       }
     }
+    // Add general stats.
+    $stats['general_stats'] = spbellen_get_general_stats();
+  }
+  return $stats;
+}
+
+function spbellen_get_general_stats() {
+  $stats = &drupal_static(__FUNCTION__);
+  if (!isset($stats)) {
+    $stats = array();
+    $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id;";
+    $result = db_query($query);
+    $record = $result->fetchAssoc();
+    foreach ($record as $key => $value) {
+      $stats[$key] = empty($value) ? 0 : $value;
+      if ($record['total'] != 0) {
+        $stats[$key.'_percentage'] = floor(100 * $value / $record['total']);
+      }
+      else {
+        $stats[$key.'_percentage'] = 0;
+      }
+    }
+    $stats['title'] = 'Algemene statistieken'; 
   }
   return $stats;
 }

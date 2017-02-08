@@ -808,6 +808,7 @@ function spbellen_theme($existing, $type, $theme, $path) {
   );
   $variables = array(
     'campaign_stats',
+    'general_stats',
   );
   $registry['spbellen_overview_theme'] = array(
     'template' => 'spbellen-overview',

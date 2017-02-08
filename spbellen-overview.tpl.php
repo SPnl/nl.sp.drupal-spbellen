@@ -12,6 +12,33 @@
 ?>
 
 <?php if(!empty($campaign_stats)) : ?>
+  <h3><?php print($general_stats['title']); ?></h3>
+  <table style="width: auto">
+    <tr>
+      <th></th><th>aantal</th><th>percentage</th>
+    </tr>
+    <tr>
+      <td>Afgerond</td><td><?php print $general_stats['completed']; ?></td><td><?php print $general_stats['completed_percentage']; ?>%</td>
+    </tr>
+    <tr>
+      <td>Terugbellen</td><td><?php print $general_stats['call_back']; ?></td><td><?php print $general_stats['call_back_percentage']; ?>%</td>
+
+    </tr>
+    <tr>
+      <td>Niet gebeld</td><td><?php print $general_stats['not_contacted']; ?></td><td><?php print $general_stats['not_contacted_percentage']; ?>%</td>
+    </tr>
+    <tr>
+      <td>Verkeerd nummer</td><td><?php print $general_stats['wrong_number']; ?></td><td><?php print $general_stats['wrong_number_percentage']; ?>%</td>
+    </tr>
+    <tr>
+      <td>Nooit meer bellen</td><td><?php print $general_stats['blacklisted']; ?></td><td><?php print $general_stats['blacklisted_percentage']; ?>%</td>
+    </tr>
+    <tr>
+      <td>Totaal</td><td><?php print $general_stats['total']; ?></td><td>100%</td>
+    </tr>
+  </table>
+<?php endif; ?>
+<?php if(!empty($campaign_stats)) : ?>
   <?php foreach($campaign_stats as $data) : ?>
     <h3><?php print($data['title']); ?></h3>
     <table style="width: auto">
