@@ -85,11 +85,9 @@ function spbellen_campaign_form($form, &$form_state) {
       );
 
       $group_types = array(
-        'call_group' => 'belgroep',
         'target_group' => 'doelgroep',
       );
       $filters = array(
-        'call_group' => 'all',
         'target_group' => 'all_but_smart',
       );
 
@@ -433,7 +431,6 @@ function spbellen_campaign_form_submit($form, &$form_state) {
 
 function spbellen_store_campaign_groups($storage, $campaign) {
   $types = array(
-    'call_group' => 'belgroep',
     'target_group' => 'doelgroep',
   );
   foreach ($types as $type_key => $type_name) {

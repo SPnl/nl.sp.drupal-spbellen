@@ -970,3 +970,24 @@ function spbellen_update_7024() {
       );
   db_add_field( 'spbellen_contact_data', 'notes', $spec);
 }
+
+/**
+ * Removes spnet login.
+ */
+function spbellen_update_7025() {
+  // Remove CiviCRM call groups from campaign groups table.
+  db_delete('spbellen_campaign_groups')
+    ->condition('group_type', 'call_group')
+    ->execute();
+
+  // Remove SPNET login users
+  $result = db_query("SELECT caller_id FROM {spbellen_caller} WHERE access_type = 'spnet'");
+  foreach ($result as $record) {
+    user_delete($record->caller_id);
+  }
+
+  // Remove spnet login callers from caller table.
+  db_delete('spbellen_caller')
+    ->condition('access_type', 'spnet')
+    ->execute();
+}

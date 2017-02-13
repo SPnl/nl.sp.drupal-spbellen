@@ -1089,10 +1089,7 @@ function spbellen_check_result($result, $dataname, $action, $data = NULL, $submi
 }
 
 function spbellen_campaign_form_access($form_nid) {
-  // Check session for call groups.
-  if (!empty($_SESSION['spbellen']['call_groups'][$form_nid])) {
-    return TRUE;
-  }
+  // Check session.
   if (!empty($_SESSION['spbellen']['local_access'][$form_nid])) {
     return TRUE;
   }
