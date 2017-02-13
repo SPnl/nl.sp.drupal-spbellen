@@ -125,11 +125,6 @@ function spbellen_campaign_form($form, &$form_state) {
           $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van CiviCRM smart mogelijk ivm. batch import!'; 
         }
 
-        if ($type_key == 'call_group') {
-          global $base_url;
-          $form[$type_key.'_select'][$type_key]['#description'] = 'Contacten die in een belgroep voorkomen kunnen inloggen in de beltool via SPNET. login url: ' . $base_url . '/aanmelden-spnet'; 
-        }
-
         $form[$type_key.'_select']['add_'.$type_key] = array(
           '#type' => 'button',
           '#value' => 'Voeg toe',

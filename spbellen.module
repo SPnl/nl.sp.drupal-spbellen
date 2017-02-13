@@ -442,49 +442,16 @@ function spbellen_webform_submission_insert($node, $submission) {
 
 function spbellen_user_login($edit, $account) {
   // Store caller campaign access in session.
-  $caller_civi_groups = array();
   $call_groups = array();
-  // Check if civicrm id for user is set, then civigroup access.
-  if (!empty($account->field_contact_id)) {
-    // Civi account login.
-    // Get caller civi groups.
-    set_time_limit(0);
-    $spcivi = \SPCivi::getInstance();
-    $params = array(
-      'contact_id' => $account->field_contact_id['und'][0]['value'],
-    );
-    $results = $spcivi->api('GroupContact', 'get', $params);
-    if (spbellen_check_result($results, 'groepen', 'get', $params)) {
-      if (!empty($results['values'])) {
-        foreach ($results['values'] as $result) {
-          $caller_civi_groups[] = $result['group_id'];
-        }
-      }
+  // Local access.
+  $query = "SELECT ca.webform_id, la.campaign_id FROM {spbellen_local_access} la INNER JOIN {spbellen_campaign} ca ON la.campaign_id = ca.id WHERE la.uid = :uid";
+  $results = db_query($query, array(':uid' => $account->uid));
+  if ($results) {
+    while ($row = $results->fetchAssoc()) {
+      $local_access[$row['webform_id']] = $row['campaign_id'];
     }
-    // Get call groups.
-    $query = "SELECT webform_id, civi_group_id FROM {spbellen_campaign_groups} cg INNER JOIN {spbellen_campaign} ca ON cg.campaign_id = ca.id WHERE group_type = 'call_group'";
-    $results = db_query($query);
-    if ($results) {
-      while ($row = $results->fetchAssoc()) {
-        $call_groups[$row['webform_id']] = $row['civi_group_id'];
-      }
-    }
-    // Get intersection. 
-    $caller_call_groups = array_intersect($call_groups, $caller_civi_groups);
-    // Store caller call groups in session.
-    $_SESSION['spbellen']['call_groups'] = $caller_call_groups;
-  }
-  else {
-    // Local access.
-    $query = "SELECT ca.webform_id, la.campaign_id FROM {spbellen_local_access} la INNER JOIN {spbellen_campaign} ca ON la.campaign_id = ca.id WHERE la.uid = :uid";
-    $results = db_query($query, array(':uid' => $account->uid));
-    if ($results) {
-      while ($row = $results->fetchAssoc()) {
-        $local_access[$row['webform_id']] = $row['campaign_id'];
-      }
-      if (!empty($local_access)) {
-        $_SESSION['spbellen']['local_access'] = $local_access;
-      }
+    if (!empty($local_access)) {
+      $_SESSION['spbellen']['local_access'] = $local_access;
     }
   }
 }
@@ -866,31 +833,6 @@ function spbellen_mail($key, &$message, $params) {
     $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
     $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
     break;
-  }
-}
-
-function spbellen_user_update(&$edit, $account, $category) {
-  if (strpos($account->init, 'spoauth_') !== FALSE) {
-    // SPNET account.
-    $account_wrapped = entity_metadata_wrapper('user', $account);
-    $display_name = $account_wrapped->field_first_name->value();
-    $display_name .= !empty($account_wrapped->field_middle_name->value()) ? ' ' . $account_wrapped->field_middle_name->value() : '';
-    $display_name .= !empty($account_wrapped->field_last_name->value()) ? ' ' . $account_wrapped->field_last_name->value() : '';
-    db_merge('spbellen_caller')
-      ->key(array(
-        'caller_id' => $account->uid,
-      ))
-      ->fields(array(
-        'access_type' => 'spnet',
-        'first_name' => $account_wrapped->field_first_name->value(),
-        'middle_name' => $account_wrapped->field_middle_name->value(),
-        'last_name' => $account_wrapped->field_last_name->value(),
-        'display_name' => $display_name,
-        'phone' => preg_replace('/[^0-9]/', '', $account_wrapped->field_phone_primary->value()),
-        'afdeling' => $account_wrapped->field_afdeling->value(),
-      ))
-      ->execute();
-
   }
 }
 
