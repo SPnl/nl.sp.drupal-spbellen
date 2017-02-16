@@ -7,8 +7,8 @@ function spbellen_coach_store_selected_campaign(&$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'select_campaign':
-      $_SESSION['spbellen']['coach_selected_campaign'] = $values['select_campaign'];
+    case 'campaign':
+      $_SESSION['spbellen']['coach_selected_campaign'] = $values['campaign'];
       break;
     }
   }

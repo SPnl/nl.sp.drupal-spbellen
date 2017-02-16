@@ -106,21 +106,6 @@ function spbellen_subscription_form($form, &$form_state) {
         '#disabled' => isset($form_state['has_account']),
       );
 
-      // Campaign code field.
-      if (!empty($form_state['campaign']->campaign_code)) {
-        $form['campaign_code'] = array(
-          '#type' => 'textfield',
-          '#title' => 'Campagne code',
-          '#default_value' => empty($form_state['values']['campaign_code']) ? '' : $form_state['values']['campaign_code'],
-          '#required' => TRUE,
-          '#disabled' => isset($form_state['has_account']),
-          '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
-          '#attributes' => array(
-            'autocomplete' => 'off',
-          ),
-        );
-      }
-
       // Submit for account check.
       if (!isset($form_state['has_account'])) {
         $form['submit_has_account'] = array(
@@ -132,54 +117,71 @@ function spbellen_subscription_form($form, &$form_state) {
       else {
         // Has no account.
         if ($form_state['has_account'] === 0) {
+          if (!empty($form_state['campaign']->campaign_code) && empty($form_state['has_campaign_access'])) {
+            // Check campaign code.
+            $form['campaign_code'] = array(
+              '#type' => 'textfield',
+              '#title' => 'Campagne code',
+              '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
+              '#attributes' => array(
+                'autocomplete' => 'off',
+              ),
+            );
+            $form['submit_campaign_code'] = array(
+              '#type' => 'button',
+              '#value' => 'Verder',
+              '#name' => 'submit_campaign_code',
+            );
+          }
+          else {
 
-          $form['first_name'] = array(
-            '#type' => 'textfield',
-            '#title' => 'Voornaam',
-            '#required' => TRUE,
-          );
+            $form['first_name'] = array(
+              '#type' => 'textfield',
+              '#title' => 'Voornaam',
+              '#required' => TRUE,
+            );
 
-          $form['middle_name'] = array(
-            '#type' => 'textfield',
-            '#title' => 'Tussenvoegsel',
-          );
+            $form['middle_name'] = array(
+              '#type' => 'textfield',
+              '#title' => 'Tussenvoegsel',
+            );
 
-          $form['last_name'] = array(
-            '#type' => 'textfield',
-            '#title' => 'Achternaam',
-            '#required' => TRUE,
-          );
+            $form['last_name'] = array(
+              '#type' => 'textfield',
+              '#title' => 'Achternaam',
+              '#required' => TRUE,
+            );
 
-          $form['phone'] = array(
-            '#type' => 'textfield',
-            '#title' => '06-nummer',
-            '#required' => TRUE,
-          );
+            $form['phone'] = array(
+              '#type' => 'textfield',
+              '#title' => '06-nummer',
+              '#required' => TRUE,
+            );
 
-          $form['postal_code'] = array(
-            '#type' => 'textfield',
-            '#title' => 'Postcode',
-            '#required' => TRUE,
-          );
+            $form['postal_code'] = array(
+              '#type' => 'textfield',
+              '#title' => 'Postcode',
+              '#required' => TRUE,
+            );
 
-          $form['account_pass'] = array(
-            '#type' => 'password_confirm',
-            '#title' => 'Kies een wachtwoord',
-            '#required' => TRUE,
-          );
+            $form['account_pass'] = array(
+              '#type' => 'password_confirm',
+              '#title' => 'Kies een wachtwoord',
+              '#required' => TRUE,
+            );
 
-          $form['submit_account_data'] = array(
-            '#type' => 'submit',
-            '#value' => 'Verder',
-            '#name' => 'submit_account_data',
-          );
+            $form['submit_account_data'] = array(
+              '#type' => 'submit',
+              '#value' => 'Verder',
+              '#name' => 'submit_account_data',
+            );
 
-          $form['back_account_data'] = array(
-            '#type' => 'button',
-            '#value' => 'Terug',
-            '#name' => 'back_account_data',
-          );
-
+            $form['back_account_data'] = array(
+              '#type' => 'button',
+              '#value' => 'Terug',
+              '#name' => 'back_account_data',
+            );
+          }
         }
         else {
 
@@ -188,6 +190,18 @@ function spbellen_subscription_form($form, &$form_state) {
               '#type' => 'textfield',
               '#title' => 'Postcode',
               '#required' => TRUE,
+            );
+          }
+
+          if (!empty($form_state['campaign']->campaign_code) && $form_state['caller_data']->state !== 'master' && empty($form_state['has_campaign_access'])) {
+            $form['campaign_code'] = array(
+              '#type' => 'textfield',
+              '#title' => 'Campagne code',
+              '#default_value' => empty($form_state['values']['campaign_code']) ? '' : $form_state['values']['campaign_code'],
+              '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
+              '#attributes' => array(
+                'autocomplete' => 'off',
+              ),
             );
           }
 
@@ -244,11 +258,6 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       drupal_goto('aanmelden/campagne' . $alias);
       break;
     case 'submit_has_account':
-      // Trim fields.
-      if (!empty($campaign->campaign_code)) {
-        $form_state['values']['campaign_code'] = trim($values['campaign_code']);
-      }
-
       // Validatie e-mail adres.
       if (! valid_email_address($values['email'])) {
         form_set_error('email', 'Vul een geldig e-mailadres in!');
@@ -260,18 +269,6 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         watchdog('spwebform_email_verify', $result, array(), WATCHDOG_NOTICE);
       }
 
-      // Check campaign code.
-      if (!empty($campaign->campaign_code)) {
-        // Check campaign code.
-        if ($values['campaign_code'] !== $campaign->campaign_code) {
-          unset($form_state['input']['campaign_code']);
-          form_set_error('campaign_code', 'De campagnecode is niet correct!');
-          $error = TRUE;
-        }
-      }
-      if (!empty($error)) {
-        return;
-      }
       $account = user_load_by_name($values['email']);
       if (!empty($account)) {
         $form_state['account'] = $account;
@@ -279,6 +276,14 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         // Get caller data.
         $caller_data = entity_load_single('caller', $account->uid);
         $form_state['caller_data'] = $caller_data;
+        // Store access.
+        $query = new EntityFieldQuery;
+        $result = $query
+          ->entityCondition('entity_type', 'local_access')
+          ->propertyCondition('uid', $account->uid)
+          ->propertyCondition('campaign_id', $campaign->id)
+          ->execute();
+        $form_state['has_campaign_access'] = !empty($result);
       }
       else {
         $form_state['has_account'] = 0;
@@ -299,6 +304,26 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       drupal_goto('user/password');
       break;
     case 'submit_account_pass':
+      // Check campaign code.
+      if (
+        !empty($form_state['campaign']->campaign_code) &&
+        $form_state['caller_data']->state !== 'master' &&
+        empty($form_state['has_campaign_access'])
+      ) {
+        // Trim fields.
+        $form_state['values']['campaign_code'] = trim($values['campaign_code']);
+
+        // Check campaign code.
+        if ($values['campaign_code'] !== $campaign->campaign_code) {
+          unset($form_state['input']['campaign_code']);
+          form_set_error('campaign_code', 'De campagnecode is niet correct!');
+          $error = TRUE;
+        }
+        if (!empty($error)) {
+          return;
+        }
+      }
+
       // Store variables for flood control.
       $form_state['values']['name'] = $values['email'];
       $form_state['values']['pass'] = $values['account_pass'];
@@ -316,6 +341,23 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       }
       return;
       break;
+    case 'submit_campaign_code':
+      // Trim fields.
+      $form_state['values']['campaign_code'] = trim($values['campaign_code']);
+
+      // Check campaign code.
+      if ($values['campaign_code'] !== $campaign->campaign_code) {
+        unset($form_state['input']['campaign_code']);
+        form_set_error('campaign_code', 'De campagnecode is niet correct!');
+        $error = TRUE;
+      }
+      if (!empty($error)) {
+        return;
+      }
+      else {
+        $form_state['has_campaign_access'] = TRUE;
+      }
+      break;
     case 'back_account_data':
       unset($_SESSION['messages']['error']);
       drupal_goto(request_path());
@@ -330,9 +372,6 @@ function spbellen_subscription_form_validate($form, &$form_state) {
         'email',
         'account_pass',
       );
-      if (!empty($campaign->campaign_code)) {
-        $fields_to_trim[] = 'campaign_code';
-      }
       foreach ($fields_to_trim as $field_to_trim) {
         $form_state['values'][$field_to_trim] = trim($values[$field_to_trim]);
       }

@@ -35,7 +35,7 @@ function spbellen_menu() {
   );
 
   $items['admin/bellen/coach'] = array(
-    'title' => 'Aanmelden bellers',
+    'title' => 'Inschrijven bellers',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_coach_subscribe_callers_form'),
@@ -44,7 +44,7 @@ function spbellen_menu() {
   );
 
   $items['admin/bellen/coach/subscribe_callers'] = array(
-    'title' => 'Aanmelden bellers',
+    'title' => 'Inschrijven bellers',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => '0',
     'access arguments' => array('spbellen administer callers'),
@@ -442,16 +442,22 @@ function spbellen_webform_submission_insert($node, $submission) {
 
 function spbellen_user_login($edit, $account) {
   // Store caller campaign access in session.
-  $call_groups = array();
-  // Local access.
-  $query = "SELECT ca.webform_id, la.campaign_id FROM {spbellen_local_access} la INNER JOIN {spbellen_campaign} ca ON la.campaign_id = ca.id WHERE la.uid = :uid";
-  $results = db_query($query, array(':uid' => $account->uid));
-  if ($results) {
-    while ($row = $results->fetchAssoc()) {
-      $local_access[$row['webform_id']] = $row['campaign_id'];
-    }
-    if (!empty($local_access)) {
-      $_SESSION['spbellen']['local_access'] = $local_access;
+  // All access.
+  $caller = entity_load_single('caller', $account->uid);
+  if ($caller->state === 'master') {
+    $_SESSION['spbellen']['all_access'] = 'all_access';
+  }
+  else {
+    // Local access.
+    $query = "SELECT ca.webform_id, la.campaign_id FROM {spbellen_local_access} la INNER JOIN {spbellen_campaign} ca ON la.campaign_id = ca.id WHERE la.uid = :uid";
+    $results = db_query($query, array(':uid' => $account->uid));
+    if ($results) {
+      while ($row = $results->fetchAssoc()) {
+        $local_access[$row['webform_id']] = $row['campaign_id'];
+      }
+      if (!empty($local_access)) {
+        $_SESSION['spbellen']['local_access'] = $local_access;
+      }
     }
   }
 }
@@ -952,5 +958,33 @@ function spbellen_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
       $form[$field]['#access'] = FALSE;
     }
     $form['account']['mail']['#access'] = FALSE;
+  }
+  $form['#validate'][] = 'spbellen_user_profile_validate';
+}
+
+function spbellen_user_profile_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  // Validate password.
+  $regex_tests = array(
+    '[0-9]+' => 'Gebruik tenminste één cijfer in het wachtwoord',
+    '[a-z]+' => 'Gebruik tenminste één kleine letter in het wachtwoord',
+    '[A-Z]+' => 'Gebruik tenminste één hoofdletter in het wachtwoord',
+    '\W+' => 'Gebruik tenminste één teken (bijv. !?+-= e.d.) in het wachtwoord',
+  );
+  foreach ($regex_tests as $regex => $feedback) {
+    if (!preg_match('/' . $regex . '/', $values['pass'])) {
+      $pass_feedback_array[] = $feedback;
+      $error = TRUE;
+      $pass_error = TRUE;
+    }
+  }
+  if (strlen($values['pass']) < 6) {
+    $pass_feedback_array[] = 'Het wachtwoord moet minimaal 6 tekens lang zijn';
+    $error = TRUE;
+    $pass_error = TRUE;
+  }
+  if (!empty($pass_error)) {
+    $pass_feedback = implode('<br/>', $pass_feedback_array);
+    form_set_error('pass', $pass_feedback);
   }
 }
