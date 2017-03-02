@@ -444,7 +444,17 @@ function spbellen_user_login($edit, $account) {
   // Store caller campaign access in session.
   // All access.
   $caller = entity_load_single('caller', $account->uid);
-  if ($caller->state === 'master') {
+  if (
+    (
+      $caller !== FALSE &&
+      $caller->state === 'master'
+    ) ||
+    (
+      is_array($account->roles) &&
+      in_array('admin', array_values($account->roles))
+    ) ||
+    $account->uid === 1
+  ) {
     $_SESSION['spbellen']['all_access'] = 'all_access';
   }
   else {
