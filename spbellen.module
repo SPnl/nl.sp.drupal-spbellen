@@ -366,6 +366,13 @@ function spbellen_webform_submission_presave($node, &$submission) {
     $map = spbellen_component_key_id_map($node);
     if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
       drupal_set_message('De inzending is niet opgeslagen. Komt dit vaak voor geef dit dan door aan webmaster@sp.nl', 'error');
+      global $user;
+      $params = array(
+        'caller' => $user,
+        'call_submission' => $submission,
+        'campaign_node' => $node,
+      );
+      drupal_mail('spbellen', 'inzending_niet_opgeslagen', 'tdgraaff@sp.nl', language_default(), $params);
       $alias = spbellen_get_campaign_form_alias($node->nid);
       $path = 'aanmelden/campagne/' . $alias;
       drupal_goto($path);
@@ -848,6 +855,12 @@ function spbellen_mail($key, &$message, $params) {
     $message['body'][] = '<p>Je aanmelding voor de belcampagne is bevestigd. Vanaf nu kan je je direct aanmelden op de onderstaande pagina.</p>';
     $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
     $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
+    break;
+  case 'inzending_niet_opgeslagen':
+    $message['subject'] = 'Beltool: inzending niet opgeslagen';
+    $message['body'][] = '<p>User:</p><pre>'.print_r($params['caller'], TRUE).'</pre>';
+    $message['body'][] = '<p>Submission:</p><pre>'.print_r($params['call_submission'], TRUE).'</pre>';
+    $message['body'][] = '<p>Node:</p><pre>'.print_r($params['campaign_node'], TRUE).'</pre>';
     break;
   }
 }
