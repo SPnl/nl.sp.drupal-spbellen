@@ -1006,12 +1006,10 @@ function spbellen_assign_target($campaign) {
       ':caller_id' => $user->uid,
     ))->fetchAssoc();
     if (!$result) {
-      // Get new target.
-      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.call_back_time < :current_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
+      // Get new target, not called before (random order).
+      $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE attempts = 0 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND occupied = 0 ORDER BY RAND() LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
-        ':occupied_time' => time() - 1800,
-        ':current_time' => time(),
       ))->fetchAssoc();
       if ($result) {
         // Claim target.
@@ -1023,6 +1021,26 @@ function spbellen_assign_target($campaign) {
           ))
           ->condition('id', $result['id'])
           ->execute();
+      }
+      else {
+        // Get new target, called before.
+        $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back')) AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (attempts = 0 OR (attempts > 0 AND ac.call_back_time < :current_time))) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
+        $result = db_query($query, array(
+          ':cid' => $campaign_id,
+          ':occupied_time' => time() - 1800,
+          ':current_time' => time(),
+        ))->fetchAssoc();
+        if ($result) {
+          // Claim target.
+          db_update('spbellen_targets')
+            ->fields(array(
+              'occupied' => 1,
+              'date' => time(),
+              'caller_id' => $user->uid,
+            ))
+            ->condition('id', $result['id'])
+            ->execute();
+        }
       }
     }
     if (!empty($result)) {
