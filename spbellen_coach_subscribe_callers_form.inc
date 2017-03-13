@@ -213,6 +213,7 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
     case 'submit_account_data':
+      require_once DRUPAL_ROOT . '/includes/password.inc';
       $account = user_load_by_name($values['email']);
       if ($account) {
         require_once DRUPAL_ROOT . '/' . variable_get('password_inc', 'includes/password.inc');
@@ -238,13 +239,15 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
           'access' => REQUEST_TIME,
           'roles' => array(),
         );
+        $account = user_save(NULL, $user);
         if (!empty($values['account_pass'])) {
-          $user['pass'] = user_hash_password($values['account_pass']);
+          $pass = user_hash_password($values['account_pass']);
         }
         else {
-          $user['pass'] = user_password();
+          $pass = user_password();
         }
-        $account = user_save(NULL, $user);
+        $account->pass = $pass;
+        $account = user_save($account);
         drupal_set_message('Er is een nieuw account aangemaakt voor ' . check_plain($values['first_name']) . ' .');
       }
       if (!empty($account)) {
