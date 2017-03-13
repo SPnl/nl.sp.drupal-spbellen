@@ -1342,7 +1342,8 @@ function spbellen_create_activity($contact_id, $activity_type, $status, $subject
     'subject' => $subject,
     'target_id' => $contact_id,
     'details' => $text,
-    'status_id' => $status,                                                                                                                                                                                  
+    'status_id' => $status,
+    'priority_id' => 2,
   );
   $activity_results = $spcivi->api('Activity', 'create', $params);
 }
