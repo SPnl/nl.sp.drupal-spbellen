@@ -403,10 +403,22 @@ function spbellen_webform_submission_insert($node, $submission) {
       if (!empty($submission->data[$map['target_available']][0])) {
         $result = $submission->data[$map['target_available']][0];
       }
+      $call_back_priority = 0;
       if (!empty($submission->data[$map['not_available_today']][0])) {
         $call_back_time = strtotime('tomorrow') + 21600; // Call back after 6:00 next day.
       }
-      else {
+      elseif (
+        !empty($map['call_appointment']) &&
+        !empty($submission->data[$map['call_appointment']][0])
+      ) {
+        $call_back_date = $submission->data[$map['call_back_date']][0];
+        $call_back_time = $submission->data[$map['call_back_time']][0];
+
+        $t = strptime($call_back_date . ' ' . $call_back_time, '%Y-%m-%d %H:%M:%S');
+        $call_back_time = mktime($t['tm_hour'], $t['tm_min'], $t['tm_sec'], $t['tm_mon'] + 1, $t['tm_mday'], $t['tm_year'] + 1900);
+        $call_back_priority = 1;
+      }
+      else  {
         $call_back_time = time() + 2700; // Call back after 45 minutes.
       }
       if (!empty($submission->data[$map['caller_message']][0])) {
@@ -415,7 +427,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       else {
         $caller_message = '';
       }
-      $action_id = spbellen_create_action($tid, $user->uid, $result, $submission->sid, $call_back_time, $caller_message);
+      $action_id = spbellen_create_action($tid, $user->uid, $result, $submission->sid, $call_back_time, $call_back_priority, $caller_message);
 
       if ($result === 'answered_blacklist') {
         spbellen_blacklist($target_contact_id);

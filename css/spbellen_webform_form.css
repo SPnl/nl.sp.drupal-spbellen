@@ -1,3 +1,17 @@
 div.webform-component--valid-test {
   display: none;
 }
+
+div.webform-datepicker div.form-item, 
+div.webform-component-time div.form-item {
+  display: inline;
+}
+
+.call-back-wrapper div.webform-component-date {
+  width: 50%;
+  float: left;
+}
+
+.call-back-wrapper div.form-item {
+  padding: 0.4em 0em;
+}
