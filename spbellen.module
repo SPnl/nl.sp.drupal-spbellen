@@ -35,19 +35,44 @@ function spbellen_menu() {
   );
 
   $items['admin/bellen/coach'] = array(
-    'title' => 'Inschrijven bellers',
+    'title' => 'Belcoach',
     'type' => MENU_NORMAL_ITEM,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('spbellen_coach_subscribe_callers_form'),
-    'file' => 'spbellen_coach_subscribe_callers_form.inc',
+    'access arguments' => array('spbellen administer callers'),
+  );
+
+  $items['admin/bellen/coach/page'] = array(
+    'title' => 'Belcoach',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => '0',
     'access arguments' => array('spbellen administer callers'),
   );
 
   $items['admin/bellen/coach/subscribe_callers'] = array(
     'title' => 'Inschrijven bellers',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_coach_subscribe_callers_form'),
+    'file' => 'spbellen_coach_subscribe_callers_form.inc',
+    'type' => MENU_LOCAL_TASK,
     'weight' => '0',
     'access arguments' => array('spbellen administer callers'),
+  );
+
+  $items['admin/bellen/coach/call_back_list'] = array(
+    'title' => 'Terugbellen contacten',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => '0',
+    'access arguments' => array('spbellen administer callers'),
+    'page callback' => 'spbellen_call_back_list',
+    'file' => 'spbellen_call_back.inc',
+  );
+
+  $items['admin/bellen/coach/call_back/%'] = array(
+    'title' => 'Call back contact',
+    'page callback' => 'spbellen_call_back_contact',
+    'page arguments' => array(4),
+    'access callback' => 'sprbs_access_check',
+    'type' => MENU_CALLBACK,
+    'file' => 'spbellen_call_back.inc',
   );
 
   $items['admin/config/sp/spbellen'] = array(
@@ -472,7 +497,7 @@ function spbellen_user_login($edit, $account) {
       is_array($account->roles) &&
       in_array('admin', array_values($account->roles))
     ) ||
-    $account->uid === 1
+    $account->uid === '1'
   ) {
     $_SESSION['spbellen']['all_access'] = 'all_access';
   }
@@ -788,6 +813,7 @@ function spbellen_contact_search_form_ajax_callback($form, &$form_state) {
  * Implements hook_theme().
  */
 function spbellen_theme($existing, $type, $theme, $path) {
+  // Contact block.
   $contact_fields = spbellen_contact_fields();
   foreach ($contact_fields as $key => $name) {
     $variables[$key] = NULL;
@@ -798,12 +824,23 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'template' => 'spbellen-block',
     'variables' => $variables,
   );
+
+  // Admin overview.
   $variables = array(
     'campaign_stats',
     'general_stats',
   );
   $registry['spbellen_overview_theme'] = array(
     'template' => 'spbellen-overview',
+    'variables' => $variables,
+  );
+
+  // Call back list.
+  $variables = array(
+    'call_back_data',
+  );
+  $registry['spbellen_call_back_list_theme'] = array(
+    'template' => 'spbellen-call-back-list',
     'variables' => $variables,
   );
   return $registry;

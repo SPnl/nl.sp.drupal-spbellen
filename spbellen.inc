@@ -1177,7 +1177,7 @@ function spbellen_assign_target($campaign) {
     ))->fetchAssoc();
     if (!$result) {
       // Get appointment targets.
-          $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE result = 'answered_call_back' AND call_back_priority = 1 AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ac.call_back_time < :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_priority DESC, attempts ASC, date ASC LIMIT 1";
+          $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE result = 'answered_call_back' AND call_back_priority = 1 AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ac.call_back_time < :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, attempts ASC, date ASC LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
         ':current_time' => time(),
@@ -1299,7 +1299,10 @@ function spbellen_check_result($result, $dataname, $action, $data = NULL, $submi
 
 function spbellen_campaign_form_access($form_nid) {
   // Check session.
-  if (!empty($_SESSION['spbellen']['local_access'][$form_nid]) || !empty($_SESSION['spbellen']['all_access'])) {
+  if (
+    !empty($_SESSION['spbellen']['local_access'][$form_nid]) ||
+    !empty($_SESSION['spbellen']['all_access'])
+  ) {
     return TRUE;
   }
   return FALSE;
