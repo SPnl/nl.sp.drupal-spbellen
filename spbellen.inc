@@ -1399,7 +1399,12 @@ function spbellen_get_general_stats() {
     foreach ($record as $key => $value) {
       $stats[$key] = empty($value) ? 0 : $value;
       if ($record['total'] != 0) {
-        $stats[$key.'_percentage'] = floor(100 * $value / $record['total']);
+        if ($key === 'not_contacted') {
+          $stats[$key.'_percentage'] = ceil(100 * $value / $record['total']);
+        }
+        else {
+          $stats[$key.'_percentage'] = floor(100 * $value / $record['total']);
+        }
       }
       else {
         $stats[$key.'_percentage'] = 0;
