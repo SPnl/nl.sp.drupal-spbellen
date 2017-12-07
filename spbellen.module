@@ -390,7 +390,7 @@ function spbellen_webform_submission_presave($node, &$submission) {
   if (spbellen_is_spbellen_form($node->nid)) {
     $map = spbellen_component_key_id_map($node);
     if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
-      drupal_set_message('De inzending is niet opgeslagen. Komt dit vaak voor geef dit dan door aan webmaster@sp.nl', 'error');
+      //drupal_set_message('De inzending is niet opgeslagen. Komt dit vaak voor geef dit dan door aan webmaster@sp.nl', 'error');
       global $user;
       $params = array(
         'caller' => $user,
