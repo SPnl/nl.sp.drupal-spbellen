@@ -1,7 +1,8 @@
 <?php
 
 function spbellen_subscription_form($form, &$form_state) {
-  form_load_include($form_state, 'inc', 'content', 'includes/password');
+  //form_load_include($form_state, 'inc', 'content', 'includes/password');
+  require_once DRUPAL_ROOT . '/includes/password.inc';
 
   // Store campaign in form.
   if (!isset($form_state['campaign'])) {
