@@ -325,7 +325,7 @@ function spbellen_node_delete($node) {
   }
 }
 
-function spbellen_entity_delete($entity, $type) { 
+function spbellen_entity_delete($entity, $type) {
   if ($type == 'campaign') {
     if (node_load($entity->webform_id)) {
       // Cleanup campaign actions, targets and campaign groups.
@@ -380,7 +380,10 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       $form['actions']['spbellen_next']  = array(
         '#type' => 'button',
         '#value' => 'Overslaan',
-        '#attributes' => array('style' => array('float: right')),
+        '#attributes' => array(
+          'style' => array('float: right'),
+          'onclick' => 'return confirm("Weet je zeker dat je ' . $contact_data['display_name'] . ' wilt overslaan?");',
+        ),
       );
     }
   }
@@ -875,7 +878,7 @@ function spbellen_custom_webform_validate($form, &$form_state) {
         'occupied' => 0,
         'date' => time(),
         'caller_id' => NULL,
-      ))  
+      ))
       ->condition('caller_id', $user->uid)
       ->execute();
     $path = drupal_get_path_alias('node/' . $form['#node']->nid);
