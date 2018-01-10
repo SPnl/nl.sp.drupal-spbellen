@@ -25,11 +25,6 @@
       <div class="content left">
         <ul>
           <li><?php print !empty($email) ? $email : ''; ?></li>
-          <?php if (!empty($is_lid)) : ?>
-            <li>Lid nr. <?php print $contact_id; ?></li>
-          <?php else : ?>
-            <li>Geen lid</li>
-          <?php endif; ?>
         </ul>
       </div>
       <div class="content right">
