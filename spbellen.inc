@@ -1083,7 +1083,7 @@ function spbellen_get_targets_batch_finished($success, $results, $operations) {
     // To do: cleanup old syncs.
     $sync_id = $results['sync_id'];
     $campaign_id = $results['campaign_id'];
-    $query = "DELETE ta, cd FROM {spbellen_targets} ta LEFT JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ( sync_id < :sync_id OR sync_id IS NULL ) AND campaign_id = :campaign_id";
+    $query = "DELETE ta FROM {spbellen_targets} ta LEFT JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ( sync_id < :sync_id OR sync_id IS NULL ) AND campaign_id = :campaign_id";
     $result = db_query($query, array(':sync_id' => $sync_id, ':campaign_id' => $campaign_id));
   }
   else {
@@ -1248,7 +1248,7 @@ function spbellen_assign_target($campaign) {
     }
     else {
       // Find occupied targets.
-      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
+      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} da ON ta.civi_contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 10 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
       ))->fetchAssoc();
@@ -1421,7 +1421,7 @@ function spbellen_get_campaign_stats($campaign_id) {
     $stats = array();
     $campaign = entity_load_single('campaign', $campaign_id);
     $webform = entity_load_single('node', $campaign->webform_id);
-    $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE campaign_id = :campaign_id;";
+    $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.civi_contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE campaign_id = :campaign_id;";
     $result = db_query($query, array(':campaign_id' => $campaign_id));
     $record = $result->fetchAssoc();
     foreach ($record as $key => $value) {
