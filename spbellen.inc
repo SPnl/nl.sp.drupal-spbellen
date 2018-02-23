@@ -569,11 +569,12 @@ function spbellen_create_campaign_form($campaign) {
     $contact_fields =  spbellen_correct_contact_fields();
     // Create correction fields.
     foreach ($contact_fields as $key => $name) {
+      $type = $key === 'address' ? 'sp_address_auto' : 'textfield';
       $joined_components[$joined_component_id] = array(
         'pid' => $parent,
         'form_key' => 'spbellen_'.$key,
         'name' => $name,
-        'type' => 'textfield',
+        'type' => $type,
         'value' => '',
         'extra' => array(
           'title_display' => 'inline',
@@ -1122,10 +1123,7 @@ function spbellen_correct_contact_fields() {
     'display_name' => 'Weergave naam',
     'phone' => 'Telefoonnummer',
     'email' => 'E-mail',
-    'street_address'=> 'Adres',
-    'postal_code' => 'Postcode',
-    'city' => 'Plaats',
-
+    'address' => 'Adresinformatie',
   );
   return $contact_fields;
 }
