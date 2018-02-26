@@ -177,10 +177,10 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
       $campaign_id = spbellen_get_campaign_id($webform_id);
       if (!empty($campaign_id)) {
         if (spbellen_click2dial_location()) {
-          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 5";
+          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
         }
         else {
-          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ((occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 5";
+          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
         }
         $substitutions = array(
           ':campaign_id' => $campaign_id,
