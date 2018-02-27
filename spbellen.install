@@ -188,6 +188,13 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => '255',
       ),
+      'state' => array(
+        'description' => 'State (0 => deleted, 1 => active).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 1,
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array(
       'id',
@@ -1006,4 +1013,18 @@ function spbellen_update_7026() {
     'size' => 'tiny',
   );
   db_add_field( 'spbellen_action', 'call_back_priority', $spec);
+}
+
+/**
+ * Add state column to spbellen_targets table.
+ */
+function spbellen_update_7027() {
+  $spec = array(
+    'description' => 'State (0 => deleted, 1 => active).',
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 1,
+    'not null' => TRUE,
+  );
+  db_add_field( 'spbellen_targets', 'state', $spec);
 }

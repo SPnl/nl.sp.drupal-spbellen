@@ -444,7 +444,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       $target_contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
 
       // Get target id.
-      $query = "SELECT id FROM {spbellen_targets} WHERE civi_contact_id = :civi_contact_id AND campaign_id = :cid";
+      $query = "SELECT id FROM {spbellen_targets} WHERE state = 1 AND civi_contact_id = :civi_contact_id AND campaign_id = :cid";
       $result = db_query($query, array(':civi_contact_id' => $target_contact_id, ':cid' => $campaign_id))->fetchAssoc();
       $tid = $result['id'];
 
@@ -963,7 +963,7 @@ function spbellen_contact_block_data() {
     if (!empty($user->uid)) {
       $campaign_id = spbellen_get_campaign_id($node->nid);
 
-      $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
+      $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE state = 1 AND occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $user->uid))->fetchAssoc();
       if (!empty($result['civi_contact_id'])) {
 
@@ -982,7 +982,7 @@ function spbellen_contact_block_data() {
 
         //Call history.
         $translate = spbellen_action_translate();
-        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
+        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE ta.state = 1 AND occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
         $result = db_query($query, array(':caller_id' => $user->uid, ':cid' => $campaign_id));
         if (!empty($result)) {
           while ($row = $result->fetchAssoc()) {
@@ -997,7 +997,7 @@ function spbellen_contact_block_data() {
         }
 
         // Stats
-        $stats = spbellen_get_campaign_stats($campaign_id);
+        $stats = spbellen_get_campaign_stats($campaign_id, FALSE);
         $data['stats'] = $stats;
 
         // Call button.
