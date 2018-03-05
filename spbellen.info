@@ -1,8 +1,7 @@
-name = SP Bellen
-description = Drupal frontend voor ondersteuning bij het bellen van contacten uit CiviCRM.
+name = SP Beltool
+description = Drupal frontend voor ondersteuning bij het bellen van contacten.
 core = 7.x
-package = sprbs
-dependencies[] = sprbs
+dependencies[] = webform
 dependencies[] = spciviapi
 dependencies[] = spwebform_email_verify
 dependencies[] = sp_webformautoaddress

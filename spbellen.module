@@ -1,14 +1,18 @@
 <?php
 
-  module_load_include("inc", "spbellen", "spbellen");
-  module_load_include('inc', 'webform', 'includes/webform.submissions');
-  module_load_include('inc', 'pathauto', 'pathauto');
+/**
+ * Beltool module file.
+ */
 
-  variable_set('user_mail_status_activated_notify', FALSE);
+module_load_include("inc", "spbellen", "spbellen");
+module_load_include('inc', 'webform', 'includes/webform.submissions');
+module_load_include('inc', 'pathauto', 'pathauto');
+
+variable_set('user_mail_status_activated_notify', FALSE);
 
 /**
- *  * Implements hook_menu().
- *   */
+ * Implements hook_menu().
+ */
 function spbellen_menu() {
   $items = array();
 
@@ -34,20 +38,26 @@ function spbellen_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/bellen/coach'] = array(
+  $items['admin/beltool'] = array(
+    'title' => 'Beltool',
+    'type' => MENU_NORMAL_ITEM,
+    'access callback' => TRUE,
+  );
+
+  $items['admin/beltool/coach'] = array(
     'title' => 'Belcoach',
     'type' => MENU_NORMAL_ITEM,
     'access arguments' => array('spbellen administer callers'),
   );
 
-  $items['admin/bellen/coach/page'] = array(
+  $items['admin/beltool/coach/page'] = array(
     'title' => 'Belcoach',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => '0',
     'access arguments' => array('spbellen administer callers'),
   );
 
-  $items['admin/bellen/coach/subscribe_callers'] = array(
+  $items['admin/beltool/coach/subscribe_callers'] = array(
     'title' => 'Inschrijven bellers',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_coach_subscribe_callers_form'),
@@ -57,7 +67,7 @@ function spbellen_menu() {
     'access arguments' => array('spbellen administer callers'),
   );
 
-  $items['admin/bellen/coach/call_back_list'] = array(
+  $items['admin/beltool/coach/call_back_list'] = array(
     'title' => 'Terugbellen contacten',
     'type' => MENU_LOCAL_TASK,
     'weight' => '0',
@@ -66,65 +76,55 @@ function spbellen_menu() {
     'file' => 'spbellen_call_back.inc',
   );
 
-  $items['admin/bellen/coach/call_back/%'] = array(
+  $items['admin/beltool/coach/call_back/%'] = array(
     'title' => 'Call back contact',
     'page callback' => 'spbellen_call_back_contact',
     'page arguments' => array(4),
-    'access callback' => 'sprbs_access_check',
+    'access arguments' => array('spbellen administer callers'),
     'type' => MENU_CALLBACK,
     'file' => 'spbellen_call_back.inc',
   );
 
-  $items['admin/config/sp/spbellen'] = array(
-    'title' => 'SP bellen',
+  $items['admin/beltool/config'] = array(
+    'title' => 'Configuratie',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'spbellen_overview',
     'file' => 'spbellen_admin_overview.inc',
     'access arguments' => array('spbellen view results'),
   );
 
-  $items['admin/config/sp/spbellen/overview'] = array(
+  $items['admin/beltool/config/overview'] = array(
     'title' => 'Overzicht',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => '0',
     'access arguments' => array('spbellen view results'),
   );
 
-  $items['admin/config/sp/spbellen/campaign'] = array(
+  $items['admin/beltool/config/campaign'] = array(
     'title' => 'Beheer belcampagnes',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_campaign_form'),
     'file' => 'spbellen_admin_campaign_form.inc',
-    'access callback' => 'sprbs_access_check',
+    'access arguments' => array('spbellen administer campaigns'),
     'weight' => '1',
   );
 
-  $items['admin/config/sp/spbellen/settings'] = array(
+  $items['admin/beltool/config/settings'] = array(
     'title' => 'Instellingen',
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_settings_form'),
     'file' => 'spbellen_admin_settings_form.inc',
-    'access callback' => 'sprbs_access_check',
+    'access arguments' => array('spbellen administer campaigns'),
     'weight' => '2',
-  );
-
-  $items['admin/config/sp/spbellen/subscribe'] = array(
-    'title' => 'Inschrijven',
-    'type' => MENU_LOCAL_TASK,
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('spbellen_subscription_form'),
-    'file' => 'spbellen_admin_subscribe_form.inc',
-    'access callback' => 'sprbs_access_check',
-    'weight' => '3',
   );
 
   $items['spbellen/group/autocomplete/%'] = array(
     'title' => 'SP bellen autocomplete',
     'page callback' => 'spbellen_group_autocomplete',
     'page arguments' => array(3),
-    'access callback' => 'sprbs_access_check',
+    'access arguments' => array('spbellen administer campaigns'),
     'type' => MENU_CALLBACK,
     'file' => 'spbellen.inc',
   );
@@ -171,7 +171,7 @@ function spbellen_menu() {
   return $items;
 }
 
-/*
+/**
  * Implements hook_permission().
  */
 function spbellen_permission() {
@@ -302,17 +302,23 @@ function campaign_entity_property_info_alter(&$info) {
   }
 }
 
+/**
+ * Implements hook node update.
+ */
 function spbellen_node_update($node) {
   if (spbellen_is_spbellen_form_check($node->nid)) {
     $alias = pathauto_cleanstring($node->title);
     $alias_array = array(
-      'source' => 'node/'.$node->nid,
-      'alias' => 'bellen/campagne/'.$alias,
+      'source' => 'node/' . $node->nid,
+      'alias' => 'bellen/campagne/' . $alias,
     );
     path_save($alias_array);
   }
 }
 
+/**
+ * Implements hook node delete.
+ */
 function spbellen_node_delete($node) {
   if ($node->type == 'webform') {
     if (spbellen_is_spbellen_form_check($node->nid)) {
@@ -325,6 +331,9 @@ function spbellen_node_delete($node) {
   }
 }
 
+/**
+ * Implements hook entity delete.
+ */
 function spbellen_entity_delete($entity, $type) {
   if ($type == 'campaign') {
     if (node_load($entity->webform_id)) {
@@ -332,7 +341,7 @@ function spbellen_entity_delete($entity, $type) {
       $sql = "SELECT ac.id FROM {spbellen_action} ac INNER JOIN {spbellen_targets} ta ON ac.target_id = ta.id WHERE campaign_id = :campaign_id";
       $result = db_query($sql, array(':campaign_id' => $entity->id));
       if ($result) {
-        while($row = $result->fetchAssoc()) {
+        while ($row = $result->fetchAssoc()) {
           $num_result = db_delete('spbellen_action')
             ->condition('id', $row['id'])
             ->execute();
@@ -353,6 +362,9 @@ function spbellen_entity_delete($entity, $type) {
   }
 }
 
+/**
+ * Implements hook form alter.
+ */
 function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
   // Check if spbellen form.
   if (!empty($form['#node'])) {
@@ -368,17 +380,17 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       $contact_data = spbellen_assign_target($campaign);
       // Fill data.
       $form['submitted']['valid_test']['#default_value'] = $contact_data['contact_id'];
-      $is_old_form = false;
-      // Check if an old campaign is used without autocomplete address
+      $is_old_form = FALSE;
+      // Check if an old campaign is used without autocomplete address.
       if (!isset($form['submitted']['contact_data']['spbellen_address'])) {
-        $is_old_form = true;
+        $is_old_form = TRUE;
       }
       $contact_fields = spbellen_contact_fields();
       $address_fields = array('postal_code', 'city', 'street_address');
       foreach ($contact_fields as $key => $name) {
         // Set form field values.
-        $form['submitted']['spbellen_hidden_'.$key]['#value'] = $contact_data[$key];
-        if (in_array($key, $address_fields) && $is_old_form === false) {
+        $form['submitted']['spbellen_hidden_' . $key]['#value'] = $contact_data[$key];
+        if (in_array($key, $address_fields) && $is_old_form === FALSE) {
           if ($key === 'street_address') {
             $matches = array();
             preg_match('/^(\d*[\w\d \'\-]+)[,\s]+(\d+)\s*([\w\d\-\/]*)$/', $contact_data[$key], $matches);
@@ -396,7 +408,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
           }
         }
         else {
-          $form['submitted']['contact_data']['spbellen_'.$key]['#default_value'] = $contact_data[$key];
+          $form['submitted']['contact_data']['spbellen_' . $key]['#default_value'] = $contact_data[$key];
         }
       }
       // Add custom submit and validation function.
@@ -414,11 +426,13 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
   }
 }
 
+/**
+ * Implements hook webform submission presave.
+ */
 function spbellen_webform_submission_presave($node, &$submission) {
   if (spbellen_is_spbellen_form($node->nid)) {
     $map = spbellen_component_key_id_map($node);
     if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
-      //drupal_set_message('De inzending is niet opgeslagen. Komt dit vaak voor geef dit dan door aan webmaster@sp.nl', 'error');
       global $user;
       $params = array(
         'caller' => $user,
@@ -433,6 +447,9 @@ function spbellen_webform_submission_presave($node, &$submission) {
   }
 }
 
+/**
+ * Implements hook webform submission insert.
+ */
 function spbellen_webform_submission_insert($node, $submission) {
   global $user;
   if (spbellen_is_spbellen_form($node->nid)) {
@@ -449,7 +466,6 @@ function spbellen_webform_submission_insert($node, $submission) {
       $tid = $result['id'];
 
       // Create action.
-
       if (!empty($submission->data[$map['call_answered']][0])) {
         $result = $submission->data[$map['call_answered']][0];
       }
@@ -458,7 +474,8 @@ function spbellen_webform_submission_insert($node, $submission) {
       }
       $call_back_priority = 0;
       if (!empty($submission->data[$map['not_available_today']][0])) {
-        $call_back_time = strtotime('tomorrow') + 21600; // Call back after 6:00 next day.
+        // Call back after 6:00 next day.
+        $call_back_time = strtotime('tomorrow') + 21600;
       }
       elseif (
         !empty($map['call_appointment']) &&
@@ -472,8 +489,9 @@ function spbellen_webform_submission_insert($node, $submission) {
         $call_back_time = mktime($t['tm_hour'], $t['tm_min'], $t['tm_sec'], $t['tm_mon'] + 1, $t['tm_mday'], $t['tm_year'] + 1900);
         $call_back_priority = 1;
       }
-      else  {
-        $call_back_time = time() + 5400; // Call back after 90 minutes.
+      else {
+        // Call back after 90 minutes.
+        $call_back_time = time() + 5400;
       }
       if (!empty($submission->data[$map['caller_message']][0])) {
         $caller_message = $submission->data[$map['caller_message']][0];
@@ -487,7 +505,7 @@ function spbellen_webform_submission_insert($node, $submission) {
         spbellen_blacklist($target_contact_id);
       }
 
-      // Check if contact information was corrected, and create activity in CiviCRM.
+      // Check if contact information was corrected
       // Create activity with corrected values.
       if ($result === 'wrong_number') {
         global $user;
@@ -513,6 +531,9 @@ function spbellen_webform_submission_insert($node, $submission) {
   }
 }
 
+/**
+ * Implements hook user login.
+ */
 function spbellen_user_login($edit, $account) {
   // Store caller campaign access in session.
   // All access.
@@ -545,6 +566,9 @@ function spbellen_user_login($edit, $account) {
   }
 }
 
+/**
+ * Implements hook node access.
+ */
 function spbellen_node_access($node, $op, $account) {
   global $user;
   if ($op === 'view') {
@@ -559,7 +583,7 @@ function spbellen_node_access($node, $op, $account) {
             return NODE_ACCESS_ALLOW;
           }
           // Check session for call groups.
-          if(spbellen_campaign_form_access($node->nid)) {
+          if (spbellen_campaign_form_access($node->nid)) {
             // Check if disabled.
             $campaign = spbellen_get_campaign($node->nid);
             if (!empty($campaign) && !$campaign->disabled) {
@@ -587,24 +611,21 @@ function spbellen_node_access($node, $op, $account) {
 }
 
 /**
- *  * Implements hook_block_info().
- *   */
+ * Implements hook_block_info().
+ */
 function spbellen_block_info() {
   $blocks['spbellen_contact_block'] = array(
     'info' => 'SP Bellen contact info',
-    //'cache' => DRUPAL_NO_CACHE,
     'pages' => "bellen/campagne/*",
     'visibility' => BLOCK_VISIBILITY_LISTED,
   );
   $blocks['spbellen_search_block'] = array(
     'info' => 'SP Bellen zoek contact',
-    //'cache' => DRUPAL_NO_CACHE,
     'pages' => "bellen/campagne/*",
     'visibility' => BLOCK_VISIBILITY_LISTED,
   );
   $blocks['spbellen_campaign_intro_block'] = array(
     'info' => 'SP Bellen campagne introductie tekst',
-    //'cache' => DRUPAL_NO_CACHE,
     'pages' => "bellen/campagne/*",
     'visibility' => BLOCK_VISIBILITY_LISTED,
   );
@@ -623,85 +644,89 @@ function spbellen_block_view($delta = '') {
       if (spbellen_is_spbellen_form($nid)) {
         if (spbellen_campaign_form_access($nid)) {
           switch ($delta) {
-          case 'spbellen_contact_block':
+            case 'spbellen_contact_block':
 
-            $data = spbellen_contact_block_data();
+              $data = spbellen_contact_block_data();
 
-            // Use the cookie library to add variables to js bel button.
-            drupal_add_library('system', 'jquery.cookie');
+              // Use the cookie library to add variables to js bel button.
+              drupal_add_library('system', 'jquery.cookie');
 
-            $jsdata = array();
-            if (!empty($data['click2dial'])) {
-              $jsdata = array('spbellen' => array(
-                'click2dial' => $data['click2dial'],
-              ));
-            }
-
-            $markup = theme('spbellen_block_theme', $data);
-            $module_path = drupal_get_path('module', 'spbellen');
-            $block = array(
-              'subject' => '',
-              'content' => array(
-                '#markup' => $markup,
-                '#attached' => array(
-                  'js' => array(
-                    array(
-                      'type' => 'file',
-                      'data' => $module_path . '/js/spbellen_click2dial.js',
-                    ),
-                    array(
-                      'data' => $jsdata,
-                      'type' => 'setting',
-                    ),
+              $jsdata = array();
+              if (!empty($data['click2dial'])) {
+                $jsdata = array(
+                  'spbellen' => array(
+                    'click2dial' => $data['click2dial'],
                   ),
-                ),
-              ),
-            );
-            break;
-          case 'spbellen_search_block':
-            $block = array(
-              'subject' => '',
-              'content' => spbellen_search_block_content(),
-            );
-            break;
-          case 'spbellen_campaign_intro_block':
-            $node = menu_get_object();
-            $nid = $node->nid;
-            $campaign_id = spbellen_get_campaign_id($nid);
-            $campaign = spbellen_get_campaign($nid);
-            // Check if start page needs to be shown.
-            if (
-              // Start page not shown yet.
-              empty($_SESSION['spbellen']['start_page_'.$nid.'_shown']) &&
-              (
-                // Start page text available.
-                !empty($campaign->start_page_text) ||
-                (
-                  // Call2dial location.
-                  spbellen_click2dial_location() &&
-                  // Extension not set yet.
-                  empty($_SESSION['spbellen']['extension_number'])
-                )
-              )
-            ) {
-              // Show start page block.
+                );
+              }
+
+              $markup = theme('spbellen_block_theme', $data);
               $module_path = drupal_get_path('module', 'spbellen');
-              $start_page_text = check_markup($campaign->start_page_text, 'filtered_html');
-              $form = drupal_get_form('spbellen_campaign_intro_form', $start_page_text, $nid);
-              $intro_block_content = drupal_render($form);
               $block = array(
                 'subject' => '',
                 'content' => array(
-                  '#markup' => $intro_block_content,
+                  '#markup' => $markup,
                   '#attached' => array(
-                    'css' => array(
-                      $module_path . '/css/spbellen_block_overlay.css',
+                    'js' => array(
+                      array(
+                        'type' => 'file',
+                        'data' => $module_path . '/js/spbellen_click2dial.js',
+                      ),
+                      array(
+                        'data' => $jsdata,
+                        'type' => 'setting',
+                      ),
                     ),
                   ),
                 ),
               );
-            }
-            break;
+              break;
+
+            case 'spbellen_search_block':
+              $block = array(
+                'subject' => '',
+                'content' => spbellen_search_block_content(),
+              );
+              break;
+
+            case 'spbellen_campaign_intro_block':
+              $node = menu_get_object();
+              $nid = $node->nid;
+              $campaign_id = spbellen_get_campaign_id($nid);
+              $campaign = spbellen_get_campaign($nid);
+              // Check if start page needs to be shown.
+              if (
+                // Start page not shown yet.
+                empty($_SESSION['spbellen']['start_page_' . $nid . '_shown']) &&
+                (
+                  // Start page text available.
+                  !empty($campaign->start_page_text) ||
+                  (
+                    // Call2dial location.
+                    spbellen_click2dial_location() &&
+                    // Extension not set yet.
+                    empty($_SESSION['spbellen']['extension_number'])
+                  )
+                )
+              ) {
+                // Show start page block.
+                $module_path = drupal_get_path('module', 'spbellen');
+                $start_page_text = check_markup($campaign->start_page_text, 'filtered_html');
+                $form = drupal_get_form('spbellen_campaign_intro_form', $start_page_text, $nid);
+                $intro_block_content = drupal_render($form);
+                $block = array(
+                  'subject' => '',
+                  'content' => array(
+                    '#markup' => $intro_block_content,
+                    '#attached' => array(
+                      'css' => array(
+                        $module_path . '/css/spbellen_block_overlay.css',
+                      ),
+                    ),
+                  ),
+                );
+              }
+              break;
           }
         }
       }
@@ -710,6 +735,9 @@ function spbellen_block_view($delta = '') {
   return $block;
 }
 
+/**
+ * Introduction form definition.
+ */
 function spbellen_campaign_intro_form($form, &$form_state, $content, $nid) {
   $form_state['spbellen_nid'] = $nid;
 
@@ -739,6 +767,9 @@ function spbellen_campaign_intro_form($form, &$form_state, $content, $nid) {
   return $form;
 }
 
+/**
+ * Implements hook_form_validate().
+ */
 function spbellen_campaign_intro_form_validate($form, &$form_state) {
   $values = $form_state['values'];
   $regex = '/^[0-9][0-9][0-9]$/';
@@ -749,6 +780,9 @@ function spbellen_campaign_intro_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Implements hook_form_submit().
+ */
 function spbellen_campaign_intro_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   if (!empty($values['spbellen_click2dial_extension'])) {
@@ -756,15 +790,21 @@ function spbellen_campaign_intro_form_submit($form, &$form_state) {
     $_SESSION['spbellen']['extension_number'] = $values['spbellen_click2dial_extension'];
   }
   // Store cookie that start page has been shown.
-  $_SESSION['spbellen']['start_page_'.$form_state['spbellen_nid'].'_shown'] = TRUE;
+  $_SESSION['spbellen']['start_page_' . $form_state['spbellen_nid'] . '_shown'] = TRUE;
 }
 
+/**
+ * Returns search block content.
+ */
 function spbellen_search_block_content() {
   $form = drupal_get_form('spbellen_contact_search_form');
   $output = drupal_render($form);
   return $output;
 }
 
+/**
+ * Defines search form.
+ */
 function spbellen_contact_search_form($form, &$form_state) {
   global $user;
   $form = array();
@@ -796,6 +836,9 @@ function spbellen_contact_search_form($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Validates contact search form.
+ */
 function spbellen_contact_search_form_validate($form, &$form_state) {
   $values = $form_state['values'];
   $target_id_raw = $values['contact'];
@@ -805,6 +848,9 @@ function spbellen_contact_search_form_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Contact search form submission processing.
+ */
 function spbellen_contact_search_form_submit($form, &$form_state) {
   global $user;
   $values = $form_state['values'];
@@ -834,6 +880,9 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Ajax callback.
+ */
 function spbellen_contact_search_form_ajax_callback($form, &$form_state) {
   return $form;
 }
@@ -875,6 +924,9 @@ function spbellen_theme($existing, $type, $theme, $path) {
   return $registry;
 }
 
+/**
+ * Error page content.
+ */
 function spbellen_error_page() {
   $form['back'] = array(
     '#type' => 'submit',
@@ -885,10 +937,16 @@ function spbellen_error_page() {
   return $form;
 }
 
+/**
+ * Error page submission processing.
+ */
 function spbellen_error_page_submit($form, &$form_state) {
   drupal_goto('bellen');
 }
 
+/**
+ * Belform custom validation.
+ */
 function spbellen_custom_webform_validate($form, &$form_state) {
   // Check if submit button or next button.
   if (
@@ -918,31 +976,39 @@ function spbellen_custom_webform_validate($form, &$form_state) {
   }
 }
 
+/**
+ * Implements hook_mail().
+ */
 function spbellen_mail($key, &$message, $params) {
   switch ($key) {
-  case 'register_confirmation_required':
-    $message['subject'] = 'Bevestig je aanmelding voor: ' . $params['webform_title'];
-    $message['body'][] = '<p>Beste ' . $params['name'] . ',</p>';
-    $message['body'][] = '<p>Klik op de onderstaande link om je aanmelding te bevestigen.</p>';
-    $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
-    $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
-    break;
-  case 'register_confirmation_success':
-    $message['subject'] = 'Je aanmelding voor ' . $params['webform_title'] . ' is bevestigd';
-    $message['body'][] = '<p>Beste ' . $params['name'] . ',</p>';
-    $message['body'][] = '<p>Je aanmelding voor de belcampagne is bevestigd. Vanaf nu kan je je direct aanmelden op de onderstaande pagina.</p>';
-    $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
-    $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
-    break;
-  case 'inzending_niet_opgeslagen':
-    $message['subject'] = 'Beltool: inzending niet opgeslagen';
-    $message['body'][] = '<p>User:</p><pre>'.print_r($params['caller'], TRUE).'</pre>';
-    $message['body'][] = '<p>Submission:</p><pre>'.print_r($params['call_submission'], TRUE).'</pre>';
-    $message['body'][] = '<p>Node:</p><pre>'.print_r($params['campaign_node'], TRUE).'</pre>';
-    break;
+    case 'register_confirmation_required':
+      $message['subject'] = 'Bevestig je aanmelding voor: ' . $params['webform_title'];
+      $message['body'][] = '<p>Beste ' . $params['name'] . ',</p>';
+      $message['body'][] = '<p>Klik op de onderstaande link om je aanmelding te bevestigen.</p>';
+      $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
+      $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
+      break;
+
+    case 'register_confirmation_success':
+      $message['subject'] = 'Je aanmelding voor ' . $params['webform_title'] . ' is bevestigd';
+      $message['body'][] = '<p>Beste ' . $params['name'] . ',</p>';
+      $message['body'][] = '<p>Je aanmelding voor de belcampagne is bevestigd. Vanaf nu kan je je direct aanmelden op de onderstaande pagina.</p>';
+      $message['body'][] = '<p><a href="' . $params['url'] . '">' . $params['url'] . '</a></p>';
+      $message['body'][] = '<p>Met vriendelijke groet,<br/>' . $params['webform_title'] . '</p>';
+      break;
+
+    case 'inzending_niet_opgeslagen':
+      $message['subject'] = 'Beltool: inzending niet opgeslagen';
+      $message['body'][] = '<p>User:</p><pre>' . print_r($params['caller'], TRUE) . '</pre>';
+      $message['body'][] = '<p>Submission:</p><pre>' . print_r($params['call_submission'], TRUE) . '</pre>';
+      $message['body'][] = '<p>Node:</p><pre>' . print_r($params['campaign_node'], TRUE) . '</pre>';
+      break;
   }
 }
 
+/**
+ * Store extenion number in session.
+ */
 function spbellen_set_extension($extension_number) {
   if (!empty($extension_number)) {
     $regex = '/^[0-9][0-9][0-9]$/';
@@ -955,6 +1021,9 @@ function spbellen_set_extension($extension_number) {
   drupal_goto('/');
 }
 
+/**
+ * Generate contact block data.
+ */
 function spbellen_contact_block_data() {
   global $user;
   $data = array();
@@ -980,7 +1049,7 @@ function spbellen_contact_block_data() {
           $data['notes'][$key] = check_markup($value, 'filtered_html');
         }
 
-        //Call history.
+        // Call history.
         $translate = spbellen_action_translate();
         $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE ta.state = 1 AND occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
         $result = db_query($query, array(':caller_id' => $user->uid, ':cid' => $campaign_id));
@@ -996,7 +1065,7 @@ function spbellen_contact_block_data() {
           }
         }
 
-        // Stats
+        // Stats.
         $stats = spbellen_get_campaign_stats($campaign_id, FALSE);
         $data['stats'] = $stats;
 
@@ -1007,8 +1076,6 @@ function spbellen_contact_block_data() {
         if ($extension) {
           $asterix_ip = variable_get('spbellen_click2dial_asterix_ip', FALSE);
           $shortname = variable_get('spbellen_click2dial_shortname', FALSE);
-          $forceclip = $campaign->click2dial_call_number;
-          $callerIDName = empty($call_number_list[$forceclip]) ? '' : $call_number_list[$forceclip];
           $phone = $contact_data['phone'];
           if (
             !empty($asterix_ip) &&
@@ -1022,14 +1089,13 @@ function spbellen_contact_block_data() {
               'username' => 'T' . $extension,
             );
             // Add optional params.
-            $params_opt = array(
-              'callerIDName',
-              'forceclip',
-            );
-            foreach ($params_opt as $param_opt) {
-              if (!empty($$param_opt)) {
-                $params[$param_opt] = $$param_opt;
-              }
+            $calleridname = empty($call_number_list[$forceclip]) ? '' : $call_number_list[$forceclip];
+            if (!empty($calleridname)) {
+              $params['callerIDName'] = $calleridname;
+            }
+            $forceclip = $campaign->click2dial_call_number;
+            if (!empty($forceclip)) {
+              $params['forceclip'] = $forceclip;
             }
 
             $script_url = 'http://' . $asterix_ip . '/ps/call.php';
@@ -1043,6 +1109,9 @@ function spbellen_contact_block_data() {
   return $data;
 }
 
+/**
+ * Implements hook_form_alter().
+ */
 function spbellen_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
   if (!user_access('administer users')) {
     $fields = array(
@@ -1064,6 +1133,9 @@ function spbellen_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
   $form['#validate'][] = 'spbellen_user_profile_validate';
 }
 
+/**
+ * Implements hook_validate().
+ */
 function spbellen_user_profile_validate($form, &$form_state) {
   $values = $form_state['values'];
   // Validate password.
