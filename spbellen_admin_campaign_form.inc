@@ -122,7 +122,7 @@ function spbellen_campaign_form($form, &$form_state) {
           '#autocomplete_path' => 'spbellen/group/autocomplete/' . $filters[$type_key],
         );
         if ($type_key == 'target_group') {
-          $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van CiviCRM smart mogelijk ivm. batch import!'; 
+          $form[$type_key.'_select'][$type_key]['#description'] = 'Geen selectie van CiviCRM smart mogelijk ivm. batch import!';
         }
 
         $form[$type_key.'_select']['add_'.$type_key] = array(
@@ -236,7 +236,7 @@ function spbellen_campaign_form($form, &$form_state) {
     else {
       $form['no_webforms'] = array(
         '#markup' => 'Er is geen webformulier beschikbaar (<a href="/node/webform/add">voeg toe</a>).',
-      ); 
+      );
     }
   }
   return $form;
@@ -280,7 +280,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
 
           $result = $query
             ->entityCondition('entity_type', 'campaign_groups')
-            ->propertyCondition('campaign_id', $storage['campaign']) 
+            ->propertyCondition('campaign_id', $storage['campaign'])
             ->execute();
 
           if (!empty($result['campaign_groups'])) {
@@ -320,8 +320,13 @@ function spbellen_campaign_form_validate($form, &$form_state) {
       $groups = $form_state['groups_all'];
       $group_raw = $values[$matches[1]];
       $group = spbellen_parse_id_form_select_value($group_raw);
-      $storage[$matches[1].'s'][$group] = $groups[$group];
-      $form_state['input'][$matches[1]] = '';
+      if (!empty($group)) {
+        $storage[$matches[1].'s'][$group] = $groups[$group];
+        $form_state['input'][$matches[1]] = '';
+      }
+      else {
+        form_set_error($matches[0], 'Selecteer eerst een doelgroep');
+      }
     }
     // Delete buttons.
     preg_match('/^del_(call_group|target_group)_([0-9]+)$/', $trigger, $matches);
@@ -438,7 +443,7 @@ function spbellen_store_campaign_groups($storage, $campaign) {
         $stored_groups_ids[$stored_group->civi_group_id] = $stored_group->id;
         $stored_groups_names[$stored_group->civi_group_id] = $stored_group->group_name;
       }
-      $selected_groups = $storage[$type_key.'s']; 
+      $selected_groups = $storage[$type_key.'s'];
       $added_groups = array_diff_assoc(array_keys($selected_groups),array_keys($stored_groups_ids));
       $removed_groups = array_diff_assoc(array_keys($stored_groups_ids), array_keys($selected_groups));
 
