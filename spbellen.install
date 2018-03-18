@@ -147,8 +147,8 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'civi_contact_id' => array(
-        'description' => 'The CiviCRM contact id.',
+      'contact_id' => array(
+        'description' => 'Contact id.',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
@@ -201,9 +201,13 @@ function spbellen_schema() {
     ),
     'unique keys' => array(
       'campaign_target' => array(
-        'civi_contact_id',
+        'contact_id',
         'campaign_id',
       ),
+    ),
+    'indexes' => array(
+      'contact_id' => array('contact_id'),
+      'last_action_id' => array('last_action_id'),
     ),
   );
 
@@ -217,13 +221,13 @@ function spbellen_schema() {
         'not null' => TRUE,
       ),
       'target_id' => array(
-        'description' => 'The target contact is a campaign.',
+        'description' => 'The target id.',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
       ),
       'caller_id' => array(
-        'description' => 'The user id performing te action.',
+        'description' => 'The user id performing the action.',
         'type' => 'varchar',
         'length' => '255',
         'not null' => TRUE,
@@ -266,20 +270,23 @@ function spbellen_schema() {
     'primary key' => array(
       'id',
     ),
+    'indexes' => array(
+      'target_id' => array('target_id'),
+    ),
   );
 
   $schema['spbellen_blacklist'] = array(
     'description' => 'Contacts that should not be called.',
     'fields' => array(
-      'civi_contact_id' => array(
-        'description' => 'Primary key.',
+      'contact_id' => array(
+        'description' => 'Contact id.',
         'type' => 'int',
         'size' => 'big',
         'not null' => TRUE,
       ),
     ),
     'primary key' => array(
-      'civi_contact_id',
+      'contact_id',
     ),
   );
 
@@ -287,6 +294,11 @@ function spbellen_schema() {
     'description' => 'Contact data.',
     'fields' => array(
       'contact_id' => array(
+        'description' => 'Contact id.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'crm_contact_id' => array(
         'description' => 'Contact id',
         'type' => 'int',
         'size' => 'big',
@@ -350,6 +362,9 @@ function spbellen_schema() {
     ),
     'primary key' => array(
       'contact_id',
+    ),
+    'indexes' => array(
+      'crm_contact_id' => array('crm_contact_id'),
     ),
   );
 
@@ -1027,4 +1042,82 @@ function spbellen_update_7027() {
     'not null' => TRUE,
   );
   db_add_field( 'spbellen_targets', 'state', $spec);
+}
+
+/*
+ * Rename contact_id to crm_contact_id field.
+ */
+function spbellen_update_7028() {
+  // Rename contact_id field to crm_contact_id and create new contact_id field on spbellen_contact_data table.
+  db_drop_primary_key('spbellen_contact_data');
+  db_change_field('spbellen_contact_data', 'contact_id', 'crm_contact_id', array(
+    'type' => 'int',
+    'size' => 'big',
+  ));
+
+  db_add_field( 'spbellen_contact_data', 'contact_id', array(
+    'description' => 'Contact id.',
+    'type' => 'serial',
+    'not null' => TRUE,
+  ), array(
+    'primary key' => array(
+      'contact_id',
+    ),
+  ));
+
+  // Alter blacklist table.
+  db_add_index('spbellen_blacklist', 'civi_contact_id', array('civi_contact_id'));
+  db_drop_primary_key('spbellen_blacklist');
+  db_change_field('spbellen_blacklist', 'civi_contact_id', 'crm_contact_id', array(
+    'description' => 'CRM contact id.',
+    'type' => 'int',
+    'size' => 'big',
+  ));
+  db_drop_index('spbellen_blacklist', 'crm_contact_id');
+  db_add_field( 'spbellen_blacklist', 'contact_id', array(
+    'description' => 'Contact id.',
+    'type' => 'int',
+    'size' => 'big',
+  ));
+  // Add new contact_id data.
+  $query = "UPDATE {spbellen_blacklist} xx INNER JOIN {spbellen_contact_data} da ON xx.crm_contact_id = da.crm_contact_id SET xx.contact_id = da.contact_id";
+  $result = db_query($query);
+  db_change_field('spbellen_blacklist', 'contact_id', 'contact_id', array(
+    'description' => 'Contact id.',
+    'type' => 'int',
+    'size' => 'big',
+    'not null' => TRUE,
+  ));
+  // Remove crm_contact_id field.
+  db_drop_field('spbellen_blacklist', 'crm_contact_id');
+  // Add primary key.
+  db_add_primary_key('spbellen_blacklist', array('contact_id'));
+
+
+  // Alter targets table.
+  db_drop_unique_key('spbellen_targets', 'campaign_target');
+  db_change_field('spbellen_targets', 'civi_contact_id', 'crm_contact_id', array(
+    'description' => 'CRM contact id.',
+    'type' => 'int',
+    'size' => 'big',
+  ));
+  db_add_field( 'spbellen_targets', 'contact_id', array(
+    'description' => 'Contact id.',
+    'type' => 'int',
+    'size' => 'big',
+  ));
+  // Add new contact_id data.
+  $query = "UPDATE {spbellen_targets} xx INNER JOIN {spbellen_contact_data} da ON xx.crm_contact_id = da.crm_contact_id SET xx.contact_id = da.contact_id";
+  $result = db_query($query);
+  db_change_field('spbellen_targets', 'contact_id', 'contact_id', array(
+    'description' => 'Contact id.',
+    'type' => 'int',
+    'size' => 'big',
+    'not null' => TRUE,
+  ));
+  // Remove crm_contact_id field.
+  db_drop_field('spbellen_targets', 'crm_contact_id');
+  db_add_index('spbellen_targets', 'contact_id', array('contact_id'));
+  // Add unique key.
+  db_add_unique_key('spbellen_targets', 'campaign_target', array('contact_id', 'campaign_id'));
 }
