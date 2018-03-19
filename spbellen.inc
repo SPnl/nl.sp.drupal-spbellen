@@ -6,17 +6,17 @@ function spbellen_get_webforms() {
     $webform_node_types = webform_variable_get('webform_node_types');
     $webforms = array();
     $query = new EntityFieldQuery();
-  
+
     $result = $query
       ->entityCondition('entity_type', 'node')
       ->entityCondition('bundle', $webform_node_types, 'IN')
       ->execute();
-    
+
     if (!empty($result['node'])) {
       $nids = array_keys($result['node']);
       $webforms = entity_load('node', $nids);
     }
-  } 
+  }
   return $webforms;
 }
 
@@ -47,16 +47,16 @@ function spbellen_get_campaigns() {
   if (!isset($campaigns)) {
     $campaigns = array();
     $query = new EntityFieldQuery();
-  
+
     $result = $query
       ->entityCondition('entity_type', 'campaign')
       ->execute();
-    
+
     if (!empty($result['campaign'])) {
       $cids = array_keys($result['campaign']);
       $campaigns = entity_load('campaign', $cids);
     }
-  } 
+  }
   return $campaigns;
 }
 
@@ -127,8 +127,8 @@ function spbellen_get_civi_groups($smartgroups = 'all') {
     if (!empty($groups_results['values'])) {
       foreach ($groups_results['values'] as $value) {
         if (
-          empty($value['group_type']) || 
-          (array_key_exists(0, $value['group_type']) && empty($value['group_type'][0])) || 
+          empty($value['group_type']) ||
+          (array_key_exists(0, $value['group_type']) && empty($value['group_type'][0])) ||
           in_array('2', $value['group_type'])
         ) {
         $groups[$value['id']] = $value['title'];
@@ -177,10 +177,10 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
       $campaign_id = spbellen_get_campaign_id($webform_id);
       if (!empty($campaign_id)) {
         if (spbellen_click2dial_location()) {
-          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ta.state = 1 AND (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
+          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id WHERE ta.state = 1 AND (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
         }
         else {
-          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ta.state = 1 AND (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
+          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id WHERE ta.state = 1 AND (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
         }
         $substitutions = array(
           ':campaign_id' => $campaign_id,
@@ -218,8 +218,8 @@ function spbellen_get_stored_campaign_groups($campaign_id, $type) {
 
   $result = $query
     ->entityCondition('entity_type', 'campaign_groups')
-    ->propertyCondition('campaign_id', $campaign_id) 
-    ->propertyCondition('group_type', $type) 
+    ->propertyCondition('campaign_id', $campaign_id)
+    ->propertyCondition('group_type', $type)
     ->execute();
 
   if (!empty($result['campaign_groups'])) {
@@ -233,12 +233,12 @@ function spbellen_create_campaign_form($campaign) {
   $error = FALSE;
   $campaign_webform = node_load($campaign->webform_id);
   if (!empty($campaign_webform->webform)) {
-    $form = $campaign_webform->webform; 
+    $form = $campaign_webform->webform;
     $campaign_components = !empty($form['components']) ? $form['components'] : array();
     $campaign_conditionals = !empty($form['conditionals']) ? $form['conditionals'] : array();
 
     // Create new campaign webform.
- 
+
     $joined_component_id = 1;
     $parent = 0;
 
@@ -281,7 +281,7 @@ function spbellen_create_campaign_form($campaign) {
     }
 
     // Add intro components.
-    // Intro text. 
+    // Intro text.
     $joined_components[$joined_component_id] = array(
       'pid' => $parent,
       'form_key' => 'intro_text',
@@ -924,8 +924,8 @@ function spbellen_get_webform_allowed_components($nid, $allowed_types) {
       foreach ($webform->webform['components'] as $key => $component) {
         if (isset($component['type']) && !empty($allowed_types[$component['type']])) {
           $components_filtered[$key] = $component;
-        } 
-      }   
+        }
+      }
       if (!empty($components_filtered)) {
         return $components_filtered;
       }
@@ -997,7 +997,7 @@ function spbellen_get_targets_batch($campaign_id, $group_ids, $sync_id, &$contex
         if (
           (
             isset($result['phone']) ||
-            isset($result['mobile']) 
+            isset($result['mobile'])
           ) &&
           empty($result['do_not_phone'])
         )
@@ -1046,25 +1046,37 @@ function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
     }
   }
 
-  $contact_id = $values['contact_id'];
+  $crm_contact_id = $values['contact_id'];
   unset($values['contact_id']);
+  $values['crm_contact_id'] = $crm_contact_id;
 
   // Get notes.
-  $notes = spbellen_get_notes($contact_id);
+  $notes = spbellen_get_notes($crm_contact_id);
   if (!empty($notes)) {
     $notes_serialized = serialize($notes);
     $values['notes'] = $notes_serialized;
   }
 
   // Add target contact data.
-  db_merge('spbellen_contact_data')
-    ->key(array('contact_id' => $contact_id))
-    ->fields($values)
-    ->execute();
+  /*db_merge('spbellen_contact_data')
+  ->key(array('crm_contact_id' => $crm_contact_id))
+  ->fields($values)
+  ->execute();*/
+  if ($contact_id = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE crm_contact_id = :crm_contact_id", array(':crm_contact_id' => $crm_contact_id))->fetchField()) {
+    db_update('spbellen_contact_data')
+      ->fields($values)
+      ->condition('contact_id', $contact_id)
+      ->execute();
+  }
+  else {
+    $contact_id = db_insert('spbellen_contact_data')
+      ->fields($values)
+      ->execute();
+  }
   // Add target.
   db_merge('spbellen_targets')
     ->key(array(
-      'civi_contact_id' => $contact_id,
+      'contact_id' => $contact_id,
       'campaign_id' => $campaign_id,
     ))
     ->fields(array(
@@ -1075,7 +1087,7 @@ function spbellen_get_targets_process_target($campaign_id, $result, $sync_id) {
     ->execute();
   // Delete contact from blacklist.
   db_delete('spbellen_blacklist')
-    ->condition('civi_contact_id', $contact_id)
+    ->condition('contact_id', $contact_id)
     ->execute();
 }
 
@@ -1104,13 +1116,14 @@ function spbellen_get_targets_batch_finished($success, $results, $operations) {
 
 function spbellen_contact_fields() {
   $contact_fields = array(
+    'contact_id' => 'Contact id',
     'phone' => 'Telefoonnummer',
     'display_name' => 'Weergave naam',
     'email' => 'E-mail',
-    'street_address'=> 'Adres',
+    'street_address' => 'Adres',
     'postal_code' => 'Postcode',
     'city' => 'Plaats',
-    'contact_id' => 'Contact id',
+    'crm_contact_id' => 'CRM contact id',
     'gender' => 'Geslacht',
     'is_lid' => 'Is lid',
     'afdeling' => 'Afdeling',
@@ -1136,12 +1149,12 @@ function spbellen_is_spbellen_form($nid) {
     if ($cache = cache_get('spbellen_forms')) {
       $data = $cache->data;
       if (!isset($data[$nid])) {
-        $data[$nid] = spbellen_is_spbellen_form_check($nid); 
+        $data[$nid] = spbellen_is_spbellen_form_check($nid);
         cache_set('spbellen_forms', $data, 'cache');
       }
     }
     else {
-      $data[$nid] = spbellen_is_spbellen_form_check($nid); 
+      $data[$nid] = spbellen_is_spbellen_form_check($nid);
       cache_set('spbellen_forms', $data, 'cache');
     }
   }
@@ -1169,14 +1182,14 @@ function spbellen_assign_target($campaign) {
     user_is_logged_in()
   ) {
     // Check if existing target exists.
-    $query = "SELECT ta.civi_contact_id FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE ta.state = 1 AND bl.civi_contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND attempts < 5 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
+    $query = "SELECT ta.contact_id FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1 AND bl.contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND attempts < 5 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
       ':cid' => $campaign_id,
       ':caller_id' => $user->uid,
     ))->fetchAssoc();
     if (!$result) {
       // Get appointment targets.
-          $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE ta.state = 1 AND result = 'call_appointment' AND call_back_priority = 1 AND attempts < 5 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, attempts ASC, date ASC LIMIT 1";
+          $query = "SELECT ta.id, ta.contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1 AND result = 'call_appointment' AND call_back_priority = 1 AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, attempts ASC, date ASC LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
         ':current_time' => time(),
@@ -1196,7 +1209,7 @@ function spbellen_assign_target($campaign) {
       else {
 
         // Get new target, not called before (random order).
-        $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE ta.state = 1 AND attempts = 0 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND occupied = 0 ORDER BY RAND() LIMIT 1";
+        $query = "SELECT ta.id, ta.contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1 AND attempts = 0 AND bl.contact_id IS NULL AND campaign_id = :cid AND occupied = 0 ORDER BY RAND() LIMIT 1";
         $result = db_query($query, array(
           ':cid' => $campaign_id,
         ))->fetchAssoc();
@@ -1213,7 +1226,7 @@ function spbellen_assign_target($campaign) {
         }
         else {
           // Get new target, called before.
-          $query = "SELECT ta.id, ta.civi_contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE ta.state = 1 AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.civi_contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (ac.call_back_time < :current_time)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
+          $query = "SELECT ta.id, ta.contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1 AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (ac.call_back_time < :current_time)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
           $result = db_query($query, array(
             ':cid' => $campaign_id,
             ':occupied_time' => time() - 1800,
@@ -1235,9 +1248,9 @@ function spbellen_assign_target($campaign) {
     }
     if (!empty($result)) {
       // A target was found!
-      $civi_contact_id = $result['civi_contact_id'];
+      $contact_id = $result['contact_id'];
       // Get contact data.
-      $result = spbellen_get_contact_data($civi_contact_id);
+      $result = spbellen_get_contact_data($contact_id);
       if ($result) {
         return $result;
       }
@@ -1247,12 +1260,12 @@ function spbellen_assign_target($campaign) {
     }
     else {
       // Find occupied targets.
-      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} da ON ta.civi_contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE ta.state = 1 AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.civi_contact_id IS NULL AND campaign_id = :cid";
+      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1 AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
       ))->fetchAssoc();
       if ($result) {
-        drupal_set_message('Er is geen beschikbaar contact gevonden (er zijn '.$result['number'].' contacten die op een later moment nog gebeld kunnen worden).', 'error');
+        drupal_set_message('Er is geen beschikbaar contact gevonden (er zijn ' . $result['number'] . ' contacten die op een later moment nog gebeld kunnen worden).', 'error');
       }
       else {
         drupal_set_message('Er is geen beschikbaar contact gevonden.', 'error');
@@ -1336,13 +1349,16 @@ function spbellen_create_action($tid, $caller_id, $result, $submission_id, $call
   return $action_id;
 }
 
-function spbellen_blacklist($target_contact_id) {
+function spbellen_blacklist($contact_id) {
   db_insert('spbellen_blacklist')
     ->fields(array(
-      'civi_contact_id' => $target_contact_id,
+      'contact_id' => $contact_id,
     ))
     ->execute();
-  spbellen_civi_no_calls($target_contact_id);
+  $crm_contact_id = spbellen_get_crm_contact_id($contact_id);
+  if (!empty($crm_contact_id)) {
+    spbellen_civi_no_calls($crm_contact_id);
+  }
 }
 
 function spbellen_action_translate() {
@@ -1361,10 +1377,13 @@ function spbellen_get_contact_data($contact_id) {
   if (!isset($contact_data)) {
     $contact_data = array();
     $fields = array_keys(spbellen_contact_fields());
+    foreach ($fields as $key => $field) {
+      $fields[$key] = 'cd.' . $field;
+    }
     $fields_list = implode(',', $fields);
-    $fields_list .=  ',notes';
+    $fields_list .= ',cd.notes';
     // Get contact data.
-    $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.civi_contact_id = cd.contact_id WHERE ta.state = 1 AND civi_contact_id = :contact_id";
+    $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id WHERE ta.state = 1 AND ta.contact_id = :contact_id";
     $result = db_query($query, array(':contact_id' => $contact_id));
     $contact_data = $result->fetchAssoc();
   }
@@ -1393,10 +1412,10 @@ function spbellen_get_general_stats($history_included) {
   if (!isset($stats)) {
     $stats = array();
     if (empty($history_included)) {
-      $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE ta.state = 1;";
+      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1;";
     }
     else {
-      $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id;";
+      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id;";
     }
     $result = db_query($query);
     $record = $result->fetchAssoc();
@@ -1414,7 +1433,7 @@ function spbellen_get_general_stats($history_included) {
         $stats[$key.'_percentage'] = 0;
       }
     }
-    $stats['title'] = 'Algemene statistieken'; 
+    $stats['title'] = 'Algemene statistieken';
   }
   return $stats;
 }
@@ -1426,10 +1445,10 @@ function spbellen_get_campaign_stats($campaign_id, $history_included) {
     $campaign = entity_load_single('campaign', $campaign_id);
     $webform = entity_load_single('node', $campaign->webform_id);
     if (empty($history_included)) {
-      $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.civi_contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE campaign_id = :campaign_id AND ta.state = 1;";
+      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE campaign_id = :campaign_id AND ta.state = 1;";
     }
     else {
-      $query = "SELECT COUNT(*) total, SUM(bl.civi_contact_id IS NOT NULL) blacklisted, SUM(bl.civi_contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.civi_contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.civi_contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.civi_contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.civi_contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.civi_contact_id = bl.civi_contact_id WHERE campaign_id = :campaign_id;";
+      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE campaign_id = :campaign_id;";
     }
     $result = db_query($query, array(':campaign_id' => $campaign_id));
     $record = $result->fetchAssoc();
@@ -1450,16 +1469,16 @@ function spbellen_get_campaign_stats($campaign_id, $history_included) {
 /*
  * Set CiviCRM privacy settings for contact to no calls.
  */
-function spbellen_civi_no_calls($contact_id) {
+function spbellen_civi_no_calls($crm_contact_id) {
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
   $params = array(
-    'id' => $contact_id,
+    'id' => $crm_contact_id,
     'do_not_phone' => 1,
   );
   $result = $spcivi->api('Contact', 'create', $params);
   if (spbellen_check_result($result, 'een contact', 'create', $params)) {
-    watchdog('spbellen', 'CiviCRM contact nr. '.$contact_id.' privacy instelling "Niet bellen" ingeschakeld.');
+    watchdog('spbellen', 'CiviCRM contact nr. ' . $contact_id . ' privacy instelling "Niet bellen" ingeschakeld.');
   }
 }
 
@@ -1544,13 +1563,13 @@ function spbellen_click2dial_call_numbers_list() {
   return $number_list;
 }
 
-function spbellen_create_activity($contact_id, $activity_type, $status, $subject, $text, $debug_info) {
+function spbellen_create_activity($crm_contact_id, $activity_type, $status, $subject, $text, $debug_info) {
   $spcivi = \SPCivi::getInstance();
   set_time_limit(60);
-  $params = array( 
+  $params = array(
     'activity_type_id' => $activity_type,
     'subject' => $subject,
-    'target_id' => $contact_id,
+    'target_id' => $crm_contact_id,
     'details' => $text,
     'status_id' => $status,
     'priority_id' => 2,
@@ -1558,7 +1577,7 @@ function spbellen_create_activity($contact_id, $activity_type, $status, $subject
   $activity_results = $spcivi->api('Activity', 'create', $params);
 }
 
-function spbellen_get_notes($contact_id) {
+function spbellen_get_notes($crm_contact_id) {
   $notes = array();
   $civi_note_content_field_id = variable_get('spcivipush_note_content_field');
   $civi_note_use_field_id = variable_get('spcivipush_note_use_field');
@@ -1572,7 +1591,7 @@ function spbellen_get_notes($contact_id) {
 
     $params = array(
       'sequential' => 1,
-      'entity_id' => $contact_id,
+      'entity_id' => $crm_contact_id,
     );
     $results = $spcivi->api('CustomValue', 'get', $params);
     if (spbellen_check_result($results, 'customvalues', 'get', $params)) {
@@ -1604,4 +1623,32 @@ function spbellen_get_notes($contact_id) {
     }
   }
   return $notes;
+}
+
+function spbellen_get_crm_contact_id($contact_id) {
+  if (!empty($contact_id)) {
+    $crm_contact_id = db_select('spbellen_contact_data', 'cd')
+      ->fields('cd', array('crm_contact_id'))
+      ->condition('cd.contact_id', $contact_id)
+      ->execute()
+      ->fetchField();
+    if (!empty($crm_contact_id)) {
+      return $crm_contact_id;
+    }
+  }
+  return FALSE;
+}
+
+function spbellen_get_contact_id($crm_contact_id) {
+  if (!empty($crm_contact_id)) {
+    $contact_id = db_select('spbellen_contact_data', 'cd')
+      ->fields('cd', array('contact_id'))
+      ->condition('cd.crm_contact_id', $crm_contact_id)
+      ->execute()
+      ->fetchField();
+    if (!empty($contact_id)) {
+      return $contact_id;
+    }
+  }
+  return FALSE;
 }

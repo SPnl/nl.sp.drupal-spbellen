@@ -490,7 +490,7 @@ function spbellen_update_7001() {
     'type' => 'int',
     'size' => 'big',
     'not null' => FALSE,
-  ); 
+  );
   db_add_field( 'spbellen_action', 'call_back_time', $spec);
 }
 
@@ -503,7 +503,7 @@ function spbellen_update_7002() {
     'type' => 'text',
     'size' => 'normal',
     'not null' => FALSE,
-  ); 
+  );
   db_add_field( 'spbellen_action', 'caller_message', $spec);
 }
 
@@ -516,7 +516,7 @@ function spbellen_update_7003() {
     'type' => 'text',
     'size' => 'normal',
     'not null' => FALSE,
-  ); 
+  );
   db_add_field( 'spbellen_campaign', 'intro_text', $spec);
 }
 
@@ -673,7 +673,7 @@ function spbellen_update_7009() {
     'type' => 'int',
     'size' => 'big',
     'not null' => FALSE,
-  ); 
+  );
   db_add_field( 'spbellen_targets', 'sync_id', $spec);
 }
 
@@ -1120,4 +1120,56 @@ function spbellen_update_7028() {
   db_add_index('spbellen_targets', 'contact_id', array('contact_id'));
   // Add unique key.
   db_add_unique_key('spbellen_targets', 'campaign_target', array('contact_id', 'campaign_id'));
+
+  // Add crm_contact_id to campaign forms.
+  $campaigns = spbellen_get_campaigns();
+  foreach ($campaigns as $campaign) {
+    $webform = entity_load_single('node', $campaign->webform_id);
+    if (!empty($webform->webform['components'])) {
+      foreach ($webform->webform['components'] as $key => $component) {
+        if ($component['form_key'] === 'spbellen_hidden_contact_id') {
+          // Store component.
+          $contact_id_component = $component;
+          // Rename component to spbellen_hidden_crm_contact_id.
+          $webform->webform['components'][$key]['form_key'] = 'spbellen_hidden_crm_contact_id';
+          $webform->webform['components'][$key]['name'] = 'CRM contact id (verborgen)';
+        }
+        $max_component_id = $key;
+      }
+      // Add contact_id component.
+      $webform->webform['components'][$max_component_id + 1] = $contact_id_component;
+      $webform->webform['components'][$max_component_id + 1]['cid'] = $max_component_id + 1;
+      node_save($webform);
+      // Insert contact_id in webform_submitted_data table.
+      $result = db_select('webform_submissions', 'sm')
+        ->fields('sm', array('sid'))
+        ->condition('nid', $webform->nid)
+        ->execute();
+      while ($sid = $result->fetchField()) {
+        if (!empty($sid)) {
+          // Get crm_contact_id.
+          $crm_contact_id = db_select('webform_submitted_data', 'sd')
+            ->fields('sd', array('data'))
+            ->condition('nid', $webform->nid)
+            ->condition('sid', $sid)
+            ->condition('cid', $contact_id_component['cid'])
+            ->execute()->fetchField();
+          if (!empty($crm_contact_id)) {
+            // Get contact id.
+            $contact_id = spbellen_get_contact_id($crm_contact_id);
+            if (!empty($contact_id)) {
+              db_insert('webform_submitted_data')
+                ->fields(array(
+                  'nid' => $webform->nid,
+                  'sid' => $sid,
+                  'cid' => $max_component_id + 1,
+                  'data' => $contact_id,
+                ))
+                ->execute();
+            }
+          }
+        }
+      }
+    }
+  }
 }

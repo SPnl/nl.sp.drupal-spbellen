@@ -457,12 +457,12 @@ function spbellen_webform_submission_insert($node, $submission) {
       $campaign_id = spbellen_get_campaign_id($node->nid);
       $map = spbellen_component_key_id_map($node);
 
-      // Get civicrm contact id from form.
-      $target_contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
+      // Get contact id from form.
+      $contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
 
       // Get target id.
-      $query = "SELECT id FROM {spbellen_targets} WHERE state = 1 AND civi_contact_id = :civi_contact_id AND campaign_id = :cid";
-      $result = db_query($query, array(':civi_contact_id' => $target_contact_id, ':cid' => $campaign_id))->fetchAssoc();
+      $query = "SELECT id FROM {spbellen_targets} WHERE state = 1 AND contact_id = :contact_id AND campaign_id = :cid";
+      $result = db_query($query, array(':contact_id' => $contact_id, ':cid' => $campaign_id))->fetchAssoc();
       $tid = $result['id'];
 
       // Create action.
@@ -502,7 +502,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       $action_id = spbellen_create_action($tid, $user->uid, $result, $submission->sid, $call_back_time, $call_back_priority, $caller_message);
 
       if ($result === 'answered_blacklist') {
-        spbellen_blacklist($target_contact_id);
+        spbellen_blacklist($contact_id);
       }
 
       // Check if contact information was corrected
@@ -518,11 +518,11 @@ function spbellen_webform_submission_insert($node, $submission) {
         $caller_text .= 'Afdeling: ' . check_plain($caller->afdeling) . '<br/>';
         $caller_text .= '</p>';
 
-        $contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
+        $crm_contact_id = $submission->data[$map['spbellen_hidden_crm_contact_id']][0];
         $phone = $submission->data[$map['spbellen_hidden_phone']][0];
         $text = '<p>Het telefoonnummer ' . $phone . ' is volgens een vrijwilliger van het belteam niet correct.</p>';
         $text .= $caller_text;
-        spbellen_create_activity($contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
+        spbellen_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
       }
 
       // Disassign target.
@@ -1032,12 +1032,12 @@ function spbellen_contact_block_data() {
     if (!empty($user->uid)) {
       $campaign_id = spbellen_get_campaign_id($node->nid);
 
-      $query = "SELECT civi_contact_id FROM {spbellen_targets} WHERE state = 1 AND occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
+      $query = "SELECT contact_id FROM {spbellen_targets} WHERE state = 1 AND occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $user->uid))->fetchAssoc();
-      if (!empty($result['civi_contact_id'])) {
+      if (!empty($result['contact_id'])) {
 
         // Contact data.
-        $contact_data = spbellen_get_contact_data($result['civi_contact_id']);
+        $contact_data = spbellen_get_contact_data($result['contact_id']);
         $contact_fields = spbellen_contact_fields();
         foreach ($contact_fields as $key => $name) {
           $data[$key] = !empty($contact_data[$key]) ? check_plain($contact_data[$key]) : '';
