@@ -1123,13 +1123,14 @@ function spbellen_update_7028() {
 
   // Add crm_contact_id to campaign forms.
   $campaigns = spbellen_get_campaigns();
+  $webformsync_data = variable_get('spwebformsync_sync_data');
   foreach ($campaigns as $campaign) {
     $webform = entity_load_single('node', $campaign->webform_id);
     if (!empty($webform->webform['components'])) {
       foreach ($webform->webform['components'] as $key => $component) {
         if ($component['form_key'] === 'spbellen_hidden_contact_id') {
           // Store component.
-          $contact_id_component = $component;
+          $original_component = $component;
           // Rename component to spbellen_hidden_crm_contact_id.
           $webform->webform['components'][$key]['form_key'] = 'spbellen_hidden_crm_contact_id';
           $webform->webform['components'][$key]['name'] = 'CRM contact id (verborgen)';
@@ -1137,9 +1138,15 @@ function spbellen_update_7028() {
         $max_component_id = $key;
       }
       // Add contact_id component.
-      $webform->webform['components'][$max_component_id + 1] = $contact_id_component;
+      $webform->webform['components'][$max_component_id + 1] = $original_component;
       $webform->webform['components'][$max_component_id + 1]['cid'] = $max_component_id + 1;
       node_save($webform);
+      // Update webformsync settings if available.
+      if (!empty($webformsync_data)) {
+        if (!empty($webformsync_data[$webform->nid])) {
+          $webformsync_data[$webform->nid]['contact_id_component'] = $original_component['cid'];
+        }
+      }
       // Insert contact_id in webform_submitted_data table.
       $result = db_select('webform_submissions', 'sm')
         ->fields('sm', array('sid'))
@@ -1152,7 +1159,7 @@ function spbellen_update_7028() {
             ->fields('sd', array('data'))
             ->condition('nid', $webform->nid)
             ->condition('sid', $sid)
-            ->condition('cid', $contact_id_component['cid'])
+            ->condition('cid', $original_component['cid'])
             ->execute()->fetchField();
           if (!empty($crm_contact_id)) {
             // Get contact id.
@@ -1172,4 +1179,5 @@ function spbellen_update_7028() {
       }
     }
   }
+  variable_set('spwebformsync_sync_data', $webformsync_data);
 }
