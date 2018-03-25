@@ -1,0 +1,172 @@
+<?php
+
+/**
+ * Main module file for SP Beltool Civi importer.
+ */
+
+module_load_include("inc", "spbellen_civi_import", "spbellen_civi_import");
+
+ /**
+  * Implements hook_menu().
+  */
+function spbellen_civi_import_menu() {
+  $items = array();
+  $items['spbellen/group/autocomplete/%'] = array(
+    'title' => 'SP bellen autocomplete',
+    'page callback' => 'spbellen_civi_import_group_autocomplete',
+    'page arguments' => array(3),
+    'access arguments' => array('spbellen administer campaigns'),
+    'type' => MENU_CALLBACK,
+    'file' => 'spbellen_civi_import.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_spbellen_importer_info().
+ */
+function spbellen_civi_import_spbellen_importer_info() {
+  $importer_info = array(
+    'form_definition_function' => 'spbellen_civi_import_import_form',
+    'form_validation_function' => 'spbellen_civi_import_import_form_validate',
+    'form_submit_function' => 'spbellen_civi_import_import_form_submit',
+  );
+  return $importer_info;
+}
+
+/**
+ * Civi importer form definition.
+ */
+function spbellen_civi_import_import_form($form, &$form_state) {
+  $form_state['civi_groups'] = spbellen_civi_import_get_groups();
+  $form = array();
+  $storage = &$form_state['storage'];
+
+  $form['civi_group_select'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Selecteer CiviCRM groepen',
+    '#prefix' => '<div id="spbellen_civi_import_ajax_form">',
+    '#suffix' => '</div>',
+  );
+
+  // Show message.
+  $form['civi_group_select']['message_cache'] = array(
+    '#markup' => '<p><strong>Leeg de Drupal cache als een CiviCRM groep niet te vinden is!</strong></p>',
+  );
+
+  // Show stored groups.
+  if (!empty($storage['groups'])) {
+    $markup = '<p><strong>Geselecteerde groepen:</strong><br/>';
+    $form['civi_group_select']['selected_groups'] = array(
+      '#markup' => $markup,
+    );
+    foreach ($storage['groups'] as $group_key => $group_name) {
+      $form['civi_group_select']['del_group_' . $group_key] = array(
+        '#type' => 'button',
+        '#name' => 'del_group_' . $group_key,
+        '#value' => 'x',
+        '#suffix' => ' ' . $group_name . '<br/>',
+        '#ajax' => array(
+          'wrapper' => 'spbellen_civi_import_ajax_form',
+          'callback' => 'spbellen_civi_import_form_ajax_callback',
+          '#default_value' => empty($storage['groups']) ? array() : $storage['groups'],
+        ),
+      );
+    }
+  }
+  $form['civi_group_select']['group'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Selecteer een groep',
+    '#description' => 'Geen selectie van CiviCRM smart mogelijk ivm. batch import!',
+    '#autocomplete_path' => 'spbellen/group/autocomplete/all_but_smart',
+  );
+
+  $form['civi_group_select']['add_group'] = array(
+    '#type' => 'button',
+    '#value' => 'Voeg toe',
+    '#name' => 'add_group',
+    '#ajax' => array(
+      'wrapper' => 'spbellen_civi_import_ajax_form',
+      'callback' => 'spbellen_civi_import_form_ajax_callback',
+    ),
+  );
+  return $form;
+}
+
+/**
+ * Civi Import validation function.
+ */
+function spbellen_civi_import_import_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  $storage = &$form_state['storage'];
+
+  if (!empty($form_state['triggering_element']['#name'])) {
+    // Check fixed name buttons.
+    $trigger = $form_state['triggering_element']['#name'];
+    switch ($trigger) {
+      case 'add_group':
+        $civi_groups = $form_state['civi_groups'];
+        $group_raw = $values['group'];
+        $group = spbellen_parse_id_from_select_value($group_raw);
+        if (!empty($group)) {
+          $storage['groups'][$group] = $civi_groups[$group];
+          $form_state['input']['group'] = '';
+        }
+        else {
+          form_set_error('group', 'Selecteer eerst een doelgroep');
+        }
+        break;
+
+    }
+
+    // Delete buttons.
+    preg_match('/^del_group_([0-9]+)$/', $trigger, $matches);
+    if (!empty($matches[1])) {
+      unset($storage['groups'][$matches[1]]);
+    }
+  }
+}
+
+/**
+ * Civi Import submit function.
+ */
+function spbellen_civi_import_import_form_submit($form, &$form_state) {
+  $storage = $form_state['storage'];
+
+  if (!empty($storage['groups'])) {
+    $operations = array();
+    $groups = $storage['groups'];
+    foreach ($groups as $group_id => $group_title) {
+      $group_name = spbellen_civi_import_get_group_machine_name($group_id);
+      if (!empty($group_name)) {
+        $group_ids = array(
+          'id' => $group_id,
+          'name' => $group_name,
+        );
+        // Add operation for each campaign group.
+        $operations[] = array(
+          'spbellen_civi_import_get_targets_batch',
+          array($storage['campaign'], $group_ids, $storage['sync_id']),
+        );
+      }
+    }
+    if (!empty($operations)) {
+      $batch = array(
+        'operations' => $operations,
+        'finished' => 'spbellen_civi_import_get_targets_batch_finished',
+        'title' => 'Ophalen contacten',
+        'init_message' => '0',
+        'progress_message' => 'Groep @current van @total',
+        'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
+      );
+      batch_set($batch);
+    }
+  }
+}
+
+/**
+ * Civi Import ajax callback function.
+ */
+function spbellen_civi_import_form_ajax_callback($form, &$form_state) {
+  return $form['import']['civi_group_select'];
+}

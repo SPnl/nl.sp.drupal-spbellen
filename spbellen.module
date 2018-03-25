@@ -109,6 +109,15 @@ function spbellen_menu() {
     'access arguments' => array('spbellen administer campaigns'),
     'weight' => '1',
   );
+  $items['admin/beltool/config/import'] = array(
+    'title' => 'Importeer contacten',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_import_form'),
+    'file' => 'spbellen_import_form.inc',
+    'access arguments' => array('spbellen administer campaigns'),
+    'weight' => '1',
+  );
 
   $items['admin/beltool/config/settings'] = array(
     'title' => 'Instellingen',
@@ -118,15 +127,6 @@ function spbellen_menu() {
     'file' => 'spbellen_admin_settings_form.inc',
     'access arguments' => array('spbellen administer campaigns'),
     'weight' => '2',
-  );
-
-  $items['spbellen/group/autocomplete/%'] = array(
-    'title' => 'SP bellen autocomplete',
-    'page callback' => 'spbellen_group_autocomplete',
-    'page arguments' => array(3),
-    'access arguments' => array('spbellen administer campaigns'),
-    'type' => MENU_CALLBACK,
-    'file' => 'spbellen.inc',
   );
 
   $items['spbellen/contact_search/autocomplete/%/%'] = array(
@@ -842,7 +842,7 @@ function spbellen_contact_search_form($form, &$form_state) {
 function spbellen_contact_search_form_validate($form, &$form_state) {
   $values = $form_state['values'];
   $target_id_raw = $values['contact'];
-  $target_id = spbellen_parse_id_form_select_value($target_id_raw);
+  $target_id = spbellen_parse_id_from_select_value($target_id_raw);
   if (empty($target_id)) {
     form_set_error('contact', 'Kies een bestaand contact uit de lijst.');
   }
@@ -855,7 +855,7 @@ function spbellen_contact_search_form_submit($form, &$form_state) {
   global $user;
   $values = $form_state['values'];
   $target_id_raw = $values['contact'];
-  $target_id = spbellen_parse_id_form_select_value($target_id_raw);
+  $target_id = spbellen_parse_id_from_select_value($target_id_raw);
   if (!empty($target_id)) {
     // Unclaim current target.
     db_update('spbellen_targets')
@@ -1161,4 +1161,21 @@ function spbellen_user_profile_validate($form, &$form_state) {
     $pass_feedback = implode('<br/>', $pass_feedback_array);
     form_set_error('pass', $pass_feedback);
   }
+}
+
+/**
+ * Returns information about spbellen importer modules.
+ *
+ * @return array
+ *   Importer info.
+ */
+function spbellen_importer_info() {
+  $importer_info = &drupal_static(__FUNCTION__);
+  if (!isset($importer_info)) {
+    $importer_info = array();
+    foreach (module_implements('spbellen_importer_info') as $module) {
+      $importer_info[] = module_invoke($module, 'spbellen_importer_info');
+    }
+  }
+  return $importer_info;
 }

@@ -1,8 +1,8 @@
 name = SP Beltool
-description = Drupal frontend voor ondersteuning bij het bellen van contacten.
+description = Drupal frontend tool for telephone campaigns.
 core = 7.x
+package = SP Beltool
 dependencies[] = webform
-dependencies[] = spciviapi
 dependencies[] = spwebform_email_verify
 dependencies[] = sp_webformautoaddress
 
