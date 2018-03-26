@@ -170,3 +170,68 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
 function spbellen_civi_import_form_ajax_callback($form, &$form_state) {
   return $form['import']['civi_group_select'];
 }
+
+/**
+ * Return CiviCRM afdeling data.
+ *
+ * @param string $postal_code
+ *   Postal code.
+ *
+ * @return array
+ *   Return display_name and id.
+ */
+function spbellen_civi_import_spbellen_get_branch($postal_code) {
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'name' => $postal_code,
+  );
+  $result = $spcivi->api('Geostelsel', 'getafdeling', $params);
+  if (spbellen_check_result($result, 'afdelingsinformatie', 'get', $params)) {
+    if (!empty($result['values'])) {
+      $value = array_shift($result['values']);
+      $afdeling_data = $value;
+      return $value;
+    }
+  }
+}
+
+/**
+ * Process phone changed message.
+ */
+function spbellen_civi_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
+  spbellen_civi_import_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
+}
+
+/**
+ * Create CiviCRM activity.
+ */
+function spbellen_civi_import_create_activity($crm_contact_id, $activity_type, $status, $subject, $text, $debug_info) {
+  $spcivi = \SPCivi::getInstance();
+  set_time_limit(60);
+  $params = array(
+    'activity_type_id' => $activity_type,
+    'subject' => $subject,
+    'target_id' => $crm_contact_id,
+    'details' => $text,
+    'status_id' => $status,
+    'priority_id' => 2,
+  );
+  $activity_results = $spcivi->api('Activity', 'create', $params);
+}
+
+/**
+ * Set CiviCRM privacy settings for contact to no calls.
+ */
+function spbellen_civi_import_spbellen_crm_block_phone($crm_contact_id) {
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'id' => $crm_contact_id,
+    'do_not_phone' => 1,
+  );
+  $result = $spcivi->api('Contact', 'create', $params);
+  if (spbellen_check_result($result, 'een contact', 'create', $params)) {
+    watchdog('spbellen', 'CiviCRM contact nr. ' . $crm_contact_id . ' privacy instelling "Niet bellen" ingeschakeld.');
+  }
+}

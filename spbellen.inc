@@ -1237,22 +1237,6 @@ function spbellen_form_ajax_callback($form, &$form_state) {
   return $form;
 }
 
-function spbellen_get_afdeling($postal_code) {
-  set_time_limit(0);
-  $spcivi = \SPCivi::getInstance();
-  $params = array(
-    'name' => $postal_code,
-  );
-  $result = $spcivi->api('Geostelsel', 'getafdeling', $params);
-  if (spbellen_check_result($result, 'afdelingsinformatie', 'get', $params)) {
-    if (!empty($result['values'])) {
-      $value = array_shift($result['values']);
-      $afdeling_data = $value;
-      return $value;
-    }
-  }
-}
-
 function spbellen_click2dial_location() {
   $ip_address = ip_address();
   $location_ip = variable_get('spbellen_click2dial_location_ip', FALSE);
@@ -1301,4 +1285,15 @@ function spbellen_get_contact_id($crm_contact_id) {
     }
   }
   return FALSE;
+}
+
+function spbellen_get_branch($postal_code) {
+  // Get afdeling.
+  foreach (module_implements('spbellen_get_branch') as $module) {
+    $function = $module . '_spbellen_get_branch';
+    $afdeling_data = $function($postal_code);
+    // Max one crm call.
+    break;
+  }
+  return $afdeling_data;
 }

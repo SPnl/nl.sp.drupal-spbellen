@@ -459,7 +459,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             // Store postal_code and afdeling caller data.
             $caller = $form_state['caller_data'];
             $caller->postal_code = str_replace(' ', '', $values['postal_code']);
-            $afdeling_data = spbellen_get_afdeling($values['postal_code']);
+            $afdeling_data = spbellen_get_branch($values['postal_code']);
             if (!empty($afdeling_data)) {
               $caller->afdeling = $afdeling_data['display_name'];
               $caller->afdeling_id = $afdeling_data['id'];
@@ -527,7 +527,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           'postal_code' => $values['postal_code'],
         );
         // Get afdeling.
-        $afdeling_data = spbellen_get_afdeling($values['postal_code']);
+        $afdeling_data = spbellen_get_branch($values['postal_code']);
         if (!empty($afdeling_data)) {
           $caller_fields['afdeling'] = $afdeling_data['display_name'];
           $caller_fields['afdeling_id'] = $afdeling_data['id'];

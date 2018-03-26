@@ -255,8 +255,7 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
         $fields = array('first_name', 'middle_name', 'last_name');
         $name_parts = array();
         $caller_state = empty($values['caller_state']['no_campaign_key_needed']) ? 'registered' : 'master';
-        // Get afdeling.
-        $afdeling_data = spbellen_get_afdeling($values['postal_code']);
+        $afdeling_data = spbellen_get_branch($values['postal_code']);
         foreach ($fields as $field) {
           if (!empty($values[$field])) {
             $name_parts[$field] = $values[$field];
