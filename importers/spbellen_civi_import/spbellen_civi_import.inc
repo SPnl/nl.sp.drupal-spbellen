@@ -340,3 +340,19 @@ function spbellen_civi_import_create_activity($crm_contact_id, $activity_type, $
   );
   $activity_results = $spcivi->api('Activity', 'create', $params);
 }
+
+/**
+ * Set CiviCRM privacy settings for contact to no calls.
+ */
+function spbellen_civi_import_spbellen_crm_block_phone($crm_contact_id) {
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'id' => $crm_contact_id,
+    'do_not_phone' => 1,
+  );
+  $result = $spcivi->api('Contact', 'create', $params);
+  if (spbellen_check_result($result, 'een contact', 'create', $params)) {
+    watchdog('spbellen', 'CiviCRM contact nr. ' . $crm_contact_id . ' privacy instelling "Niet bellen" ingeschakeld.');
+  }
+}

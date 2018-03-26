@@ -1102,7 +1102,7 @@ function spbellen_blacklist($contact_id) {
     ->execute();
   $crm_contact_id = spbellen_get_crm_contact_id($contact_id);
   if (!empty($crm_contact_id)) {
-    spbellen_civi_no_calls($crm_contact_id);
+    module_invoke_all('spbellen_crm_block_phone', $crm_contact_id);
   }
 }
 
@@ -1209,22 +1209,6 @@ function spbellen_get_campaign_stats($campaign_id, $history_included) {
     $stats[$campaign_id]['title'] = $webform->title;
   }
   return $stats[$campaign_id];
-}
-
-/*
- * Set CiviCRM privacy settings for contact to no calls.
- */
-function spbellen_civi_no_calls($crm_contact_id) {
-  set_time_limit(0);
-  $spcivi = \SPCivi::getInstance();
-  $params = array(
-    'id' => $crm_contact_id,
-    'do_not_phone' => 1,
-  );
-  $result = $spcivi->api('Contact', 'create', $params);
-  if (spbellen_check_result($result, 'een contact', 'create', $params)) {
-    watchdog('spbellen', 'CiviCRM contact nr. ' . $contact_id . ' privacy instelling "Niet bellen" ingeschakeld.');
-  }
 }
 
 function spbellen_get_active_campaign() {
