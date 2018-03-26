@@ -522,7 +522,7 @@ function spbellen_webform_submission_insert($node, $submission) {
         $phone = $submission->data[$map['spbellen_hidden_phone']][0];
         $text = '<p>Het telefoonnummer ' . $phone . ' is volgens een vrijwilliger van het belteam niet correct.</p>';
         $text .= $caller_text;
-        spbellen_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
+        module_invoke_all('spbellen_process_phone_invalid_message', $crm_contact_id, $text);
       }
 
       // Disassign target.

@@ -1291,20 +1291,6 @@ function spbellen_click2dial_call_numbers_list() {
   return $number_list;
 }
 
-function spbellen_create_activity($crm_contact_id, $activity_type, $status, $subject, $text, $debug_info) {
-  $spcivi = \SPCivi::getInstance();
-  set_time_limit(60);
-  $params = array(
-    'activity_type_id' => $activity_type,
-    'subject' => $subject,
-    'target_id' => $crm_contact_id,
-    'details' => $text,
-    'status_id' => $status,
-    'priority_id' => 2,
-  );
-  $activity_results = $spcivi->api('Activity', 'create', $params);
-}
-
 function spbellen_get_crm_contact_id($contact_id) {
   if (!empty($contact_id)) {
     $crm_contact_id = db_select('spbellen_contact_data', 'cd')

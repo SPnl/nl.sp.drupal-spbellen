@@ -316,3 +316,27 @@ function spbellen_civi_import_get_group_machine_name($group_id) {
     }
   }
 }
+
+/**
+ * Process phone changed message.
+ */
+function spbellen_civi_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
+  spbellen_civi_import_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
+}
+
+/**
+ * Create CiviCRM activity.
+ */
+function spbellen_civi_import_create_activity($crm_contact_id, $activity_type, $status, $subject, $text, $debug_info) {
+  $spcivi = \SPCivi::getInstance();
+  set_time_limit(60);
+  $params = array(
+    'activity_type_id' => $activity_type,
+    'subject' => $subject,
+    'target_id' => $crm_contact_id,
+    'details' => $text,
+    'status_id' => $status,
+    'priority_id' => 2,
+  );
+  $activity_results = $spcivi->api('Activity', 'create', $params);
+}
