@@ -1280,3 +1280,20 @@ function spbellen_get_branch($postal_code) {
   }
   return $afdeling_data;
 }
+
+function spbellen_get_stored_campaign_groups($campaign_id, $type) {
+  $campaign_groups = array();
+  $query = new EntityFieldQuery();
+
+  $result = $query
+    ->entityCondition('entity_type', 'campaign_groups')
+    ->propertyCondition('campaign_id', $campaign_id)
+    ->propertyCondition('group_type', $type)
+    ->execute();
+
+  if (!empty($result['campaign_groups'])) {
+    $cgids = array_keys($result['campaign_groups']);
+    $campaign_groups = entity_load('campaign_groups', $cgids);
+  }
+  return $campaign_groups;
+}
