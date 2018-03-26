@@ -203,21 +203,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
           else {
             $storage['title'] = $webform->title;
           }
-          $campaign_groups = array();
-          $query = new EntityFieldQuery();
-
-          $result = $query
-            ->entityCondition('entity_type', 'campaign_groups')
-            ->propertyCondition('campaign_id', $storage['campaign'])
-            ->execute();
-
-          if (!empty($result['campaign_groups'])) {
-            $cgids = array_keys($result['campaign_groups']);
-            $campaign_groups = entity_load('campaign_groups', $cgids);
-          }
-          foreach ($campaign_groups as $campaign_group) {
-            $storage[$campaign_group->group_type.'s'][$campaign_group->civi_group_id] = $campaign_group->group_name;
-          }
         }
       }
       break;
@@ -284,52 +269,6 @@ function spbellen_campaign_form_submit($form, &$form_state) {
   }
 }
 
-function spbellen_store_campaign_groups($storage, $campaign) {
-  $types = array(
-    'target_group' => 'doelgroep',
-  );
-  foreach ($types as $type_key => $type_name) {
-    // Update and create campaign_groups.
-    if (isset($storage[$type_key.'s'])) {
-      // Get stored groups.
-      $stored_groups_ids = array();
-      $stored_campaign_groups = spbellen_get_stored_campaign_groups($campaign->id, $type_key);
-      foreach ($stored_campaign_groups as $stored_group) {
-        $stored_groups_ids[$stored_group->civi_group_id] = $stored_group->id;
-        $stored_groups_names[$stored_group->civi_group_id] = $stored_group->group_name;
-      }
-      $selected_groups = $storage[$type_key.'s'];
-      $added_groups = array_diff_assoc(array_keys($selected_groups),array_keys($stored_groups_ids));
-      $removed_groups = array_diff_assoc(array_keys($stored_groups_ids), array_keys($selected_groups));
-
-      foreach($added_groups as $group_id) {
-        $properties = array(
-          'civi_group_id' => $group_id,
-          'campaign_id' => $campaign->id,
-          'group_name' => $selected_groups[$group_id],
-          'group_type' => $type_key,
-          'disabled' => 0,
-        );
-        $campaign_groups = entity_create('campaign_groups', $properties);
-        $result = $campaign_groups->save();
-        if ($result === FALSE) {
-          drupal_set_message('Het toevoegen van de campagnegroep "'.$selected_groups[$group_id].'" is niet gelukt.', 'error');
-        }
-      }
-      foreach ($removed_groups as $group_id) {
-        $campaign_group_id = $stored_groups_ids[$group_id];
-        $result = entity_delete('campaign_groups', $campaign_group_id);
-        if ($result === FALSE) {
-          drupal_set_message('Het verwijderen van de campagnegroep "'.$stored_groups_names[$group_id].'" is niet gelukt.', 'error');
-        }
-        else {
-          drupal_set_message('Campagnegroep "'.$stored_groups_names[$group_id].'" is verwijderd.');
-        }
-      }
-    }
-  }
-}
-
 function spbellen_store_campaign($storage, $values) {
   if ($storage['campaign'] === 'new') {
     // Create campaign.
@@ -363,11 +302,6 @@ function spbellen_store_campaign($storage, $values) {
 
   if ($result !== FALSE) {
     drupal_set_message('Belcampagne is opgeslagen.');
-
-    // Store campaign groups.
-    spbellen_store_campaign_groups($storage, $campaign);
-
-    // Add spbellen intro webform to campaign webform.
   }
   else {
     drupal_set_message('Het opslaan van de campagne is niet gelukt.', 'error');
