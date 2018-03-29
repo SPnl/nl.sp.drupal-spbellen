@@ -897,7 +897,6 @@ function spbellen_theme($existing, $type, $theme, $path) {
     $variables[$key] = NULL;
   }
   $variables['history'] = NULL;
-  $variables['notes'] = NULL;
   $registry['spbellen_block_theme'] = array(
     'template' => 'spbellen-block',
     'variables' => $variables,

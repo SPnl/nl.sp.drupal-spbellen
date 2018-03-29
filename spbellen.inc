@@ -851,11 +851,12 @@ function spbellen_contact_fields() {
     'street_address' => 'Adres',
     'postal_code' => 'Postcode',
     'city' => 'Plaats',
-    'crm_contact_id' => 'CRM contact id',
     'gender' => 'Geslacht',
     'is_lid' => 'Is lid',
     'afdeling' => 'Afdeling',
     'afdeling_id' => 'Afdeling id',
+    'crm_contact_id' => 'CRM contact id',
+    'notes' => 'Notities',
   );
   return $contact_fields;
 }
@@ -1109,7 +1110,6 @@ function spbellen_get_contact_data($contact_id) {
       $fields[$key] = 'cd.' . $field;
     }
     $fields_list = implode(',', $fields);
-    $fields_list .= ',cd.notes';
     // Get contact data.
     $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id WHERE ta.state = 1 AND ta.contact_id = :contact_id";
     $result = db_query($query, array(':contact_id' => $contact_id));
@@ -1296,4 +1296,71 @@ function spbellen_get_stored_campaign_groups($campaign_id, $type) {
     $campaign_groups = entity_load('campaign_groups', $cgids);
   }
   return $campaign_groups;
+}
+
+/**
+ * Import contact in campaign.
+ *
+ * @param int $campaign_id
+ *   Campaign id.
+ * @param int $sync_id
+ *   Synchronization count.
+ * @param array $contact_data
+ *   See spbellen_contact_fields() for keys.
+ */
+function spbellen_import_contact($campaign_id, $sync_id, array $contact_data) {
+  $fields = array_keys(spbellen_contact_fields());
+  foreach ($fields as $field) {
+    if (!empty($contact_data[$field])) {
+      $values[$field] = $contact_data[$field];
+    }
+  }
+  if (!empty($values['contact_id'])) {
+    $contact_id = $values['contact_id'];
+  }
+  elseif (!empty($values['crm_contact_id'])) {
+    // Get contact_id from crm_contact_id.
+    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE crm_contact_id = :crm_contact_id", array(':crm_contact_id' => $values['crm_contact_id']))->fetchField();
+    if (!empty($result)) {
+      $contact_id = $result;
+    }
+  }
+  elseif (!empty($values['phone'])) {
+    // Get contact_id from phone.
+    $values['phone'] = preg_replace('/\D/', '', $values['phone']);
+    $values['phone'] = preg_replace('/^(\31|0031)/', '0', $values['phone']);
+    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone = :phone", array(':phone' => $values['phone']))->fetchField();
+    if (!empty($result)) {
+      $contact_id = $result;
+    }
+  }
+  // Store contact data.
+  if (empty($contact_id)) {
+    $contact_id = db_insert('spbellen_contact_data')
+      ->fields($values)
+      ->execute();
+  }
+  else {
+    db_update('spbellen_contact_data')
+      ->fields($values)
+      ->condition('contact_id', $contact_id)
+      ->execute();
+  }
+  // Add target.
+  db_merge('spbellen_targets')
+    ->key(array(
+      'contact_id' => $contact_id,
+      'campaign_id' => $campaign_id,
+    ))
+    ->fields(array(
+      'occupied' => 0,
+      'sync_id' => $sync_id,
+      'state' => 1,
+    ))
+    ->execute();
+  // Delete contact from blacklist.
+  db_delete('spbellen_blacklist')
+    ->condition('contact_id', $contact_id)
+    ->execute();
+  return $contact_id;
 }

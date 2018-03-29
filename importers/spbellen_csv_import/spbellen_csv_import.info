@@ -1,0 +1,5 @@
+name = SP Beltool csv importer
+description = Csv importer for SP Beltool.
+core = 7.x
+package = SP Beltool
+dependencies[] = spbellen

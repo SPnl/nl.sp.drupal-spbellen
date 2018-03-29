@@ -1,0 +1,165 @@
+<?php
+
+/**
+ * Main module file for SP Beltool csv importer.
+ */
+
+module_load_include("inc", "spbellen_csv_import", "spbellen_csv_import");
+
+/**
+ * Implements hook_spbellen_importer_info().
+ */
+function spbellen_csv_import_spbellen_importer_info() {
+  $importer_info = array(
+    'form_definition_function' => 'spbellen_csv_import_import_form',
+    'form_validation_function' => 'spbellen_csv_import_import_form_validate',
+    'form_submit_function' => 'spbellen_csv_import_import_form_submit',
+  );
+  return $importer_info;
+}
+
+/**
+ * Civi importer form definition.
+ */
+function spbellen_csv_import_import_form(&$form, &$form_state) {
+  $storage = &$form_state['storage'];
+
+  $form['csv_import_file_select'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Selecteer een csv bestand',
+    '#prefix' => '<div id="spbellen_csv_import_ajax_form">',
+    '#suffix' => '</div>',
+  );
+
+  // Upload file.
+  // ----------------------------------------------------------
+  if (empty($storage['upload'])) {
+    // Set the encoding type (necessary for file uploads).
+    $form['#attributes']['enctype'] = 'multipart/form-data';
+
+    $form['csv_import_file_select']['upload'] = array(
+      '#type' => 'file',
+      '#title' => 'CSV bestand',
+      '#disabled' => (empty($storage['upload'])) ? FALSE : TRUE,
+    );
+
+    $form['csv_import_file_select']['submit_file'] = array(
+      '#type' => 'submit',
+      '#name' => 'submit_file',
+      '#value' => 'Verder',
+      '#ajax' => array(
+        'wrapper' => 'spbellen_csv_import_ajax_form',
+        'callback' => 'spbellen_csv_import_form_ajax_callback',
+      ),
+    );
+  }
+  else {
+    if ($storage['delimiter'] !== FALSE) {
+      $delimiter = ($storage['delimiter'] === "\t") ? 'tab' : $storage['delimiter'];
+      if (!empty($delimiter)) {
+        $form['csv_import_file_select']['selected_file'] = array(
+          '#markup' => '<p>Bestand: ' . $storage['upload']->filename . '<br/>' . 'Veldscheidingsteken: "' . $delimiter . '"</p>',
+        );
+      }
+    }
+    $form['csv_import_file_select']['table_start'] = array(
+      '#markup' => '<table><tr><th>csv veld waarden</th><th>beltool velden</th>',
+    );
+    $options = array(
+      'phone' => 'Telefoonnummer',
+      'name' => 'Naam',
+      'postal_code' => 'Postcode',
+    );
+    $default = '';
+    foreach ($storage['csv_field_mapping_data'] as $csv_field_key => $example_values) {
+      $form['csv_import_file_select']['csv_field_key_' . $csv_field_key] = array(
+        '#type' => 'select',
+        '#options' => $options,
+        '#empty_option' => '- Geen -',
+        '#default_value' => $default,
+        '#name' => 'csv_field_key_' . $csv_field_key,
+        '#prefix' => '<tr><td><p>' . implode('<br/>', $example_values) . '</p></td><td>',
+        '#suffix' => '</td>',
+        '#ajax' => array(
+          'wrapper' => 'spbellen_csv_import_ajax_form',
+          'callback' => 'spbellen_csv_import_form_ajax_callback',
+        ),
+      );
+    }
+    $form['csv_import_file_select']['table_end'] = array(
+      '#markup' => '</table>',
+    );
+
+    $form['csv_import_file_select']['skip_first_row'] = array(
+      '#title' => 'Eerste rij?',
+      '#type' => 'checkboxes',
+      '#options' => array('skip_first_row' => 'overslaan'),
+      '#multiple' => TRUE,
+    );
+
+  }
+}
+
+/**
+ * Civi Import validation function.
+ */
+function spbellen_csv_import_import_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  $storage = &$form_state['storage'];
+
+  if (!empty($form_state['triggering_element']['#name'])) {
+    // Check fixed name buttons.
+    $trigger = $form_state['triggering_element']['#name'];
+    switch ($trigger) {
+      case 'submit_file':
+        $file = file_save_upload('upload', array('file_validate_extensions' => array('csv tsv txt')));
+        if ($file) {
+          // Move the file into the Drupal file system.
+          if ($file = file_move($file, 'private://')) {
+            // Get delimiter.
+            $delimiter = spbellen_csv_import_detect_delimiter($file);
+            if ($delimiter === FALSE) {
+              form_set_error('file', 'Het veldscheidingsteken kon niet worden gedetecteerd.');
+            }
+            else {
+              // Save the file for use in the submit handler.
+              $storage['upload'] = $file;
+              $storage['delimiter'] = $delimiter;
+              // Save csv field data.
+              $storage['csv_field_mapping_data'] = spbellen_csv_import_parse_csv_field_mapping_data($file, $delimiter);
+            }
+          }
+          else {
+            form_set_error('file', t("Failed to write the uploaded file to the site's file folder."));
+          }
+        }
+        else {
+          form_set_error('file', t('No file was uploaded.'));
+        }
+        return;
+    }
+  }
+}
+
+/**
+ * Csv Import submit function.
+ */
+function spbellen_csv_import_import_form_submit($form, &$form_state) {
+  $storage = $form_state['storage'];
+
+  if (!empty($form_state['triggering_element']['#name'])) {
+    $trigger = $form_state['triggering_element']['#name'];
+    switch ($trigger) {
+      case 'submit_file':
+        $form_state['rebuild'] = TRUE;
+        return;
+    }
+  }
+}
+
+/**
+ * Civi Import ajax callback function.
+ */
+function spbellen_csv_import_form_ajax_callback($form, &$form_state) {
+  return $form['csv_import_file_select'];
+}

@@ -124,24 +124,16 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
   if (spbellen_check_result($results, 'contacten', 'get', $params)) {
     if (!empty($results['values'])) {
       foreach ($results['values'] as $key => $result) {
-        // Process contact.
-        $contact_id = $result['contact_id'];
-
+        $crm_contact_id = $result['contact_id'];
         if ((isset($result['phone']) || isset($result['mobile'])) && empty($result['do_not_phone'])) {
-          // Check if has phonenumer.
-          if (!empty($result['mobile'])) {
-            $result['phone'] = $result['mobile'];
-          }
-
-          $result['phone'] = preg_replace('/\D/', '', $result['phone']);
-          $result['is_lid'] = $result['is_member'];
-          $result['afdeling_id'] = empty($result['afdeling_code']) ? '' : $result['afdeling_code'];
+          // Process contact.
+          $contact_data = spbellen_civi_import_map_civi_data($result);
+          $contact_id = spbellen_import_contact($campaign_id, $sync_id, $contact_data);
 
           if (empty($context['results']['count'][$group_id])) {
             $context['results']['count'][$group_id] = 0;
           }
           $context['results']['count'][$group_id]++;
-          spbellen_civi_import_process_target($campaign_id, $result, $sync_id);
         }
 
         // Stats.
@@ -150,7 +142,7 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
 
         // Update our progress information.
         $context['sandbox']['progress']++;
-        $context['sandbox']['current_contact'] = $contact_id;
+        $context['sandbox']['current_contact'] = $crm_contact_id;
       }
 
     }
@@ -162,62 +154,6 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
   $context['sandbox']['current_chunk']++;
   $context['message'] = ($context['sandbox']['current_chunk'] * $chunk_size) . '/' . $context['sandbox']['max'];
   $context['finished'] = ($context['sandbox']['progress'] / $context['sandbox']['max']);
-}
-
-/**
- * Process target.
- */
-function spbellen_civi_import_process_target($campaign_id, $result, $sync_id) {
-  $fields = array_keys(spbellen_contact_fields());
-  foreach ($fields as $field) {
-    if (!empty($result[$field])) {
-      $values[$field] = $result[$field];
-    }
-  }
-
-  $crm_contact_id = $values['contact_id'];
-  unset($values['contact_id']);
-  $values['crm_contact_id'] = $crm_contact_id;
-
-  // Get notes.
-  $notes = spbellen_civi_import_get_notes($crm_contact_id);
-  if (!empty($notes)) {
-    $notes_serialized = serialize($notes);
-    $values['notes'] = $notes_serialized;
-  }
-
-  // Add target contact data.
-  /*db_merge('spbellen_contact_data')
-  ->key(array('crm_contact_id' => $crm_contact_id))
-  ->fields($values)
-  ->execute();*/
-  if ($contact_id = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE crm_contact_id = :crm_contact_id", array(':crm_contact_id' => $crm_contact_id))->fetchField()) {
-    db_update('spbellen_contact_data')
-      ->fields($values)
-      ->condition('contact_id', $contact_id)
-      ->execute();
-  }
-  else {
-    $contact_id = db_insert('spbellen_contact_data')
-      ->fields($values)
-      ->execute();
-  }
-  // Add target.
-  db_merge('spbellen_targets')
-    ->key(array(
-      'contact_id' => $contact_id,
-      'campaign_id' => $campaign_id,
-    ))
-    ->fields(array(
-      'occupied' => 0,
-      'sync_id' => $sync_id,
-      'state' => 1,
-    ))
-    ->execute();
-  // Delete contact from blacklist.
-  db_delete('spbellen_blacklist')
-    ->condition('contact_id', $contact_id)
-    ->execute();
 }
 
 /**
@@ -332,4 +268,33 @@ function spbellen_civi_import_create_activity($crm_contact_id, $activity_type, $
     'priority_id' => 2,
   );
   $activity_results = $spcivi->api('Activity', 'create', $params);
+}
+
+/**
+ * Map civi data to storage contact data.
+ */
+function spbellen_civi_import_map_civi_data($civi_data) {
+  $contact_data['crm_contact_id'] = $civi_data['contact_id'];
+  $contact_data['phone'] = $civi_data['phone'];
+  // Check if has mobile phonenumer.
+  if (!empty($civi_data['mobile'])) {
+    $contact_data['phone'] = $civi_data['mobile'];
+  }
+  $contact_data['phone'] = preg_replace('/\D/', '', $contact_data['phone']);
+  $contact_data['display_name'] = $civi_data['display_name'];
+  $contact_data['email'] = $civi_data['email'];
+  $contact_data['street_address'] = $civi_data['street_address'];
+  $contact_data['postal_code'] = $civi_data['postal_code'];
+  $contact_data['city'] = $civi_data['city'];
+  $contact_data['gender'] = $civi_data['gender'];
+  $contact_data['is_lid'] = $civi_data['is_member'];
+  $contact_data['afdeling_id'] = empty($civi_data['afdeling_code']) ? '' : $civi_data['afdeling_code'];
+  $contact_data['afdeling'] = $civi_data['afdeling'];
+  // Get notes.
+  $notes = spbellen_civi_import_get_notes($civi_data['contact_id']);
+  if (!empty($notes)) {
+    $notes_serialized = serialize($notes);
+    $contact_data['notes'] = $notes_serialized;
+  }
+  return $contact_data;
 }
