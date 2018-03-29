@@ -35,19 +35,12 @@ function spbellen_import_form($form, &$form_state) {
     );
   }
   if (!empty($storage['campaign'])) {
-    $form['import'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'Importeer contacten',
-    );
 
     // Get import forms.
     $importer_info = spbellen_importer_info();
     if (!empty($importer_info)) {
       foreach ($importer_info as $info) {
-        $import_form_elements = $info['form_definition_function']($form, $form_state);
-        foreach ($import_form_elements as $key => $element) {
-          $form['import'][$key] = $element;
-        }
+        $info['form_definition_function']($form, $form_state);
       }
     }
 

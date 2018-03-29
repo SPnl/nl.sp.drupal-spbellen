@@ -35,11 +35,10 @@ function spbellen_civi_import_spbellen_importer_info() {
 }
 
 /**
- * Civi importer form definition.
+ * Implements hook_spbellen_importer_info() form_definition_function.
  */
-function spbellen_civi_import_import_form($form, &$form_state) {
+function spbellen_civi_import_import_form(&$form, &$form_state) {
   $form_state['civi_groups'] = spbellen_civi_import_get_groups();
-  $form = array();
   $storage = &$form_state['storage'];
 
   $form['civi_group_select'] = array(
@@ -90,11 +89,10 @@ function spbellen_civi_import_import_form($form, &$form_state) {
       'callback' => 'spbellen_civi_import_form_ajax_callback',
     ),
   );
-  return $form;
 }
 
 /**
- * Civi Import validation function.
+ * Implements hook_spbellen_importer_info() form_validation_function.
  */
 function spbellen_civi_import_import_form_validate($form, &$form_state) {
   $values = $form_state['values'];
@@ -128,7 +126,7 @@ function spbellen_civi_import_import_form_validate($form, &$form_state) {
 }
 
 /**
- * Civi Import submit function.
+ * Implements hook_spbellen_importer_info() form_submit_function.
  */
 function spbellen_civi_import_import_form_submit($form, &$form_state) {
   $storage = $form_state['storage'];
@@ -168,17 +166,11 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
  * Civi Import ajax callback function.
  */
 function spbellen_civi_import_form_ajax_callback($form, &$form_state) {
-  return $form['import']['civi_group_select'];
+  return $form['civi_group_select'];
 }
 
 /**
- * Return CiviCRM afdeling data.
- *
- * @param string $postal_code
- *   Postal code.
- *
- * @return array
- *   Return display_name and id.
+ * Implements hook_spbellen_get_branch().
  */
 function spbellen_civi_import_spbellen_get_branch($postal_code) {
   set_time_limit(0);
@@ -197,31 +189,14 @@ function spbellen_civi_import_spbellen_get_branch($postal_code) {
 }
 
 /**
- * Process phone changed message.
+ * Implements hook_spbellen_process_phone_invalid_message.
  */
 function spbellen_civi_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
   spbellen_civi_import_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
 }
 
 /**
- * Create CiviCRM activity.
- */
-function spbellen_civi_import_create_activity($crm_contact_id, $activity_type, $status, $subject, $text, $debug_info) {
-  $spcivi = \SPCivi::getInstance();
-  set_time_limit(60);
-  $params = array(
-    'activity_type_id' => $activity_type,
-    'subject' => $subject,
-    'target_id' => $crm_contact_id,
-    'details' => $text,
-    'status_id' => $status,
-    'priority_id' => 2,
-  );
-  $activity_results = $spcivi->api('Activity', 'create', $params);
-}
-
-/**
- * Set CiviCRM privacy settings for contact to no calls.
+ * Implements hook_spbellen_crm_block_phone().
  */
 function spbellen_civi_import_spbellen_crm_block_phone($crm_contact_id) {
   set_time_limit(0);

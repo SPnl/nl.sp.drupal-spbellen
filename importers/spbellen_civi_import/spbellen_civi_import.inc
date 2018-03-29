@@ -316,3 +316,20 @@ function spbellen_civi_import_get_group_machine_name($group_id) {
     }
   }
 }
+
+/**
+ * Create CiviCRM activity.
+ */
+function spbellen_civi_import_create_activity($crm_contact_id, $activity_type, $status, $subject, $text, $debug_info) {
+  $spcivi = \SPCivi::getInstance();
+  set_time_limit(60);
+  $params = array(
+    'activity_type_id' => $activity_type,
+    'subject' => $subject,
+    'target_id' => $crm_contact_id,
+    'details' => $text,
+    'status_id' => $status,
+    'priority_id' => 2,
+  );
+  $activity_results = $spcivi->api('Activity', 'create', $params);
+}
