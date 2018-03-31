@@ -844,7 +844,7 @@ function spbellen_parse_webform_select_options($webform, $selected_component) {
 
 function spbellen_contact_fields() {
   $contact_fields = array(
-    'contact_id' => 'Contact id',
+    'contact_id' => 'Beltool contact id',
     'phone' => 'Telefoonnummer',
     'display_name' => 'Weergave naam',
     'email' => 'E-mail',
@@ -1309,6 +1309,7 @@ function spbellen_get_stored_campaign_groups($campaign_id, $type) {
  *   See spbellen_contact_fields() for keys.
  */
 function spbellen_import_contact($campaign_id, $sync_id, array $contact_data) {
+  $contact_id = FALSE;
   $fields = array_keys(spbellen_contact_fields());
   foreach ($fields as $field) {
     if (!empty($contact_data[$field])) {

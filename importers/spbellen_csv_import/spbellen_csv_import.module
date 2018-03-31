@@ -65,11 +65,10 @@ function spbellen_csv_import_import_form(&$form, &$form_state) {
     $form['csv_import_file_select']['table_start'] = array(
       '#markup' => '<table><tr><th>csv veld waarden</th><th>beltool velden</th>',
     );
-    $options = array(
-      'phone' => 'Telefoonnummer',
-      'name' => 'Naam',
-      'postal_code' => 'Postcode',
-    );
+    $options = spbellen_contact_fields();
+    if (empty($storage['contact_fields'])) {
+      $storage['contact_fields'] = $options;
+    }
     $default = '';
     foreach ($storage['csv_field_mapping_data'] as $csv_field_key => $example_values) {
       $form['csv_import_file_select']['csv_field_key_' . $csv_field_key] = array(
@@ -137,6 +136,22 @@ function spbellen_csv_import_import_form_validate($form, &$form_state) {
           form_set_error('file', t('No file was uploaded.'));
         }
         return;
+
+      case 'import_submit':
+        $storage['skip_first_row'] = (reset($values['skip_first_row']) === 'skip_first_row') ? 1 : 0;
+        // Store mapping.
+        foreach ($values as $key => $value) {
+          preg_match('/^csv_field_key_([0-9]+)$/', $key, $matches);
+          if (isset($matches[1])) {
+            if (!empty($values[$matches[0]])) {
+              $storage['csv_beltool_mapping'][$matches[1]] = $values[$matches[0]];
+            }
+          }
+        }
+        if (empty($storage['csv_beltool_mapping']) || array_search('phone', $storage['csv_beltool_mapping']) === FALSE) {
+          form_set_error('csv_import_file_select', 'Geef aan welk csv veld het telefoonnummer bevat!');
+        }
+        break;
     }
   }
 }
@@ -152,7 +167,22 @@ function spbellen_csv_import_import_form_submit($form, &$form_state) {
     switch ($trigger) {
       case 'submit_file':
         $form_state['rebuild'] = TRUE;
-        return;
+        break;
+
+      case 'import_submit':
+        // Import csv.
+        $batch = array(
+          'operations' => array(
+            array('spbellen_csv_import_batch', array($storage)),
+          ),
+          'finished' => 'spbellen_csv_import_batch_finished',
+          'title' => 'Importeren csv',
+          'init_message' => '0',
+          'progress_message' => '',
+          'error_message' => 'Er is een fout opgetreden bij het ophalen van data',
+        );
+        batch_set($batch);
+        break;
     }
   }
 }
