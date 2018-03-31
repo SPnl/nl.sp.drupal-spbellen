@@ -204,17 +204,6 @@ function spbellen_entity_info() {
     'fieldable' => FALSE,
   );
 
-  $info['campaign_groups'] = array(
-    'label' => 'Campagne groepen',
-    'entity class' => 'Entity',
-    'controller class' => 'EntityAPIController',
-    'base table' => 'spbellen_campaign_groups',
-    'entity keys' => array(
-      'id' => 'id',
-    ),
-    'fieldable' => FALSE,
-  );
-
   $info['target'] = array(
     'label' => 'Doel',
     'entity class' => 'Entity',
@@ -279,7 +268,6 @@ function spbellen_entity_info() {
 function campaign_entity_property_info_alter(&$info) {
   $tables = array(
     'campaign',
-    'campaign_groups',
     'target',
     'action',
     'contact_data',
@@ -321,7 +309,7 @@ function spbellen_node_delete($node) {
     if (spbellen_is_spbellen_form_check($node->nid)) {
       $campaign_id = spbellen_get_campaign_id($node->nid);
       if (!empty($campaign_id)) {
-        // Cleanup targets and campaign groups.
+        // Cleanup campaign.
         entity_delete('campaign', $campaign_id);
       }
     }
@@ -334,7 +322,7 @@ function spbellen_node_delete($node) {
 function spbellen_entity_delete($entity, $type) {
   if ($type == 'campaign') {
     if (node_load($entity->webform_id)) {
-      // Cleanup campaign actions, targets and campaign groups.
+      // Cleanup campaign actions and targets.
       $sql = "SELECT ac.id FROM {spbellen_action} ac INNER JOIN {spbellen_targets} ta ON ac.target_id = ta.id WHERE campaign_id = :campaign_id";
       $result = db_query($sql, array(':campaign_id' => $entity->id));
       if ($result) {
@@ -344,9 +332,6 @@ function spbellen_entity_delete($entity, $type) {
             ->execute();
         }
       }
-      $num_result = db_delete('spbellen_campaign_groups')
-        ->condition('campaign_id', $entity->id)
-        ->execute();
       $num_result = db_delete('spbellen_targets')
         ->condition('campaign_id', $entity->id)
         ->execute();
@@ -579,7 +564,7 @@ function spbellen_node_access($node, $op, $account) {
           if (in_array('beheerder', $user->roles) || in_array('beheerder (resultaten)', $user->roles)) {
             return NODE_ACCESS_ALLOW;
           }
-          // Check session for call groups.
+          // Check session.
           if (spbellen_campaign_form_access($node->nid)) {
             // Check if disabled.
             $campaign = spbellen_get_campaign($node->nid);
@@ -593,7 +578,7 @@ function spbellen_node_access($node, $op, $account) {
             }
           }
           else {
-            // Deny access when not in callgroup.
+            // Deny access.
             return NODE_ACCESS_DENY;
           }
         }

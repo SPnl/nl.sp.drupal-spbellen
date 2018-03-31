@@ -182,11 +182,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
       $storage['campaign'] = 'new';
       break;
     case 'submit':
-      // Validate target groups before submission.
-      if (empty($storage['target_groups'])) {
-        form_set_error('target_groups', 'Selecteer minimaal één doelgroep.');
-      }
-
       // Validate title.
       if (empty($values['title'])) {
         form_set_error('title', 'Kies een titel voor de campaigne.');

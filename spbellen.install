@@ -1,18 +1,8 @@
 <?php
 
 /**
- * Implements hook_install()
+ * Drupal install and update functionality.
  */
-function spbellen_install() {
-}
-
-/**
- * Implements hook_uninstall()
- */
-function spbellen_uninstall() {
-  // Remove any variables we created.
-  //variable_del('');
-}
 
 /**
  * Implements hook_schema().
@@ -89,45 +79,6 @@ function spbellen_schema() {
       'webform_id' => array(
         'webform_id',
       ),
-    ),
-  );
-
-  $schema['spbellen_campaign_groups'] = array(
-    'description' => 'Links campaigns to CiviCRM groups.',
-    'fields' => array(
-      'id' => array(
-        'description' => 'Primary key.',
-        'type' => 'serial',
-        'size' => 'big',
-        'not null' => TRUE,
-      ),
-      'campaign_id' => array(
-        'description' => 'The campaign id.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => TRUE,
-      ),
-      'civi_group_id' => array(
-        'description' => 'The CiviCRM group id.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => TRUE,
-      ),
-      'group_name' => array(
-        'description' => 'The group name.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-      'group_type' => array(
-        'description' => 'Either target_group or call_group',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array(
-      'id',
     ),
   );
 
@@ -258,7 +209,7 @@ function spbellen_schema() {
         'type' => 'text',
         'size' => 'normal',
         'not null' => FALSE,
-      )
+      ),
     ),
     'primary key' => array(
       'id',
@@ -311,7 +262,7 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
       ),
-      'street_address'=> array(
+      'street_address' => array(
         'description' => 'Street address',
         'type' => 'varchar',
         'length' => 255,
@@ -330,7 +281,7 @@ function spbellen_schema() {
         'description' => 'Gender',
         'type' => 'varchar',
         'length' => 255,
-       ),
+      ),
       'is_lid' => array(
         'description' => 'Membership status',
         'type' => 'int',
@@ -484,7 +435,7 @@ function spbellen_update_7001() {
     'size' => 'big',
     'not null' => FALSE,
   );
-  db_add_field( 'spbellen_action', 'call_back_time', $spec);
+  db_add_field('spbellen_action', 'call_back_time', $spec);
 }
 
 /**
@@ -497,7 +448,7 @@ function spbellen_update_7002() {
     'size' => 'normal',
     'not null' => FALSE,
   );
-  db_add_field( 'spbellen_action', 'caller_message', $spec);
+  db_add_field('spbellen_action', 'caller_message', $spec);
 }
 
 /**
@@ -510,7 +461,7 @@ function spbellen_update_7003() {
     'size' => 'normal',
     'not null' => FALSE,
   );
-  db_add_field( 'spbellen_campaign', 'intro_text', $spec);
+  db_add_field('spbellen_campaign', 'intro_text', $spec);
 }
 
 /**
@@ -541,7 +492,7 @@ function spbellen_update_7004() {
         'type' => 'varchar',
         'length' => 255,
       ),
-      'street_address'=> array(
+      'street_address' => array(
         'description' => 'Street address',
         'type' => 'varchar',
         'length' => 255,
@@ -560,7 +511,7 @@ function spbellen_update_7004() {
         'description' => 'Gender',
         'type' => 'varchar',
         'length' => 255,
-       ),
+      ),
       'is_lid' => array(
         'description' => 'Membership status',
         'type' => 'int',
@@ -585,7 +536,7 @@ function spbellen_update_7005() {
     'default' => 0,
     'not null' => TRUE,
   );
-  db_add_field( 'spbellen_campaign', 'open_access', $spec);
+  db_add_field('spbellen_campaign', 'open_access', $spec);
 }
 
 /**
@@ -597,7 +548,7 @@ function spbellen_update_7006() {
     'type' => 'varchar',
     'length' => '255',
   );
-  db_add_field( 'spbellen_campaign', 'campaign_code', $spec);
+  db_add_field('spbellen_campaign', 'campaign_code', $spec);
 }
 
 
@@ -640,7 +591,7 @@ function spbellen_update_7007() {
 }
 
 /**
- * modify caller_id column type from integer to varchar.
+ * Modify caller_id column type from integer to varchar.
  */
 function spbellen_update_7008() {
   db_change_field('spbellen_targets', 'caller_id', 'caller_id',
@@ -667,10 +618,10 @@ function spbellen_update_7009() {
     'size' => 'big',
     'not null' => FALSE,
   );
-  db_add_field( 'spbellen_targets', 'sync_id', $spec);
+  db_add_field('spbellen_targets', 'sync_id', $spec);
 }
 
-/*
+/**
  * Add campaign title to  {spbellen_campaign} table.
  */
 function spbellen_update_7012() {
@@ -679,7 +630,7 @@ function spbellen_update_7012() {
     'type' => 'varchar',
     'length' => '255',
   );
-  db_add_field( 'spbellen_campaign', 'title', $spec);
+  db_add_field('spbellen_campaign', 'title', $spec);
 }
 
 /**
@@ -777,7 +728,11 @@ function spbellen_update_7013() {
       }
       if ($sync) {
         $account_wrapped = entity_metadata_wrapper('user', $account);
-        $fields = array('field_first_name', 'field_middle_name', 'field_last_name');
+        $fields = array(
+          'field_first_name',
+          'field_middle_name',
+          'field_last_name',
+        );
         $name_parts = array();
         foreach ($fields as $field) {
           if (isset($account_wrapped->$field) && !empty($account_wrapped->$field->value())) {
@@ -814,11 +769,11 @@ function spbellen_update_7014() {
     'default' => 0,
     'not null' => TRUE,
   );
-  db_add_field( 'spbellen_campaign', 'caller_check', $spec);
+  db_add_field('spbellen_campaign', 'caller_check', $spec);
 }
 
 
-/*
+/**
  * Add campaign start page text to {spbellen_campaign} table.
  */
 function spbellen_update_7015() {
@@ -828,11 +783,12 @@ function spbellen_update_7015() {
     'size' => 'normal',
     'not null' => FALSE,
   );
-  db_add_field( 'spbellen_campaign', 'start_page_text', $spec);
+  db_add_field('spbellen_campaign', 'start_page_text', $spec);
 }
 
-/*
+/**
  * Add postal_code and afdeling field to {spbellen_caller} table.
+ *
  * Add afdeling field to {spbellen_contact_data} table.
  */
 function spbellen_update_7016() {
@@ -841,18 +797,18 @@ function spbellen_update_7016() {
     'type' => 'varchar',
     'length' => 255,
   );
-  db_add_field( 'spbellen_caller', 'postal_code', $spec);
+  db_add_field('spbellen_caller', 'postal_code', $spec);
 
   $spec = array(
     'description' => 'Afdeling',
     'type' => 'varchar',
     'length' => 255,
   );
-  db_add_field( 'spbellen_caller', 'afdeling', $spec);
-  db_add_field( 'spbellen_contact_data', 'afdeling', $spec);
+  db_add_field('spbellen_caller', 'afdeling', $spec);
+  db_add_field('spbellen_contact_data', 'afdeling', $spec);
 }
 
-/*
+/**
  * Rename chapter column to afdeling.
  */
 function spbellen_update_7017() {
@@ -881,11 +837,11 @@ function spbellen_update_7018() {
     'default' => 0,
     'not null' => TRUE,
   );
-  db_add_field( 'spbellen_campaign', 'afdeling_filter', $spec);
+  db_add_field('spbellen_campaign', 'afdeling_filter', $spec);
 }
 
 /**
- * Add afdeling_id fields to {spbellen_caller} and {spbellen_contact_data} tables.
+ * Add afdeling_id fields to {spbellen_caller}, {spbellen_contact_data} tables.
  */
 function spbellen_update_7019() {
   $spec = array(
@@ -893,11 +849,11 @@ function spbellen_update_7019() {
     'type' => 'int',
     'size' => 'big',
   );
-  db_add_field( 'spbellen_caller', 'afdeling_id', $spec);
-  db_add_field( 'spbellen_contact_data', 'afdeling_id', $spec);
+  db_add_field('spbellen_caller', 'afdeling_id', $spec);
+  db_add_field('spbellen_contact_data', 'afdeling_id', $spec);
 }
 
-/*
+/**
  * Set caller_id to user uid (was user name).
  */
 function spbellen_update_7020() {
@@ -920,7 +876,7 @@ function spbellen_update_7020() {
   db_change_field('spbellen_targets', 'caller_id', 'caller_id', $spec);
 }
 
-/*
+/**
  * Removes spnet login accounts that share email with other account.
  */
 function spbellen_update_7021() {
@@ -970,11 +926,11 @@ function spbellen_update_7021() {
  */
 function spbellen_update_7022() {
   $spec = array(
-      'description' => 'Click2dial call number.',
-      'type' => 'varchar',
-      'length' => 255,
-      );
-  db_add_field( 'spbellen_campaign', 'click2dial_call_number', $spec);
+    'description' => 'Click2dial call number.',
+    'type' => 'varchar',
+    'length' => 255,
+  );
+  db_add_field('spbellen_campaign', 'click2dial_call_number', $spec);
 }
 
 /**
@@ -982,12 +938,12 @@ function spbellen_update_7022() {
  */
 function spbellen_update_7024() {
   $spec = array(
-      'description' => 'Contact notes (serialized) important for caller.',
-      'type' => 'text',
-      'size' => 'normal',
-      'not null' => FALSE,
-      );
-  db_add_field( 'spbellen_contact_data', 'notes', $spec);
+    'description' => 'Contact notes (serialized) important for caller.',
+    'type' => 'text',
+    'size' => 'normal',
+    'not null' => FALSE,
+  );
+  db_add_field('spbellen_contact_data', 'notes', $spec);
 }
 
 /**
@@ -999,7 +955,7 @@ function spbellen_update_7025() {
     ->condition('group_type', 'call_group')
     ->execute();
 
-  // Remove SPNET login users
+  // Remove SPNET login users.
   $result = db_query("SELECT caller_id FROM {spbellen_caller} WHERE access_type = 'spnet'");
   foreach ($result as $record) {
     user_delete($record->caller_id);
@@ -1020,7 +976,7 @@ function spbellen_update_7026() {
     'type' => 'int',
     'size' => 'tiny',
   );
-  db_add_field( 'spbellen_action', 'call_back_priority', $spec);
+  db_add_field('spbellen_action', 'call_back_priority', $spec);
 }
 
 /**
@@ -1034,10 +990,10 @@ function spbellen_update_7027() {
     'default' => 1,
     'not null' => TRUE,
   );
-  db_add_field( 'spbellen_targets', 'state', $spec);
+  db_add_field('spbellen_targets', 'state', $spec);
 }
 
-/*
+/**
  * Rename contact_id to crm_contact_id field.
  */
 function spbellen_update_7028() {
@@ -1048,7 +1004,7 @@ function spbellen_update_7028() {
     'size' => 'big',
   ));
 
-  db_add_field( 'spbellen_contact_data', 'contact_id', array(
+  db_add_field('spbellen_contact_data', 'contact_id', array(
     'description' => 'Contact id.',
     'type' => 'serial',
     'not null' => TRUE,
@@ -1067,7 +1023,7 @@ function spbellen_update_7028() {
     'size' => 'big',
   ));
   db_drop_index('spbellen_blacklist', 'crm_contact_id');
-  db_add_field( 'spbellen_blacklist', 'contact_id', array(
+  db_add_field('spbellen_blacklist', 'contact_id', array(
     'description' => 'Contact id.',
     'type' => 'int',
     'size' => 'big',
@@ -1086,7 +1042,6 @@ function spbellen_update_7028() {
   // Add primary key.
   db_add_primary_key('spbellen_blacklist', array('contact_id'));
 
-
   // Alter targets table.
   db_drop_unique_key('spbellen_targets', 'campaign_target');
   db_change_field('spbellen_targets', 'civi_contact_id', 'crm_contact_id', array(
@@ -1094,7 +1049,7 @@ function spbellen_update_7028() {
     'type' => 'int',
     'size' => 'big',
   ));
-  db_add_field( 'spbellen_targets', 'contact_id', array(
+  db_add_field('spbellen_targets', 'contact_id', array(
     'description' => 'Contact id.',
     'type' => 'int',
     'size' => 'big',
@@ -1179,5 +1134,12 @@ function spbellen_update_7028() {
  * Remove open_access from  {spbellen_campaign} table.
  */
 function spbellen_update_7029() {
-  db_drop_field( 'spbellen_campaign', 'open_access');
+  db_drop_field('spbellen_campaign', 'open_access');
+}
+
+/**
+ * Remove {spbellen_campaign_groups} table.
+ */
+function spbellen_update_7030() {
+  db_drop_table('spbellen_campaign_groups');
 }
