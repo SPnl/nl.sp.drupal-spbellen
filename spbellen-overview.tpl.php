@@ -40,29 +40,56 @@
 <?php endif; ?>
 <?php if(!empty($campaign_stats)) : ?>
   <?php foreach($campaign_stats as $data) : ?>
-    <h3><?php print($data['title']); ?></h3>
+    <h3><?php print ($data['title']); ?> (<a href="/node/<?php print $data['webform_id']; ?>/webform-results/analysis" target="_blank">resultaten)</a></h3>
     <table style="width: auto">
       <tr>
-        <th></th><th>aantal</th><th>percentage</th>
+        <th></th><th colspan="2">Alle contacten</th><th colspan="2">Laatste import</th>
       </tr>
       <tr>
-        <td>Afgerond</td><td><?php print $data['completed']; ?></td><td><?php print $data['completed_percentage']; ?>%</td>
+        <th></th><th>aantal</th><th>percentage</th><th>aantal</th><th>percentage</th>
       </tr>
       <tr>
-        <td>Terugbellen</td><td><?php print $data['call_back']; ?></td><td><?php print $data['call_back_percentage']; ?>%</td>
+        <td>Afgerond</td>
+        <td><?php print $data['all']['completed']; ?></td>
+        <td><?php print $data['all']['completed_percentage']; ?>%</td>
+        <td><?php print $data['last_import_only']['completed']; ?></td>
+        <td><?php print $data['last_import_only']['completed_percentage']; ?>%</td>
+      </tr>
+      <tr>
+        <td>Terugbellen</td>
+        <td><?php print $data['all']['call_back']; ?></td>
+        <td><?php print $data['all']['call_back_percentage']; ?>%</td>
+        <td><?php print $data['last_import_only']['call_back']; ?></td>
+        <td><?php print $data['last_import_only']['call_back_percentage']; ?>%</td>
 
       </tr>
       <tr>
-        <td>Niet gebeld</td><td><?php print $data['not_contacted']; ?></td><td><?php print $data['not_contacted_percentage']; ?>%</td>
+        <td>Niet gebeld</td>
+        <td><?php print $data['all']['not_contacted']; ?></td>
+        <td><?php print $data['all']['not_contacted_percentage']; ?>%</td>
+        <td><?php print $data['last_import_only']['not_contacted']; ?></td>
+        <td><?php print $data['last_import_only']['not_contacted_percentage']; ?>%</td>
       </tr>
       <tr>
-        <td>Verkeerd nummer</td><td><?php print $data['wrong_number']; ?></td><td><?php print $data['wrong_number_percentage']; ?>%</td>
+        <td>Verkeerd nummer</td>
+        <td><?php print $data['all']['wrong_number']; ?></td>
+        <td><?php print $data['all']['wrong_number_percentage']; ?>%</td>
+        <td><?php print $data['last_import_only']['wrong_number']; ?></td>
+        <td><?php print $data['last_import_only']['wrong_number_percentage']; ?>%</td>
       </tr>
       <tr>
-        <td>Nooit meer bellen</td><td><?php print $data['blacklisted']; ?></td><td><?php print $data['blacklisted_percentage']; ?>%</td>
+        <td>Nooit meer bellen</td>
+        <td><?php print $data['all']['blacklisted']; ?></td>
+        <td><?php print $data['all']['blacklisted_percentage']; ?>%</td>
+        <td><?php print $data['last_import_only']['blacklisted']; ?></td>
+        <td><?php print $data['last_import_only']['blacklisted_percentage']; ?>%</td>
       </tr>
       <tr>
-        <td>Totaal</td><td><?php print $data['total']; ?></td><td>100%</td>
+        <td>Totaal</td>
+        <td><?php print $data['all']['total']; ?></td>
+        <td>100%</td>
+        <td><?php print $data['last_import_only']['total']; ?></td>
+        <td>100%</td>
       </tr>
     </table>
   <?php endforeach; ?>

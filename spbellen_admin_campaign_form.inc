@@ -68,14 +68,16 @@ function spbellen_campaign_form($form, &$form_state) {
       );
 
       $options = spbellen_click2dial_call_numbers_list();
-      $form['click2dial_call_number'] = array(
-        '#type' => 'select',
-        '#title' => 'Selecteer het telefoonnummer waarmee gebeld gaat worden.',
-        '#description' => 'Laat leeg om anoniem te bellen.',
-        '#options' => $options,
-        '#default_value' => empty($storage['click2dial_call_number']) ? '' : $storage['click2dial_call_number'],
-        '#empty_option' => 'Kies:',
-      );
+      if (!empty($options)) {
+        $form['click2dial_call_number'] = array(
+          '#type' => 'select',
+          '#title' => 'Selecteer het telefoonnummer waarmee gebeld gaat worden.',
+          '#description' => 'Laat leeg om anoniem te bellen.',
+          '#options' => $options,
+          '#default_value' => empty($storage['click2dial_call_number']) ? '' : $storage['click2dial_call_number'],
+          '#empty_option' => 'Kies:',
+        );
+      }
 
       $form['campaign_start_page_text'] = array(
         '#type' => 'textarea',
@@ -94,10 +96,18 @@ function spbellen_campaign_form($form, &$form_state) {
         );
       }
 
+      $form['last_import_only'] = array(
+        '#type' => 'checkboxes',
+        '#title' => 'Bel alleen laatste import',
+        '#name' => 'last_import_only',
+        '#options' => array('enabled' => 'Bel alleen contacten van de laatste import'),
+        '#default_value' => empty($storage['last_import_only']) ? array() : array('enabled'),
+      );
+
       $form['afdeling_filter'] = array(
         '#type' => 'checkboxes',
         '#title' => 'Afdelingsfilter',
-        '#description' => 'Contacten in de geselecteerde groepen zonder locatieinformatie worden niet getoond!',
+        '#description' => 'Contacten zonder locatieinformatie worden niet getoond!',
         '#name' => 'afdeling_filter',
         '#options' => array('enabled' => 'Toon alleen contacten uit afdeling beller'),
         '#default_value' => empty($storage['afdeling_filter']) ? array() : array('enabled'),
@@ -161,6 +171,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         $webform = entity_load_single('node', $campaign->webform_id);
         if (!empty($campaign)) {
           $storage['webform'] = $campaign->webform_id;
+          $storage['last_import_only'] = $campaign->last_import_only;
           $storage['afdeling_filter'] = $campaign->afdeling_filter;
           $storage['disabled'] = $campaign->disabled;
           $storage['campaign_code'] = $campaign->campaign_code;
@@ -240,6 +251,7 @@ function spbellen_store_campaign($storage, $values) {
     $properties = array(
       'webform_id' => $values['webform'],
       'disabled' => empty($values['disabled']['disabled']) ? 0 : 1,
+      'last_import_only' => empty($values['last_import_only']['enabled']) ? 0 : 1,
       'afdeling_filter' => empty($values['afdeling_filter']['enabled']) ? 0 : 1,
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
@@ -253,7 +265,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign = entity_load_single('campaign', $storage['campaign']);
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
-    $campaign->afdeling_filter = empty($values['afdeling_filter']['enabled']) ? 0 : 1;
+    $campaign->last_import_only = empty($values['last_import_only']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];

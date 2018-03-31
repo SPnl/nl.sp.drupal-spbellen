@@ -28,6 +28,13 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
+      'last_import_only' => array(
+        'description' => 'Call only contacts from the last import',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
       'afdeling_filter' => array(
         'description' => 'Wether caller contacts are filtered on caller afdelingsregion.',
         'type' => 'int',
@@ -1142,4 +1149,18 @@ function spbellen_update_7029() {
  */
 function spbellen_update_7030() {
   db_drop_table('spbellen_campaign_groups');
+}
+
+/**
+ * Add last_import_only to {spbellen_campaign} table.
+ */
+function spbellen_update_7031() {
+  $spec = array(
+    'description' => 'Call only contacts from the last import',
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'not null' => TRUE,
+  );
+  db_add_field('spbellen_campaign', 'last_import_only', $spec);
 }

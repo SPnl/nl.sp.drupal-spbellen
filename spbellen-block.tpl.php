@@ -9,11 +9,11 @@
 
 <div id="spbellen-block-data">
   <div id="spbellen-stats">
-    <div id="spbellen_completed_percentage" style="width:<?php print $stats['completed_percentage']; ?>%"></div>
-    <div id="spbellen_call_back_percentage" style="width:<?php print $stats['call_back_percentage']; ?>%"></div>
-    <div id="spbellen_not_contacted_percentage" style="width:<?php print $stats['not_contacted_percentage']; ?>%"></div>
-    <div id="spbellen_wrong_number_percentage" style="width:<?php print $stats['wrong_number_percentage']; ?>%"></div>
-    <div id="spbellen_blacklisted_percentage" style="width:<?php print $stats['blacklisted_percentage']; ?>%"></div>
+    <div id="spbellen_completed_percentage" style="width:<?php print $stats[$stats_type]['completed_percentage']; ?>%"></div>
+    <div id="spbellen_call_back_percentage" style="width:<?php print $stats[$stats_type]['call_back_percentage']; ?>%"></div>
+    <div id="spbellen_not_contacted_percentage" style="width:<?php print $stats[$stats_type]['not_contacted_percentage']; ?>%"></div>
+    <div id="spbellen_wrong_number_percentage" style="width:<?php print $stats[$stats_type]['wrong_number_percentage']; ?>%"></div>
+    <div id="spbellen_blacklisted_percentage" style="width:<?php print $stats[$stats_type]['blacklisted_percentage']; ?>%"></div>
   </div>
   <div class="wrapper left">
     <div class="content top">
@@ -36,9 +36,9 @@
     <p><strong>Belgeschiedenis</strong></p>
     <?php if (!empty($history)) : ?>
       <ul>
-        <?php foreach ($history as $values) : ?> 
+        <?php foreach ($history as $values) : ?>
           <li><?php print $values['date']; ?><br/><?php print $values['result']; ?><?php if (!empty($values['caller_message'])) : ?><br/>Opmerking: "<?php print $values['caller_message']; ?>"<?php endif; ?></li>
-        <?php endforeach; ?> 
+        <?php endforeach; ?>
       </ul>
     <?php else : ?>
         <p>Er is nog niet eerder gebeld</p>

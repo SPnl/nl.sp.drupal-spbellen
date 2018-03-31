@@ -50,9 +50,11 @@ function spbellen_menu() {
     'access arguments' => array('spbellen administer callers'),
   );
 
-  $items['admin/beltool/coach/page'] = array(
-    'title' => 'Belcoach',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
+  $items['admin/beltool/coach/overview'] = array(
+    'title' => 'Overzicht belcampagnes',
+    'page callback' => 'spbellen_overview',
+    'file' => 'spbellen_admin_overview.inc',
+    'type' => MENU_LOCAL_TASK,
     'weight' => '0',
     'access arguments' => array('spbellen administer callers'),
   );
@@ -63,14 +65,14 @@ function spbellen_menu() {
     'page arguments' => array('spbellen_coach_subscribe_callers_form'),
     'file' => 'spbellen_coach_subscribe_callers_form.inc',
     'type' => MENU_LOCAL_TASK,
-    'weight' => '0',
+    'weight' => '1',
     'access arguments' => array('spbellen administer callers'),
   );
 
   $items['admin/beltool/coach/call_back_list'] = array(
     'title' => 'Terugbellen contacten',
     'type' => MENU_LOCAL_TASK,
-    'weight' => '0',
+    'weight' => '2',
     'access arguments' => array('spbellen administer callers'),
     'page callback' => 'spbellen_call_back_list',
     'file' => 'spbellen_call_back.inc',
@@ -88,16 +90,7 @@ function spbellen_menu() {
   $items['admin/beltool/config'] = array(
     'title' => 'Configuratie',
     'type' => MENU_NORMAL_ITEM,
-    'page callback' => 'spbellen_overview',
-    'file' => 'spbellen_admin_overview.inc',
-    'access arguments' => array('spbellen view results'),
-  );
-
-  $items['admin/beltool/config/overview'] = array(
-    'title' => 'Overzicht',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => '0',
-    'access arguments' => array('spbellen view results'),
+    'access arguments' => array('spbellen administer campaigns'),
   );
 
   $items['admin/beltool/config/campaign'] = array(
@@ -109,6 +102,7 @@ function spbellen_menu() {
     'access arguments' => array('spbellen administer campaigns'),
     'weight' => '1',
   );
+
   $items['admin/beltool/config/import'] = array(
     'title' => 'Importeer contacten',
     'type' => MENU_LOCAL_TASK,
@@ -116,7 +110,7 @@ function spbellen_menu() {
     'page arguments' => array('spbellen_import_form'),
     'file' => 'spbellen_import_form.inc',
     'access arguments' => array('spbellen administer campaigns'),
-    'weight' => '1',
+    'weight' => '2',
   );
 
   $items['admin/beltool/config/settings'] = array(
@@ -126,7 +120,7 @@ function spbellen_menu() {
     'page arguments' => array('spbellen_settings_form'),
     'file' => 'spbellen_admin_settings_form.inc',
     'access arguments' => array('spbellen administer campaigns'),
-    'weight' => '2',
+    'weight' => '3',
   );
 
   $items['spbellen/contact_search/autocomplete/%/%'] = array(
@@ -1011,7 +1005,8 @@ function spbellen_contact_block_data() {
   $node = menu_get_object();
   if (spbellen_is_spbellen_form($node->nid)) {
     if (!empty($user->uid)) {
-      $campaign_id = spbellen_get_campaign_id($node->nid);
+      $campaign = spbellen_get_campaign($node->nid);
+      $campaign_id = $campaign->id;
 
       $query = "SELECT contact_id FROM {spbellen_targets} WHERE state = 1 AND occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $user->uid))->fetchAssoc();
@@ -1032,8 +1027,11 @@ function spbellen_contact_block_data() {
 
         // Call history.
         $translate = spbellen_action_translate();
-        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE ta.state = 1 AND occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
-        $result = db_query($query, array(':caller_id' => $user->uid, ':cid' => $campaign_id));
+        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid";
+        $result = db_query($query, array(
+          ':caller_id' => $user->uid,
+          ':cid' => $campaign_id,
+        ));
         if (!empty($result)) {
           while ($row = $result->fetchAssoc()) {
             $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
@@ -1047,8 +1045,14 @@ function spbellen_contact_block_data() {
         }
 
         // Stats.
-        $stats = spbellen_get_campaign_stats($campaign_id, FALSE);
+        $stats = spbellen_get_campaign_stats($campaign_id);
         $data['stats'] = $stats;
+        if (empty($campaign->last_import_only)) {
+          $data['stats_type'] = 'all';
+        }
+        else {
+          $data['stats_type'] = 'last_import_only';
+        }
 
         // Call button.
         $campaign = entity_load_single('campaign', $campaign_id);
