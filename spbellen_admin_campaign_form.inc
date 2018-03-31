@@ -111,41 +111,12 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['disabled']) ? array() : array('disabled'),
       );
 
-      $form['open_access'] = array(
-        '#type' => 'checkboxes',
-        '#title' => 'Sta open aanmelding bellers toe',
-        '#name' => 'open_access',
-        '#options' => array('enabled' => 'Open aanmelding'),
-        '#default_value' => empty($storage['open_access']) ? array() : array('enabled'),
-      );
-
       $form['campaign_code'] = array(
         '#type' => 'textfield',
         '#title' => 'Campagne code',
         '#description' => 'Alleen gebruikers met deze code kunnen zich aanmelden, laat leeg indien iedereen zich moet kunnen aanmelden.',
         '#default_value' => empty($storage['campaign_code']) ? '' : $storage['campaign_code'],
-        '#states' => array(
-          'visible' => array(
-            ':input[name="open_access[enabled]"]' => array('checked' => TRUE),
-          ),
-        ),
       );
-
-      /*
-      $form['caller_check'] = array(
-        '#type' => 'checkboxes',
-        '#title' => 'Bellers controleren',
-        '#description' => 'Bellers worden dienen gecontroleerd te worden alvorens ze met contacten kunnen bellen.',
-        '#name' => 'caller_check',
-        '#options' => array('enabled' => 'Bellers controleren'),
-        '#default_value' => empty($storage['caller_check']) ? array() : array('enabled'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="open_access[enabled]"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
-      */
 
       $form['submit'] = array(
         '#type' => 'submit',
@@ -192,7 +163,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
           $storage['webform'] = $campaign->webform_id;
           $storage['afdeling_filter'] = $campaign->afdeling_filter;
           $storage['disabled'] = $campaign->disabled;
-          $storage['open_access'] = $campaign->open_access;
           $storage['campaign_code'] = $campaign->campaign_code;
           //$storage['caller_check'] = $campaign->caller_check;
           $storage['campaign_start_page_text'] = $campaign->start_page_text;
@@ -274,10 +244,8 @@ function spbellen_store_campaign($storage, $values) {
     // Create campaign.
     $properties = array(
       'webform_id' => $values['webform'],
-      //'caller_check' => empty($values['caller_check']['enabled']) ? 0 : 1,
       'disabled' => empty($values['disabled']['disabled']) ? 0 : 1,
       'afdeling_filter' => empty($values['afdeling_filter']['enabled']) ? 0 : 1,
-      'open_access' => empty($values['open_access']['enabled']) ? 0 : 1,
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
       'title' => $values['title'],
@@ -291,8 +259,6 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
     $campaign->afdeling_filter = empty($values['afdeling_filter']['enabled']) ? 0 : 1;
-    $campaign->open_access = empty($values['open_access']['enabled']) ? 0 : 1;
-    //$campaign->caller_check = empty($values['caller_check']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];

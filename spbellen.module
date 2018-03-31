@@ -140,10 +140,7 @@ function spbellen_menu() {
 
   $campaigns = spbellen_get_campaigns();
   foreach ($campaigns as $campaign) {
-    if (
-      !empty($campaign->open_access) &&
-      empty($campaign->disabled)
-    ) {
+    if (empty($campaign->disabled)) {
       $webform = node_load($campaign->webform_id);
       $alias = spbellen_get_campaign_form_alias($campaign->webform_id);
       if ($alias) {

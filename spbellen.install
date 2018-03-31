@@ -52,13 +52,6 @@ function spbellen_schema() {
         'default' => 0,
         'not null' => TRUE,
       ),
-      'open_access' => array(
-        'description' => 'Wether open sign up is allowed for the campaign.',
-        'type' => 'int',
-        'size' => 'tiny',
-        'default' => 0,
-        'not null' => TRUE,
-      ),
       'campaign_code' => array(
         'description' => 'Campaign code.',
         'type' => 'varchar',
@@ -1180,4 +1173,11 @@ function spbellen_update_7028() {
     }
   }
   variable_set('spwebformsync_sync_data', $webformsync_data);
+}
+
+/**
+ * Remove open_access from  {spbellen_campaign} table.
+ */
+function spbellen_update_7029() {
+  db_drop_field( 'spbellen_campaign', 'open_access');
 }
