@@ -5,5 +5,7 @@ package = SP Beltool
 dependencies[] = webform
 dependencies[] = spwebform_email_verify
 dependencies[] = sp_webformautoaddress
+dependencies[] = entity
+dependencies[] = pathauto
 
 scripts[] = js/spbellen.js

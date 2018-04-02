@@ -144,7 +144,7 @@ function spbellen_campaign_form($form, &$form_state) {
     }
     else {
       $form['no_webforms'] = array(
-        '#markup' => 'Er is geen webformulier beschikbaar (<a href="/node/webform/add">voeg toe</a>).',
+        '#markup' => 'Er is geen webformulier beschikbaar (<a href="/node/add/webform">voeg toe</a>).',
       );
     }
   }
