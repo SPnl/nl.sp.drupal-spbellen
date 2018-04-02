@@ -15,19 +15,16 @@ function spbellen_settings_form($form, &$form_state) {
     '#title' => 'Shortname',
     '#description' => 'Verkorte bedrijfsnaam die in de Voclarion gebruikt wordt.',
     '#default_value' => variable_get('spbellen_click2dial_shortname', ''),
-    '#required' => TRUE,
   );
   $form['spbellen_click2dial']['general']['spbellen_click2dial_location_ip'] = array(
     '#type' => 'textfield',
     '#title' => 'IP adres van locatie waar gebeld wordt',
     '#default_value' => variable_get('spbellen_click2dial_location_ip', ''),
-    '#required' => TRUE,
   );
   $form['spbellen_click2dial']['general']['spbellen_click2dial_asterix_ip'] = array(
     '#type' => 'textfield',
     '#title' => 'IP adres van telefooncentrale',
     '#default_value' => variable_get('spbellen_click2dial_asterix_ip', ''),
-    '#required' => TRUE,
   );
   $form['spbellen_click2dial']['caller_ids'] = array(
     '#type' => 'fieldset',
@@ -54,42 +51,42 @@ function spbellen_settings_form($form, &$form_state) {
     '#type' => 'fieldset',
     '#title' => 'Tekst instellingen',
   );
-  $default = variable_get('spbellen_general_start_page', '');
+  $default = variable_get('spbellen_general_start_page', array('value' => '<p>Welkom bij de SP Beltool.</p><p>Als je zo gaat bellen krijg je toegang tot persoonlijke gegevens van mensen. Ga hier zorgvuldig mee om. Het is niet toegestaan persoonsgegevens te verzamelen door deze op te op te schrijven of anderszins op te slaan. Een uitzondering hierop is als er bij een gesprek iets misgaat, of er om een andere reden iets moet worden doorgegeven over een contact aan de belcoördinator.</p>'));
   $form['spbellen_text_settings']['spbellen_general_start_page'] = array(
     '#type' => 'text_format',
     '#title' => 'Entree pagina',
     '#format' => isset($default['format']) ? $default['format'] : NULL,
     '#default_value' => isset($default['value']) ? $default['value'] : '',
   );
-  $default = variable_get('spbellen_campaign_select_intro', '');
+  $default = variable_get('spbellen_campaign_select_intro', array('value' => '<p>Kies hieronder een campagne waarvoor je wil bellen.</p>'));
   $form['spbellen_text_settings']['spbellen_campaign_select_intro'] = array(
     '#type' => 'text_format',
     '#title' => 'Introductie loginpagina',
     '#format' => isset($default['format']) ? $default['format'] : NULL,
     '#default_value' => isset($default['value']) ? $default['value'] : '',
   );
-  $default = variable_get('spbellen_login_intro_campaign_code', '');
+  $default = variable_get('spbellen_login_intro_campaign_code', array('value' => '<p>Om in te loggen voor deze belcampagne is je e-mailadres en een campagne code vereist. Heb je de campagnecode niet, neem dan contact op met de belcoördinator.</p>'));
   $form['spbellen_text_settings']['spbellen_login_intro_campaign_code'] = array(
     '#type' => 'text_format',
     '#title' => 'Introductie eerste stap inloggen met campagnecode',
     '#format' => isset($default['format']) ? $default['format'] : NULL,
     '#default_value' => isset($default['value']) ? $default['value'] : '',
   );
-  $default = variable_get('spbellen_login_intro_no_campaign_code', '');
+  $default = variable_get('spbellen_login_intro_no_campaign_code', array('value' => '<p>Om in te loggen voor deze belcampagne is je e-mailadres nodig.</p>'));
   $form['spbellen_text_settings']['spbellen_login_intro_no_campaign_code'] = array(
     '#type' => 'text_format',
     '#title' => 'Introductie eerste stap inloggen zonder campagnecode',
     '#format' => isset($default['format']) ? $default['format'] : NULL,
     '#default_value' => isset($default['value']) ? $default['value'] : '',
   );
-  $default = variable_get('spbellen_login_intro_first_visit', '');
+  $default = variable_get('spbellen_login_intro_first_visit', array('value' => '<p>Je krijgt bij het gebruik van de beltool toegang tot privacy gevoelige informatie, daarom stellen we hieronder een aantal vragen zodat we kunnen controleren wie je bent. Daarnaast moet je een wachtwoord in te stellen voor de beltool. Vergeet dit wachtwoord niet, je hebt het de volgende keer dat je gaat bellen voor een belcampagne weer nodig om in te loggen.</p>'));
   $form['spbellen_text_settings']['spbellen_login_intro_first_visit'] = array(
     '#type' => 'text_format',
     '#title' => 'Introductie inloggen eerste bezoek',
     '#format' => isset($default['format']) ? $default['format'] : NULL,
     '#default_value' => isset($default['value']) ? $default['value'] : '',
   );
-  $default = variable_get('spbellen_login_intro_password', '');
+  $default = variable_get('spbellen_login_intro_password', array('value' => '<p>Je hebt de eerste keer dat u de SP Beltool gebruikte een wachtwoord ingesteld. Vul dat wachtwoord hieronder in.</p>'));
   $form['spbellen_text_settings']['spbellen_login_intro_password'] = array(
     '#type' => 'text_format',
     '#title' => 'Introductie inloggen wachtwoord',
