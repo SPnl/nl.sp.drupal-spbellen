@@ -162,11 +162,6 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
 function spbellen_civi_import_get_targets_batch_finished($success, $results, $operations) {
   if ($success) {
     drupal_set_message('Aantal opgehaalde contacten: ' . array_sum($results['count']));
-    // To do: cleanup old syncs.
-    $sync_id = $results['sync_id'];
-    $campaign_id = $results['campaign_id'];
-    $query = "UPDATE {spbellen_targets} ta SET ta.state = 0 WHERE ( sync_id < :sync_id OR sync_id IS NULL ) AND campaign_id = :campaign_id";
-    $result = db_query($query, array(':sync_id' => $sync_id, ':campaign_id' => $campaign_id));
   }
   else {
     $error_operation = reset($operations);

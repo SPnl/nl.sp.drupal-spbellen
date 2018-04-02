@@ -437,7 +437,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       $contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
 
       // Get target id.
-      $query = "SELECT id FROM {spbellen_targets} WHERE state = 1 AND contact_id = :contact_id AND campaign_id = :cid";
+      $query = "SELECT id FROM {spbellen_targets} WHERE contact_id = :contact_id AND campaign_id = :cid";
       $result = db_query($query, array(':contact_id' => $contact_id, ':cid' => $campaign_id))->fetchAssoc();
       $tid = $result['id'];
 
@@ -1008,7 +1008,7 @@ function spbellen_contact_block_data() {
       $campaign = spbellen_get_campaign($node->nid);
       $campaign_id = $campaign->id;
 
-      $query = "SELECT contact_id FROM {spbellen_targets} WHERE state = 1 AND occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
+      $query = "SELECT contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $user->uid))->fetchAssoc();
       if (!empty($result['contact_id'])) {
 

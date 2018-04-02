@@ -92,8 +92,7 @@ function spbellen_import_form_submit($form, &$form_state) {
     // Get sync id for importers.
     $campaign = entity_load_single('campaign', $storage['campaign']);
     if (!empty($campaign)) {
-      $query = "SELECT MAX(sync_id) AS old_sync_id FROM spbellen_targets WHERE campaign_id = :campaign_id";
-      $sync_id = (db_query($query, array(':campaign_id' => $campaign->id))->fetchField() + 1);
+      $sync_id = spbellen_get_max_sync_id($campaign->id) + 1;
       $storage['sync_id'] = $sync_id;
 
       // Execute importer submit functions.
@@ -107,6 +106,9 @@ function spbellen_import_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Ajax callback.
+ */
 function spbellen_import_form_ajax_callback($form, &$form_state) {
   return $form;
 }
