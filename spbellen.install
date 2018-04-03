@@ -4,6 +4,29 @@
  * Drupal install and update functionality.
  */
 
+ /**
+  * Implements hook_uninstall().
+  */
+function spbellen_uninstall() {
+  $quantity = variable_get('click2dial_call_numbers_quantity', 2);
+  for ($nr = 1; $nr <= $quantity; $nr++) {
+    variable_del('spbellen_click2dial_callerIDName_' . $nr);
+    variable_del('spbellen_click2dial_forceclip_' . $nr);
+  }
+  variable_del('click2dial_call_numbers_quantity');
+
+  variable_del('spbellen_campaign_select_intro');
+  variable_del('spbellen_click2dial_asterix_ip');
+  variable_del('spbellen_click2dial_location_ip');
+  variable_del('spbellen_click2dial_shortname');
+
+  variable_del('spbellen_general_start_page');
+  variable_del('spbellen_login_intro_campaign_code');
+  variable_del('spbellen_login_intro_first_visit');
+  variable_del('spbellen_login_intro_no_campaign_code');
+  variable_del('spbellen_login_intro_password');
+}
+
 /**
  * Implements hook_schema().
  */
@@ -145,6 +168,12 @@ function spbellen_schema() {
         'size' => 'tiny',
         'default' => 1,
         'not null' => TRUE,
+      ),
+      'sync_id' => array(
+        'description' => 'Sync id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => FALSE,
       ),
     ),
     'primary key' => array(
