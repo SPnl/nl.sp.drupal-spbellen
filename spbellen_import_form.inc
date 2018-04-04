@@ -14,41 +14,48 @@ function spbellen_import_form($form, &$form_state) {
   $form['#prefix'] = '<div id="spbellen_import_ajax_form">';
   $form['#suffix'] = '</div>';
 
-  if (!empty($campaigns_list)) {
-    // Select campaign.
-    // ----------------------------------------------------------
-    $form['select_campaign'] = array(
-      '#type' => 'select',
-      '#title' => 'Kies een belcampagne.',
-      '#name' => 'select_campaign',
-      '#options' => $campaigns_list,
-      '#empty_option' => 'Kies:',
-      '#ajax' => array(
-        'wrapper' => 'spbellen_import_ajax_form',
-        'callback' => 'spbellen_import_form_ajax_callback',
-      ),
+  $importer_info = spbellen_importer_info();
+  if (empty($importer_info)) {
+    $form['no_importers'] = array(
+      '#markup' => '<p>Er zijn nog geen importers geïnstalleerd.</p>',
     );
   }
   else {
-    $form['no_campaigns'] = array(
-      '#markup' => '<p>Er zijn nog geen campagnes aangemaakt.</p>',
-    );
-  }
-  if (!empty($storage['campaign'])) {
-
-    // Get import forms.
-    $importer_info = spbellen_importer_info();
-    if (!empty($importer_info)) {
-      foreach ($importer_info as $info) {
-        $info['form_definition_function']($form, $form_state);
-      }
+    if (!empty($campaigns_list)) {
+      // Select campaign.
+      // ----------------------------------------------------------
+      $form['select_campaign'] = array(
+        '#type' => 'select',
+        '#title' => 'Kies een belcampagne.',
+        '#name' => 'select_campaign',
+        '#options' => $campaigns_list,
+        '#empty_option' => 'Kies:',
+        '#ajax' => array(
+          'wrapper' => 'spbellen_import_ajax_form',
+          'callback' => 'spbellen_import_form_ajax_callback',
+        ),
+      );
     }
+    else {
+      $form['no_campaigns'] = array(
+        '#markup' => '<p>Er zijn nog geen campagnes aangemaakt.</p>',
+      );
+    }
+    if (!empty($storage['campaign'])) {
 
-    $form['import_submit'] = array(
-      '#type' => 'submit',
-      '#name' => 'import_submit',
-      '#value' => 'Importeer',
-    );
+      // Get import forms.
+      if (!empty($importer_info)) {
+        foreach ($importer_info as $info) {
+          $info['form_definition_function']($form, $form_state);
+        }
+      }
+
+      $form['import_submit'] = array(
+        '#type' => 'submit',
+        '#name' => 'import_submit',
+        '#value' => 'Importeer',
+      );
+    }
   }
   return $form;
 }

@@ -1282,10 +1282,10 @@ function spbellen_get_branch($postal_code) {
   foreach (module_implements('spbellen_get_branch') as $module) {
     $function = $module . '_spbellen_get_branch';
     $afdeling_data = $function($postal_code);
-    // Max one crm call.
-    break;
+    if (!empty($afdeling_data)) {
+      return $afdeling_data;
+    }
   }
-  return $afdeling_data;
 }
 
 /**
