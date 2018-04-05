@@ -21,40 +21,59 @@ function spbellen_import_form($form, &$form_state) {
     );
   }
   else {
-    if (!empty($campaigns_list)) {
-      // Select campaign.
-      // ----------------------------------------------------------
-      $form['select_campaign'] = array(
-        '#type' => 'select',
-        '#title' => 'Kies een belcampagne.',
-        '#name' => 'select_campaign',
-        '#options' => $campaigns_list,
-        '#empty_option' => 'Kies:',
-        '#ajax' => array(
-          'wrapper' => 'spbellen_import_ajax_form',
-          'callback' => 'spbellen_import_form_ajax_callback',
-        ),
-      );
-    }
-    else {
+    if (empty($campaigns_list)) {
       $form['no_campaigns'] = array(
         '#markup' => '<p>Er zijn nog geen campagnes aangemaakt.</p>',
       );
     }
-    if (!empty($storage['campaign'])) {
-
-      // Get import forms.
-      if (!empty($importer_info)) {
-        foreach ($importer_info as $info) {
-          $info['form_definition_function']($form, $form_state);
-        }
+    else {
+      if (empty($storage['campaign'])) {
+        // Select campaign.
+        // ----------------------------------------------------------
+        $form['select_campaign'] = array(
+          '#type' => 'select',
+          '#title' => 'Kies een belcampagne.',
+          '#name' => 'select_campaign',
+          '#options' => $campaigns_list,
+          '#empty_option' => 'Kies:',
+          '#ajax' => array(
+            'wrapper' => 'spbellen_import_ajax_form',
+            'callback' => 'spbellen_import_form_ajax_callback',
+          ),
+        );
       }
+      else {
+        if (empty($storage['selected_importer']) && count($importer_info) > 1) {
+          $system_list = system_list('module_enabled');
+          foreach ($importer_info as $module => $info) {
+            $importer_list[$module] = $system_list[$module]->info['name'];
+          }
+          $form['select_importer'] = array(
+            '#type' => 'select',
+            '#title' => 'Kies een importer',
+            '#name' => 'select_importer',
+            '#options' => $importer_list,
+            '#empty_option' => 'Kies:',
+            '#ajax' => array(
+              'wrapper' => 'spbellen_import_ajax_form',
+              'callback' => 'spbellen_import_form_ajax_callback',
+            ),
+          );
+        }
+        else {
+          if (empty($storage['selected_importer'])) {
+            reset($importer_info);
+            $storage['selected_importer'] = key($importer_info);
+          }
+          $importer_info[$storage['selected_importer']]['form_definition_function']($form, $form_state);
+          $form['import_submit'] = array(
+            '#type' => 'submit',
+            '#name' => 'import_submit',
+            '#value' => 'Importeer',
+          );
+        }
 
-      $form['import_submit'] = array(
-        '#type' => 'submit',
-        '#name' => 'import_submit',
-        '#value' => 'Importeer',
-      );
+      }
     }
   }
   return $form;
@@ -75,6 +94,13 @@ function spbellen_import_form_validate($form, &$form_state) {
         // Store selected campaign.
         if (!empty($values['select_campaign'])) {
           $storage['campaign'] = $values['select_campaign'];
+        }
+        break;
+
+      case 'select_importer':
+        // Store selected campaign.
+        if (!empty($values['select_importer'])) {
+          $storage['selected_importer'] = $values['select_importer'];
         }
         break;
 

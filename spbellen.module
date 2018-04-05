@@ -1159,7 +1159,7 @@ function spbellen_importer_info() {
   if (!isset($importer_info)) {
     $importer_info = array();
     foreach (module_implements('spbellen_importer_info') as $module) {
-      $importer_info[] = module_invoke($module, 'spbellen_importer_info');
+      $importer_info[$module] = module_invoke($module, 'spbellen_importer_info');
     }
   }
   return $importer_info;
