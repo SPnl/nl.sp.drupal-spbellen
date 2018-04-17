@@ -9,6 +9,12 @@ Drupal.behaviors.spBellen = {
       //console.log("Preview page!");  //here we can add our JS code
     }
 
+    window.onbeforeunload = function (e) {
+      e = e || window.event;
+
+      // For Safari, other browsers use a default message
+      return 'Weet je zeker dat je wilt afsluiten? Alle niet-opgeslagen gegevens zullen zijn verloren.';
+    };
   }
 };
 
