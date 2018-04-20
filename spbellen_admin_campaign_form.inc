@@ -104,6 +104,21 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['last_import_only']) ? array() : array('enabled'),
       );
 
+      if ($storage['campaign'] !== 'new' && !empty($storage['campaign'])) {
+        $options = spbellen_import_history_list($storage['campaign']);
+        $defaults = spbellen_import_history_defaults($storage['campaign']);
+        if (!empty($options)) {
+          $form['active_imports'] = array(
+            '#type' => 'checkboxes',
+            '#title' => 'Selecteer welke contacten gebeld moeten worden',
+            '#name' => 'active_imports',
+            '#options' => $options,
+            '#empty_option' => 'Kies:',
+            '#default_value' => $defaults,
+          );
+        }
+      }
+
       $form['afdeling_filter'] = array(
         '#type' => 'checkboxes',
         '#title' => 'Afdelingsfilter',

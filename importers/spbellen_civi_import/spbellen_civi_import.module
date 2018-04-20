@@ -140,11 +140,16 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
         $group_ids = array(
           'id' => $group_id,
           'name' => $group_name,
+          'title' => $group_title,
         );
         // Add operation for each campaign group.
         $operations[] = array(
           'spbellen_civi_import_get_targets_batch',
-          array($storage['campaign'], $group_ids, $storage['sync_id']),
+          array(
+            $storage['campaign'],
+            $group_ids,
+            $storage['sync_id'],
+          ),
         );
       }
     }

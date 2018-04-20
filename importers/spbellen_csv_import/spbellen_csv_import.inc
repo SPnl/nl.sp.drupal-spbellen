@@ -55,7 +55,6 @@ function spbellen_csv_import_parse_csv_field_mapping_data($file, $delimiter) {
  * Process batch.
  */
 function spbellen_csv_import_batch($storage, &$context) {
-  watchdog('test_storage', 'Storage: ' . '<pre>' . print_r($storage, TRUE) . '</pre>');
   // Process by chunks.
   $chunk_size = 50;
 
@@ -64,6 +63,10 @@ function spbellen_csv_import_batch($storage, &$context) {
   $file_object = new SplFileObject($realpath);
   $file_object->setFlags(SplFileObject::READ_CSV);
   $file_object->setCsvControl($storage['delimiter']);
+
+  $context['results']['sync_id'] = $storage['sync_id'];
+  $context['results']['campaign_id'] = $storage['campaign'];
+  $context['results']['import_title'] = 'CSV import: ' . $storage['upload']->filename;
 
   if (empty($context['sandbox'])) {
     // Get number of rows to import.
@@ -145,7 +148,9 @@ function spbellen_csv_import_batch_process_row($row_number, $row, $storage) {
  */
 function spbellen_csv_import_batch_finished($success, $results, $operations) {
   if ($success) {
+    $total = $results['count'];
     drupal_set_message('Aantal opgehaalde contacten: ' . $results['count']);
+    spbellen_store_import_history($results['campaign_id'], $results['sync_id'], $total, $results['import_title']);
   }
 }
 

@@ -1388,3 +1388,66 @@ function spbellen_get_min_sync_id($campaign_id) {
   }
   return $min_sync_id;
 }
+
+/**
+ * Store import history.
+ */
+function spbellen_store_import_history($campaign_id, $sync_id, $quantity, $title) {
+  if (!empty($campaign_id) && !empty($sync_id) && !empty($quantity) && !empty($title)) {
+    $fields = array(
+      'campaign_id' => $campaign_id,
+      'sync_id' => $sync_id,
+      'date' => time(),
+      'quantity' => $quantity,
+      'title' => $title,
+    );
+    $import_history = entity_create('import_history', $fields);
+    entity_save('import_history', $import_history);
+  }
+}
+
+/**
+ * Return import history list.
+ */
+function spbellen_import_history_list($campaign_id) {
+  $rows = &drupal_static(__FUNCTION__);
+  if (!isset($rows)) {
+    $rows = array();
+    if (!empty($campaign_id)) {
+      $result = spbellen_get_import_history($campaign_id);
+      foreach ($result as $import) {
+        $rows[$import->id] = $import->title;
+      }
+    }
+  }
+  return $rows;
+}
+
+/**
+ * History list defaults.
+ */
+function spbellen_import_history_defaults($campaign_id) {
+  $rows = &drupal_static(__FUNCTION__);
+  if (!isset($rows)) {
+    $rows = array();
+    if (!empty($campaign_id)) {
+      $query = "SELECT id FROM {spbellen_import_history} WHERE campaign_id = :campaign_id AND state = 1";
+      $result = db_query($query, array(':campaign_id' => $campaign_id));
+      $rows = $result->FetchAllKeyed(0, 0);
+    }
+  }
+  return $rows;
+}
+
+function spbellen_get_import_history($campaign_id) {
+  $rows = &drupal_static(__FUNCTION__);
+  if (!isset($rows)) {
+    $rows = array();
+    if (!empty($campaign_id)) {
+      $query = "SELECT * FROM {spbellen_import_history} WHERE campaign_id = :campaign_id";
+      $result = db_query($query, array(':campaign_id' => $campaign_id));
+      $rows = $result->FetchAllAssoc('id');
+    }
+  }
+  return $rows;
+}

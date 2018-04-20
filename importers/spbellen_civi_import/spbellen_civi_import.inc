@@ -95,6 +95,10 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
 
+  $context['results']['sync_id'] = $sync_id;
+  $context['results']['campaign_id'] = $campaign_id;
+  $context['results']['group_names'][$group_ids['id']] = substr($group_ids['title'], 0, 40) . ' (' . $group_ids['id'] . ')';
+
   if (empty($context['sandbox'])) {
     // Get total number of contacts.
     $number_of_contacts = 0;
@@ -136,10 +140,6 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
           $context['results']['count'][$group_id]++;
         }
 
-        // Stats.
-        $context['results']['sync_id'] = $sync_id;
-        $context['results']['campaign_id'] = $campaign_id;
-
         // Update our progress information.
         $context['sandbox']['progress']++;
         $context['sandbox']['current_contact'] = $crm_contact_id;
@@ -151,6 +151,8 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
       return;
     }
   }
+
+  // Stats.
   $context['sandbox']['current_chunk']++;
   $context['message'] = ($context['sandbox']['current_chunk'] * $chunk_size) . '/' . $context['sandbox']['max'];
   $context['finished'] = ($context['sandbox']['progress'] / $context['sandbox']['max']);
@@ -161,7 +163,10 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
  */
 function spbellen_civi_import_get_targets_batch_finished($success, $results, $operations) {
   if ($success) {
-    drupal_set_message('Aantal opgehaalde contacten: ' . array_sum($results['count']));
+    $total = array_sum($results['count']);
+    drupal_set_message('Aantal opgehaalde contacten: ' . $total);
+    $import_title = substr('Civi-import: ' . implode(', ', $results['group_names']), 0, 254);
+    spbellen_store_import_history($results['campaign_id'], $results['sync_id'], $total, $import_title);
   }
   else {
     $error_operation = reset($operations);

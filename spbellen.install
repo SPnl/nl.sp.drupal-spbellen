@@ -51,13 +51,6 @@ function spbellen_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'last_import_only' => array(
-        'description' => 'Call only contacts from the last import',
-        'type' => 'int',
-        'size' => 'tiny',
-        'default' => 0,
-        'not null' => TRUE,
-      ),
       'afdeling_filter' => array(
         'description' => 'Wether caller contacts are filtered on caller afdelingsregion.',
         'type' => 'int',
@@ -163,7 +156,7 @@ function spbellen_schema() {
         'length' => '255',
       ),
       'state' => array(
-        'description' => 'State (0 => deleted, 1 => active).',
+        'description' => 'State (0 => inactive, 1 => active).',
         'type' => 'int',
         'size' => 'tiny',
         'default' => 1,
@@ -471,6 +464,99 @@ function spbellen_schema() {
     ),
   );
 
+  $schema['spbellen_import_history'] = array(
+    'description' => 'Campaign import history',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'campaign_id' => array(
+        'description' => 'Campaign_id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'title' => array(
+        'description' => 'Title',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => '',
+      ),
+      'date' => array(
+        'description' => 'The moment when the import was finished.',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'quantity' => array(
+        'description' => 'Number of contacts imported',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'state' => array(
+        'description' => 'State (0 => inactive, 1 => active).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 1,
+        'not null' => TRUE,
+      ),
+      'call_order' => array(
+        'description' => 'Sync_id',
+        'type' => 'int',
+        'size' => 'tiny',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'indexes' => array(
+      'campaign_id' => array('campaign_id'),
+      'date' => array('date'),
+      'call_order' => array('call_order'),
+      'state' => array('state'),
+    ),
+  );
+
+  $schema['spbellen_target_import_relation'] = array(
+    'description' => 'Target import relation.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'target_id' => array(
+        'description' => 'Target_id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'import_id' => array(
+        'description' => 'Import id.',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'unique keys' => array(
+      'target_import_id' => array(
+        'target_id',
+        'import_id',
+      ),
+    ),
+    'indexes' => array(
+      'target_id' => array('target_id'),
+      'import_id' => array('import_id'),
+      'target_import' => array(
+        'target_id',
+        'import_id',
+      ),
+    ),
+  );
+
   return $schema;
 }
 
@@ -585,7 +671,14 @@ function spbellen_update_7004() {
  * Add open_access to  {spbellen_campaign} table.
  */
 function spbellen_update_7005() {
-  // Previously field open_access was added here on spbellen_campaign table.
+  $spec = array(
+    'description' => 'Wether open sign up is allowed for the campaign.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'not null' => TRUE,
+  );
+  db_add_field('spbellen_campaign', 'open_access', $spec);
 }
 
 /**
@@ -1163,17 +1256,6 @@ function spbellen_update_7028() {
   // Add unique key.
   db_add_unique_key('spbellen_targets', 'campaign_contact_id', array('contact_id', 'campaign_id'));
 
-  if (!db_field_exists('spbellen_campaign', 'last_import_only')) {
-    $spec = array(
-      'description' => 'Call only contacts from the last import',
-      'type' => 'int',
-      'size' => 'tiny',
-      'default' => 0,
-      'not null' => TRUE,
-    );
-    db_add_field('spbellen_campaign', 'last_import_only', $spec);
-  }
-
   // Add crm_contact_id to campaign forms.
   $campaigns = spbellen_get_campaigns();
   $webformsync_data = variable_get('spwebformsync_sync_data');
@@ -1233,32 +1315,18 @@ function spbellen_update_7028() {
     }
   }
   variable_set('spwebformsync_sync_data', $webformsync_data);
-}
 
-/**
- * Remove open_access from  {spbellen_campaign} table.
- */
-function spbellen_update_7029() {
-  // Moved to 7028 db_drop_field('spbellen_campaign', 'open_access');
-}
+  // Add indexes.
+  db_add_index('spbellen_targets', 'campaign_id', array('campaign_id'));
+  db_add_index('spbellen_targets', 'caller_id', array('caller_id'));
+  db_add_index('spbellen_targets', 'sync_id', array('sync_id'));
 
-/**
- * Remove {spbellen_campaign_groups} table.
- */
-function spbellen_update_7030() {
-  if (db_table_exists('spbellen_campaign_groups')) {
-    db_drop_table('spbellen_campaign_groups');
-  }
 }
 
 /**
  * Add indexes.
  */
-function spbellen_update_7031() {
-  db_add_index('spbellen_targets', 'campaign_id', array('campaign_id'));
-  db_add_index('spbellen_targets', 'caller_id', array('caller_id'));
-  db_add_index('spbellen_targets', 'sync_id', array('sync_id'));
-
+function spbellen_update_7029() {
   db_add_index('spbellen_action', 'target_id', array('target_id'));
   db_add_index('spbellen_action', 'caller_id', array('caller_id'));
   db_add_index('spbellen_action', 'timestamp', array('timestamp'));
@@ -1268,4 +1336,110 @@ function spbellen_update_7031() {
   db_add_index('spbellen_local_access', 'uid', array('uid'));
   db_add_index('spbellen_local_access', 'campaign_id', array('campaign_id'));
   db_add_index('spbellen_local_access', 'hash', array('hash'));
+}
+
+/**
+ * Add indexes.
+ */
+function spbellen_update_7031() {
+  // Add spbelen_import_history table.
+  if (!db_table_exists('spbellen_import_history')) {
+    $table = array(
+      'description' => 'Campaign import history',
+      'fields' => array(
+        'id' => array(
+          'description' => 'Id.',
+          'type' => 'serial',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'campaign_id' => array(
+          'description' => 'Campaign_id',
+          'type' => 'int',
+          'size' => 'big',
+        ),
+        'title' => array(
+          'description' => 'Title',
+          'type' => 'varchar',
+          'length' => 255,
+          'default' => '',
+        ),
+        'date' => array(
+          'description' => 'The moment when the import was finished.',
+          'type' => 'int',
+          'size' => 'big',
+        ),
+        'quantity' => array(
+          'description' => 'Number of contacts imported',
+          'type' => 'int',
+          'size' => 'big',
+        ),
+        'state' => array(
+          'description' => 'State (0 => inactive, 1 => active).',
+          'type' => 'int',
+          'size' => 'tiny',
+          'default' => 1,
+          'not null' => TRUE,
+        ),
+        'call_order' => array(
+          'description' => 'Sync_id',
+          'type' => 'int',
+          'size' => 'tiny',
+        ),
+      ),
+      'primary key' => array(
+        'id',
+      ),
+      'indexes' => array(
+        'campaign_id' => array('campaign_id'),
+        'date' => array('date'),
+        'call_order' => array('call_order'),
+        'state' => array('state'),
+      ),
+    );
+    db_create_table('spbellen_import_history', $table);
+  }
+
+  // Add spbellen_target_import_relation table.
+  if (!db_table_exists('spbellen_target_import_relation')) {
+    $table = array(
+      'description' => 'Target import relation.',
+      'fields' => array(
+        'id' => array(
+          'description' => 'Id.',
+          'type' => 'serial',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'target_id' => array(
+          'description' => 'Target_id',
+          'type' => 'int',
+          'size' => 'big',
+        ),
+        'import_id' => array(
+          'description' => 'Import id.',
+          'type' => 'int',
+          'size' => 'big',
+        ),
+      ),
+      'primary key' => array(
+        'id',
+      ),
+      'unique keys' => array(
+        'target_import_id' => array(
+          'target_id',
+          'import_id',
+        ),
+      ),
+      'indexes' => array(
+        'target_id' => array('target_id'),
+        'import_id' => array('import_id'),
+        'target_import' => array(
+          'target_id',
+          'import_id',
+        ),
+      ),
+    );
+    db_create_table('spbellen_target_import_relation', $table);
+  }
 }
