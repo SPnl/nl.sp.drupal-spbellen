@@ -67,6 +67,13 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['title']) ? '' : $storage['title'],
       );
 
+      $form['campaign_code'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Campagne code',
+        '#description' => 'Alleen gebruikers met deze code kunnen zich aanmelden, laat leeg indien iedereen zich moet kunnen aanmelden.',
+        '#default_value' => empty($storage['campaign_code']) ? '' : $storage['campaign_code'],
+      );
+
       $options = spbellen_click2dial_call_numbers_list();
       if (!empty($options)) {
         $form['click2dial_call_number'] = array(
@@ -96,22 +103,13 @@ function spbellen_campaign_form($form, &$form_state) {
         );
       }
 
-      $form['last_import_only'] = array(
-        '#type' => 'checkboxes',
-        '#title' => 'Bel alleen laatste import',
-        '#name' => 'last_import_only',
-        '#options' => array('enabled' => 'Bel alleen contacten van de laatste import'),
-        '#default_value' => empty($storage['last_import_only']) ? array() : array('enabled'),
-      );
-
       if ($storage['campaign'] !== 'new' && !empty($storage['campaign'])) {
         $options = spbellen_import_history_list($storage['campaign']);
         $defaults = spbellen_import_history_defaults($storage['campaign']);
         if (!empty($options)) {
           $form['blocked_imports'] = array(
             '#type' => 'checkboxes',
-            '#title' => 'Niet bellen',
-            '#description' => 'Contacten in geselecteerde worden niet gebeld.',
+            '#title' => 'Contacten niet bellen',
             '#name' => 'blocked_imports',
             '#options' => $options,
             '#empty_option' => 'Kies:',
@@ -120,10 +118,12 @@ function spbellen_campaign_form($form, &$form_state) {
         }
       }
 
+      $form['other'] = array(
+        '#markup' => '<strong>Overig</strong>',
+      );
+
       $form['afdeling_filter'] = array(
         '#type' => 'checkboxes',
-        '#title' => 'Afdelingsfilter',
-        '#description' => 'Contacten zonder locatieinformatie worden niet getoond!',
         '#name' => 'afdeling_filter',
         '#options' => array('enabled' => 'Toon alleen contacten uit afdeling beller'),
         '#default_value' => empty($storage['afdeling_filter']) ? array() : array('enabled'),
@@ -131,17 +131,9 @@ function spbellen_campaign_form($form, &$form_state) {
 
       $form['disabled'] = array(
         '#type' => 'checkboxes',
-        '#title' => 'Maak de campagne ontoegankelijk voor bellers',
         '#name' => 'disabled',
-        '#options' => array('disabled' => 'Campagne uitgeschakeld'),
+        '#options' => array('disabled' => 'Maak de campagne ontoegankelijk voor bellers'),
         '#default_value' => empty($storage['disabled']) ? array() : array('disabled'),
-      );
-
-      $form['campaign_code'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Campagne code',
-        '#description' => 'Alleen gebruikers met deze code kunnen zich aanmelden, laat leeg indien iedereen zich moet kunnen aanmelden.',
-        '#default_value' => empty($storage['campaign_code']) ? '' : $storage['campaign_code'],
       );
 
       $form['submit'] = array(
@@ -175,49 +167,48 @@ function spbellen_campaign_form_validate($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'sync_targets':
-      return;
-      break;
-    case 'select_campaign':
-      // Store selected campaign.
-      if (!empty($values['select_campaign'])) {
-        $storage['campaign'] = $values['select_campaign'];
-        // Preset stored campaign values.
-        $campaign = entity_load_single('campaign', $storage['campaign']);
-        $webform = entity_load_single('node', $campaign->webform_id);
-        if (!empty($campaign)) {
-          $storage['webform'] = $campaign->webform_id;
-          $storage['last_import_only'] = $campaign->last_import_only;
-          $storage['afdeling_filter'] = $campaign->afdeling_filter;
-          $storage['disabled'] = $campaign->disabled;
-          $storage['campaign_code'] = $campaign->campaign_code;
-          //$storage['caller_check'] = $campaign->caller_check;
-          $storage['campaign_start_page_text'] = $campaign->start_page_text;
-          $storage['click2dial_call_number'] = $campaign->click2dial_call_number;
-          if (!empty($campaign->title)) {
-            $storage['title'] = $campaign->title;
-          }
-          else {
-            $storage['title'] = $webform->title;
+      case 'sync_targets':
+        return;
+
+      case 'select_campaign':
+        // Store selected campaign.
+        if (!empty($values['select_campaign'])) {
+          $storage['campaign'] = $values['select_campaign'];
+          // Preset stored campaign values.
+          $campaign = entity_load_single('campaign', $storage['campaign']);
+          $webform = entity_load_single('node', $campaign->webform_id);
+          if (!empty($campaign)) {
+            $storage['webform'] = $campaign->webform_id;
+            $storage['afdeling_filter'] = $campaign->afdeling_filter;
+            $storage['disabled'] = $campaign->disabled;
+            $storage['campaign_code'] = $campaign->campaign_code;
+            $storage['campaign_start_page_text'] = $campaign->start_page_text;
+            $storage['click2dial_call_number'] = $campaign->click2dial_call_number;
+            if (!empty($campaign->title)) {
+              $storage['title'] = $campaign->title;
+            }
+            else {
+              $storage['title'] = $webform->title;
+            }
           }
         }
-      }
-      break;
-    case 'webform':
-      $storage['webform'] = $values['webform'];
-    case 'new_campaign':
-      $storage['campaign'] = 'new';
-      break;
-    case 'submit':
-      // Validate title.
-      if (empty($values['title'])) {
-        form_set_error('title', 'Kies een titel voor de campaigne.');
-      }
-      return;
-      break;
-    case 'delete':
-      return;
-      break;
+        break;
+
+      case 'webform':
+        $storage['webform'] = $values['webform'];
+      case 'new_campaign':
+        $storage['campaign'] = 'new';
+        break;
+
+      case 'submit':
+        // Validate title.
+        if (empty($values['title'])) {
+          form_set_error('title', 'Kies een titel voor de campaigne.');
+        }
+        return;
+
+      case 'delete':
+        return;
     }
   }
   $form_state['rebuild'] = TRUE;
@@ -231,30 +222,42 @@ function spbellen_campaign_form_submit($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'submit':
-      // Store campaign in database.
-      $campaign = spbellen_store_campaign($storage, $values);
-      // Add spbellen intro form to campaign form.
-      if ($storage['campaign'] === 'new') {
-        spbellen_create_campaign_form($campaign);
-      }
-      else {
-        if (!empty($campaign->title)) {
-          // Save campaign form title.
-          $webform = node_load($campaign->webform_id);
-          $webform->title = $campaign->title;
-          $webform->path['pathauto'] = 0;
-          $webform->path['alias'] = 'bellen/campagne/'.pathauto_cleanstring($webform->title);
-          node_save($webform);
+      case 'submit':
+        // Store campaign in database.
+        $campaign = spbellen_store_campaign($storage, $values);
+        // Add spbellen intro form to campaign form.
+        if ($storage['campaign'] === 'new') {
+          spbellen_create_campaign_form($campaign);
         }
-      }
-      cache_clear_all('spbellen_forms', 'cache');
-      menu_rebuild();
-      break;
-    case 'delete':
-      // Delete campaign.
-      spbellen_delete_campaign($storage['campaign']);
-      break;
+        else {
+          if (!empty($campaign->title)) {
+            // Save campaign form title.
+            $webform = node_load($campaign->webform_id);
+            $webform->title = $campaign->title;
+            $webform->path['pathauto'] = 0;
+            $webform->path['alias'] = 'bellen/campagne/' . pathauto_cleanstring($webform->title);
+            node_save($webform);
+          }
+        }
+        // Store imort state.
+        if (!empty($values['blocked_imports'])) {
+          foreach ($values['blocked_imports'] as $key => $value) {
+            db_update('spbellen_import_history')
+              ->fields(array(
+                'state' => empty($value) ? 1 : 0,
+              ))
+              ->condition('id', $key)
+              ->execute();
+          }
+        }
+        cache_clear_all('spbellen_forms', 'cache');
+        menu_rebuild();
+        break;
+
+      case 'delete':
+        // Delete campaign.
+        spbellen_delete_campaign($storage['campaign']);
+        break;
     }
     // Clear spbellen_forms cache.
     cache_clear_all('spbellen_forms', 'cache');
@@ -267,7 +270,6 @@ function spbellen_store_campaign($storage, $values) {
     $properties = array(
       'webform_id' => $values['webform'],
       'disabled' => empty($values['disabled']['disabled']) ? 0 : 1,
-      'last_import_only' => empty($values['last_import_only']['enabled']) ? 0 : 1,
       'afdeling_filter' => empty($values['afdeling_filter']['enabled']) ? 0 : 1,
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
@@ -281,7 +283,6 @@ function spbellen_store_campaign($storage, $values) {
     $campaign = entity_load_single('campaign', $storage['campaign']);
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
-    $campaign->last_import_only = empty($values['last_import_only']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];

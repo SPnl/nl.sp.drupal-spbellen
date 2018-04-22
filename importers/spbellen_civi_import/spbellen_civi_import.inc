@@ -93,7 +93,7 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
 
-  $context['results']['import_id'] = $import_info['import_id'];
+  $context['results']['import_id'] = $import_info['id'];
 
   if (empty($context['sandbox'])) {
     // Get total number of contacts.

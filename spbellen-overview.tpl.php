@@ -43,7 +43,7 @@
     <h3><?php print ($data['title']); ?> (<a href="/node/<?php print $data['webform_id']; ?>/webform-results/analysis" target="_blank">resultaten)</a></h3>
     <table style="width: auto">
       <tr>
-        <th></th><th colspan="2">Alle contacten</th><th colspan="2">Laatste import</th>
+        <th></th><th colspan="2">Alle contacten</th><th colspan="2">Actieve contacten</th>
       </tr>
       <tr>
         <th></th><th>aantal</th><th>percentage</th><th>aantal</th><th>percentage</th>
@@ -52,43 +52,43 @@
         <td>Afgerond</td>
         <td><?php print $data['all']['completed']; ?></td>
         <td><?php print $data['all']['completed_percentage']; ?>%</td>
-        <td><?php print $data['last_import_only']['completed']; ?></td>
-        <td><?php print $data['last_import_only']['completed_percentage']; ?>%</td>
+        <td><?php print $data['no_inactive']['completed']; ?></td>
+        <td><?php print $data['no_inactive']['completed_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Terugbellen</td>
         <td><?php print $data['all']['call_back']; ?></td>
         <td><?php print $data['all']['call_back_percentage']; ?>%</td>
-        <td><?php print $data['last_import_only']['call_back']; ?></td>
-        <td><?php print $data['last_import_only']['call_back_percentage']; ?>%</td>
+        <td><?php print $data['no_inactive']['call_back']; ?></td>
+        <td><?php print $data['no_inactive']['call_back_percentage']; ?>%</td>
 
       </tr>
       <tr>
         <td>Niet gebeld</td>
         <td><?php print $data['all']['not_contacted']; ?></td>
         <td><?php print $data['all']['not_contacted_percentage']; ?>%</td>
-        <td><?php print $data['last_import_only']['not_contacted']; ?></td>
-        <td><?php print $data['last_import_only']['not_contacted_percentage']; ?>%</td>
+        <td><?php print $data['no_inactive']['not_contacted']; ?></td>
+        <td><?php print $data['no_inactive']['not_contacted_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Verkeerd nummer</td>
         <td><?php print $data['all']['wrong_number']; ?></td>
         <td><?php print $data['all']['wrong_number_percentage']; ?>%</td>
-        <td><?php print $data['last_import_only']['wrong_number']; ?></td>
-        <td><?php print $data['last_import_only']['wrong_number_percentage']; ?>%</td>
+        <td><?php print $data['no_inactive']['wrong_number']; ?></td>
+        <td><?php print $data['no_inactive']['wrong_number_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Nooit meer bellen</td>
         <td><?php print $data['all']['blacklisted']; ?></td>
         <td><?php print $data['all']['blacklisted_percentage']; ?>%</td>
-        <td><?php print $data['last_import_only']['blacklisted']; ?></td>
-        <td><?php print $data['last_import_only']['blacklisted_percentage']; ?>%</td>
+        <td><?php print $data['no_inactive']['blacklisted']; ?></td>
+        <td><?php print $data['no_inactive']['blacklisted_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Totaal</td>
         <td><?php print $data['all']['total']; ?></td>
         <td>100%</td>
-        <td><?php print $data['last_import_only']['total']; ?></td>
+        <td><?php print $data['no_inactive']['total']; ?></td>
         <td>100%</td>
       </tr>
     </table>

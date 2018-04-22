@@ -466,7 +466,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             }
             entity_save('caller', $caller);
           }
- 
+
           // Finalize login.
           global $user;
           $user = user_load($account->uid);

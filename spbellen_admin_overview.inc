@@ -3,7 +3,7 @@
 function spbellen_overview() {
   $stats = spbellen_get_all_stats();
   if (empty($stats['campaign_stats'])) {
-    return '<p>Er zijn nog ggen campaignes aangemaakt.</p>';
+    return '<p>Er zijn nog geen campaignes aangemaakt.</p>';
   }
   else {
     $variables = array(

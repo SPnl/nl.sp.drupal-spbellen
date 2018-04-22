@@ -1057,14 +1057,7 @@ function spbellen_contact_block_data() {
         }
 
         // Stats.
-        $stats = spbellen_get_campaign_stats($campaign_id);
-        $data['stats'] = $stats;
-        if (empty($campaign->last_import_only)) {
-          $data['stats_type'] = 'all';
-        }
-        else {
-          $data['stats_type'] = 'last_import_only';
-        }
+        $data['stats'] = spbellen_get_campaign_stats($campaign_id);
 
         // Call button.
         $campaign = entity_load_single('campaign', $campaign_id);

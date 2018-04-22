@@ -122,18 +122,11 @@ function spbellen_import_form_validate($form, &$form_state) {
 function spbellen_import_form_submit($form, &$form_state) {
   $storage = &$form_state['storage'];
   if (!empty($storage['campaign'])) {
-    // Get sync id for importers.
-    $campaign = entity_load_single('campaign', $storage['campaign']);
-    if (!empty($campaign)) {
-      $sync_id = spbellen_get_max_sync_id($campaign->id) + 1;
-      $storage['sync_id'] = $sync_id;
-
-      // Execute importer submit functions.
-      $importer_info = spbellen_importer_info();
-      if (!empty($importer_info)) {
-        foreach ($importer_info as $info) {
-          $info['form_submit_function']($form, $form_state);
-        }
+    // Execute importer submit functions.
+    $importer_info = spbellen_importer_info();
+    if (!empty($importer_info)) {
+      foreach ($importer_info as $info) {
+        $info['form_submit_function']($form, $form_state);
       }
     }
   }

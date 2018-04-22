@@ -85,15 +85,14 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
     if (spbellen_campaign_form_access($webform_id)) {
       $campaign_id = spbellen_get_campaign_id($webform_id);
       if (!empty($campaign_id)) {
-        $min_sync_id = spbellen_get_min_sync_id($campaign_id);
+        $from_where = " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE bl.contact_id IS NULL AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.state = 0) AND ";
         if (spbellen_click2dial_location()) {
-          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id WHERE ta.sync_id >= :min_sync_id AND (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
+          $query = "SELECT ta.id, cd.phone, cd.display_name" . $from_where . "(attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
         }
         else {
-          $query = "SELECT ta.id, cd.phone, cd.display_name FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id WHERE ta.sync_id >= :min_sync_id AND (attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
+          $query = "SELECT ta.id, cd.phone, cd.display_name" . $from_where . "(attempts = 0 OR (occupied = 0 AND (result = 'not_answered' OR result = 'answered_call_back')) OR (occupied = 1 AND ta.caller_id = :caller_id)) AND campaign_id = :campaign_id AND (phone LIKE :phonenumber OR display_name LIKE :display_name) LIMIT 10";
         }
         $substitutions = array(
-          ':min_sync_id' => $min_sync_id,
           ':campaign_id' => $campaign_id,
           ':phonenumber' => "$string%",
           ':display_name' => "%$string%",
@@ -912,19 +911,19 @@ function spbellen_assign_target($campaign) {
   if (
     user_is_logged_in()
   ) {
-    $min_sync_id = spbellen_get_min_sync_id($campaign_id);
+    // Query parts.
+    $from_where = " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.state = 0) AND ";
+
     // Check if existing target exists.
-    $query = "SELECT ta.contact_id FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.sync_id >= :min_sync_id AND bl.contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND attempts < 5 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
+    $query = "SELECT ta.contact_id" . $from_where . "bl.contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND attempts < 5 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
-      ':min_sync_id' => $min_sync_id,
       ':cid' => $campaign_id,
       ':caller_id' => $user->uid,
     ))->fetchAssoc();
     if (!$result) {
       // Get appointment targets.
-          $query = "SELECT ta.id, ta.contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.sync_id >= :min_sync_id AND result = 'call_appointment' AND call_back_priority = 1 AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, attempts ASC, date ASC LIMIT 1";
+          $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, attempts ASC, date ASC LIMIT 1";
       $result = db_query($query, array(
-        ':min_sync_id' => $min_sync_id,
         ':cid' => $campaign_id,
         ':current_time' => time(),
         ':occupied_time' => time() - 1800,
@@ -943,9 +942,8 @@ function spbellen_assign_target($campaign) {
       else {
 
         // Get new target, not called before (random order).
-        $query = "SELECT ta.id, ta.contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.sync_id >= :min_sync_id AND attempts = 0 AND bl.contact_id IS NULL AND campaign_id = :cid AND occupied = 0 ORDER BY RAND() LIMIT 1";
+        $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "attempts = 0 AND bl.contact_id IS NULL AND campaign_id = :cid AND occupied = 0 ORDER BY RAND() LIMIT 1";
         $result = db_query($query, array(
-          ':min_sync_id' => $min_sync_id,
           ':cid' => $campaign_id,
         ))->fetchAssoc();
         if ($result) {
@@ -961,9 +959,8 @@ function spbellen_assign_target($campaign) {
         }
         else {
           // Get new target, called before.
-          $query = "SELECT ta.id, ta.contact_id, occupied FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.sync_id >= :min_sync_id AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (ac.call_back_time < :current_time)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
+          $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (ac.call_back_time < :current_time)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
           $result = db_query($query, array(
-            ':min_sync_id' => $min_sync_id,
             ':cid' => $campaign_id,
             ':occupied_time' => time() - 1800,
             ':current_time' => time(),
@@ -996,9 +993,8 @@ function spbellen_assign_target($campaign) {
     }
     else {
       // Find occupied targets.
-      $query = "SELECT COUNT(*) number FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.sync_id >= :min_sync_id AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid";
+      $query = "SELECT COUNT(*) number" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid";
       $result = db_query($query, array(
-        ':min_sync_id' => $min_sync_id,
         ':cid' => $campaign_id,
       ))->fetchAssoc();
       if ($result) {
@@ -1176,12 +1172,11 @@ function spbellen_get_campaign_stats($campaign_id) {
     $campaign = entity_load_single('campaign', $campaign_id);
     $webform = entity_load_single('node', $campaign->webform_id);
     foreach (array(
-      'last_import_only' => spbellen_get_max_sync_id($campaign_id),
-      'all' => 0,
-    ) as $type => $min_sync_id) {
-      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE campaign_id = :campaign_id AND ta.sync_id >= :min_sync_id;";
+      'all' => '',
+      'no_inactive' => ' AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.state = 0)',
+    ) as $type => $query_part) {
+      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id" . $query_part;
       $result = db_query($query, array(
-        ':min_sync_id' => $min_sync_id,
         ':campaign_id' => $campaign_id,
       ));
       $record = $result->fetchAssoc();
@@ -1293,8 +1288,8 @@ function spbellen_get_branch($postal_code) {
  *
  * @param int $campaign_id
  *   Campaign id.
- * @param int $sync_id
- *   Synchronization count.
+ * @param int $import_id
+ *   Import id.
  * @param array $contact_data
  *   See spbellen_contact_fields() for keys.
  */
@@ -1324,9 +1319,9 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
       $contact_id = $result;
     }
   }
-  elseif (!empty($values['phone'])) {
+  elseif (!empty($values['phone']) && strlen($phone) > 8) {
     // Get contact_id from phone.
-    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE '%:phone%'", array(':phone' => $values['phone']))->fetchField();
+    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE :phone", array(':phone' => '%' . db_like($values['phone']) . '%'))->fetchField();
     if (!empty($result)) {
       $contact_id = $result;
     }
@@ -1365,33 +1360,6 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
       ->execute();
   }
   return $contact_id;
-}
-
-/**
- * Get max sync id.
- */
-function spbellen_get_max_sync_id($campaign_id) {
-  // Get latest sync id.
-  $query = "SELECT MAX(sync_id) max_sync_id FROM spbellen_targets ta INNER JOIN spbellen_campaign ca ON ta.campaign_id = ca.id WHERE campaign_id = :campaign_id";
-  $max_sync_id = db_query($query, array(':campaign_id' => $campaign_id))->fetchField();
-  if (empty($max_sync_id)) {
-    return 0;
-  }
-  return $max_sync_id;
-}
-
-/**
- * Get min sync id.
- */
-function spbellen_get_min_sync_id($campaign_id) {
-  $campaign = entity_load_single('campaign', $campaign_id);
-  if ($campaign->last_import_only) {
-    $min_sync_id = spbellen_get_max_sync_id($campaign_id);
-  }
-  else {
-    $min_sync_id = 0;
-  }
-  return $min_sync_id;
 }
 
 /**

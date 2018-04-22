@@ -1174,6 +1174,13 @@ function spbellen_update_7027() {
  * Rename contact_id to crm_contact_id field.
  */
 function spbellen_update_7028() {
+  // Cleanup targets without contact data.
+  db_add_index('spbellen_targets', 'civi_contact_id', array('civi_contact_id'));
+  $query = "DELETE ta FROM {spbellen_targets} ta LEFT JOIN {spbellen_contact_data} da ON ta.civi_contact_id = da.contact_id WHERE da.contact_id IS NULL;";
+  db_query($query);
+  $query = "DELETE ta FROM {spbellen_targets} ta RIGHT JOIN {spbellen_contact_data} da ON ta.civi_contact_id = da.contact_id WHERE ta.id IS NULL;";
+  db_query($query);
+
   // Rename contact_id field to crm_contact_id and create new contact_id field on spbellen_contact_data table.
   db_drop_primary_key('spbellen_contact_data');
   db_change_field('spbellen_contact_data', 'contact_id', 'crm_contact_id', array(
@@ -1490,15 +1497,17 @@ function spbellen_update_7030() {
     if (!empty($import_history)) {
       foreach ($import_history as $campaign_id => $import_data) {
         foreach (array(0, 1) as $state) {
-          db_update('spbellen_import_history')
-            ->fields(array(
-              'quantity' => $quantity[$campaign_id][$state],
-            ))
-            ->condition('id', $import_data[$state])
-            ->execute();
+          if (!empty($import_data[$state])) {
+            db_update('spbellen_import_history')
+              ->fields(array(
+                'quantity' => $quantity[$campaign_id][$state],
+              ))
+              ->condition('id', $import_data[$state])
+              ->execute();
+          }
         }
       }
     }
-    drop_table('spbellen_campaign_groups');
+    db_drop_table('spbellen_campaign_groups');
   }
 }
