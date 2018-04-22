@@ -194,16 +194,18 @@ function spbellen_subscription_form($form, &$form_state) {
             );
           }
 
-          if (!empty($form_state['campaign']->campaign_code) && $form_state['caller_data']->state !== 'master' && empty($form_state['has_campaign_access'])) {
-            $form['campaign_code'] = array(
-              '#type' => 'textfield',
-              '#title' => 'Campagne code',
-              '#default_value' => empty($form_state['values']['campaign_code']) ? '' : $form_state['values']['campaign_code'],
-              '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
-              '#attributes' => array(
-                'autocomplete' => 'off',
-              ),
-            );
+          if (!empty($form_state['campaign']->campaign_code) && empty($form_state['has_campaign_access'])) {
+            if (empty($form_state['caller_data']->state) || $form_state['caller_data']->state !== 'master') {
+              $form['campaign_code'] = array(
+                '#type' => 'textfield',
+                '#title' => 'Campagne code',
+                '#default_value' => empty($form_state['values']['campaign_code']) ? '' : $form_state['values']['campaign_code'],
+                '#suffix' => !empty($form_state['campaign_code_feedback']) ? $form_state['campaign_code_feedback'] : '',
+                '#attributes' => array(
+                  'autocomplete' => 'off',
+                ),
+              );
+            }
           }
 
           // Check pass.
