@@ -1298,7 +1298,7 @@ function spbellen_get_branch($postal_code) {
  * @param array $contact_data
  *   See spbellen_contact_fields() for keys.
  */
-function spbellen_import_contact($campaign_id, $sync_id, array $contact_data) {
+function spbellen_import_contact($campaign_id, $import_id, array $contact_data) {
   $contact_id = FALSE;
   $fields = array_keys(spbellen_contact_fields());
   foreach ($fields as $field) {
@@ -1326,7 +1326,7 @@ function spbellen_import_contact($campaign_id, $sync_id, array $contact_data) {
   }
   elseif (!empty($values['phone'])) {
     // Get contact_id from phone.
-    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone = :phone", array(':phone' => $values['phone']))->fetchField();
+    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE '%:phone%'", array(':phone' => $values['phone']))->fetchField();
     if (!empty($result)) {
       $contact_id = $result;
     }
@@ -1344,21 +1344,26 @@ function spbellen_import_contact($campaign_id, $sync_id, array $contact_data) {
       ->execute();
   }
   // Add target.
-  db_merge('spbellen_targets')
-    ->key(array(
-      'contact_id' => $contact_id,
-      'campaign_id' => $campaign_id,
-    ))
-    ->fields(array(
-      'occupied' => 0,
-      'sync_id' => $sync_id,
-      'state' => 1,
-    ))
-    ->execute();
-  // Delete contact from blacklist.
-  db_delete('spbellen_blacklist')
-    ->condition('contact_id', $contact_id)
-    ->execute();
+  $target_id = db_query("SELECT id FROM {spbellen_targets} WHERE contact_id = :contact_id AND campaign_id = :campaign_id", array(':contact_id' => $contact_id, ':campaign_id' => $campaign_id))->fetchField();
+  if (empty($target_id)) {
+    $target_id = db_insert('spbellen_targets')
+      ->fields(array(
+        'campaign_id' => $campaign_id,
+        'state' => 1,
+        'occupied' => 0,
+        'contact_id' => $contact_id,
+      ))
+      ->execute();
+  }
+  // Add target import relation.
+  if (!empty($target_id)) {
+    db_insert('spbellen_target_import_relation')
+      ->fields(array(
+        'target_id' => $target_id,
+        'import_id' => $import_id,
+      ))
+      ->execute();
+  }
   return $contact_id;
 }
 
@@ -1392,17 +1397,18 @@ function spbellen_get_min_sync_id($campaign_id) {
 /**
  * Store import history.
  */
-function spbellen_store_import_history($campaign_id, $sync_id, $quantity, $title) {
-  if (!empty($campaign_id) && !empty($sync_id) && !empty($quantity) && !empty($title)) {
+function spbellen_store_import_history($campaign_id, $quantity, $title, $state = 1) {
+  if (!empty($campaign_id) && !empty($title)) {
     $fields = array(
       'campaign_id' => $campaign_id,
-      'sync_id' => $sync_id,
       'date' => time(),
       'quantity' => $quantity,
       'title' => $title,
+      'state' => $state,
     );
     $import_history = entity_create('import_history', $fields);
     entity_save('import_history', $import_history);
+    return $import_history->id;
   }
 }
 
@@ -1416,7 +1422,7 @@ function spbellen_import_history_list($campaign_id) {
     if (!empty($campaign_id)) {
       $result = spbellen_get_import_history($campaign_id);
       foreach ($result as $import) {
-        $rows[$import->id] = $import->title;
+        $rows[$import->id] = date('d-m-Y', $import->date) . ' ' . $import->title . ' (' . $import->quantity . ')';
       }
     }
   }
@@ -1431,7 +1437,7 @@ function spbellen_import_history_defaults($campaign_id) {
   if (!isset($rows)) {
     $rows = array();
     if (!empty($campaign_id)) {
-      $query = "SELECT id FROM {spbellen_import_history} WHERE campaign_id = :campaign_id AND state = 1";
+      $query = "SELECT id FROM {spbellen_import_history} WHERE campaign_id = :campaign_id AND state = 0";
       $result = db_query($query, array(':campaign_id' => $campaign_id));
       $rows = $result->FetchAllKeyed(0, 0);
     }

@@ -83,27 +83,23 @@ function spbellen_civi_import_group_autocomplete($filter, $string) {
 /**
  * Get batch.
  */
-function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_id, &$context) {
+function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$context) {
   // Process by chunks.
   $chunk_size = 20;
-  $group_id = $group_ids['id'];
-  $group_name = $group_ids['name'];
   if (empty($context['results']['count'])) {
-    $context['reults']['count'] = array();
+    $context['results']['count'] = array();
   }
 
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
 
-  $context['results']['sync_id'] = $sync_id;
-  $context['results']['campaign_id'] = $campaign_id;
-  $context['results']['group_names'][$group_ids['id']] = substr($group_ids['title'], 0, 40) . ' (' . $group_ids['id'] . ')';
+  $context['results']['import_id'] = $import_info['import_id'];
 
   if (empty($context['sandbox'])) {
     // Get total number of contacts.
     $number_of_contacts = 0;
     $params = array(
-      'group' => $group_id,
+      'group' => $group_info['id'],
       'is_deleted' => 0,
       'status' => 'Added',
     );
@@ -121,7 +117,7 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
 
   $params = array(
     'options' => array('limit' => $chunk_size, 'offset' => $context['sandbox']['progress']),
-    'group' => $group_id,
+    'group' => $group_info['id'],
     'include_non_menmbers' => 1,
   );
   $results = $spcivi->api('Contact', 'getspdata', $params);
@@ -132,7 +128,7 @@ function spbellen_civi_import_get_targets_batch($campaign_id, $group_ids, $sync_
         if ((isset($result['phone']) || isset($result['mobile'])) && empty($result['do_not_phone'])) {
           // Process contact.
           $contact_data = spbellen_civi_import_map_civi_data($result);
-          $contact_id = spbellen_import_contact($campaign_id, $sync_id, $contact_data);
+          $contact_id = spbellen_import_contact($import_info['campaign_id'], $import_info['id'], $contact_data);
 
           if (empty($context['results']['count'][$group_id])) {
             $context['results']['count'][$group_id] = 0;
@@ -165,8 +161,13 @@ function spbellen_civi_import_get_targets_batch_finished($success, $results, $op
   if ($success) {
     $total = array_sum($results['count']);
     drupal_set_message('Aantal opgehaalde contacten: ' . $total);
-    $import_title = substr('Civi-import: ' . implode(', ', $results['group_names']), 0, 254);
-    spbellen_store_import_history($results['campaign_id'], $results['sync_id'], $total, $import_title);
+    // Store import total.
+    db_update('spbellen_import_history')
+      ->fields(array(
+        'quantity' => $total,
+      ))
+      ->condition('id', $results['import_id'])
+      ->execute();
   }
   else {
     $error_operation = reset($operations);

@@ -108,10 +108,11 @@ function spbellen_campaign_form($form, &$form_state) {
         $options = spbellen_import_history_list($storage['campaign']);
         $defaults = spbellen_import_history_defaults($storage['campaign']);
         if (!empty($options)) {
-          $form['active_imports'] = array(
+          $form['blocked_imports'] = array(
             '#type' => 'checkboxes',
-            '#title' => 'Selecteer welke contacten gebeld moeten worden',
-            '#name' => 'active_imports',
+            '#title' => 'Niet bellen',
+            '#description' => 'Contacten in geselecteerde worden niet gebeld.',
+            '#name' => 'blocked_imports',
             '#options' => $options,
             '#empty_option' => 'Kies:',
             '#default_value' => $defaults,

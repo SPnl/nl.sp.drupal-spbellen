@@ -480,9 +480,8 @@ function spbellen_schema() {
       ),
       'title' => array(
         'description' => 'Title',
-        'type' => 'varchar',
-        'length' => 255,
-        'default' => '',
+        'type' => 'text',
+        'size' => 'normal',
       ),
       'date' => array(
         'description' => 'The moment when the import was finished.',
@@ -1339,9 +1338,9 @@ function spbellen_update_7029() {
 }
 
 /**
- * Add indexes.
+ * Add import history.
  */
-function spbellen_update_7031() {
+function spbellen_update_7030() {
   // Add spbelen_import_history table.
   if (!db_table_exists('spbellen_import_history')) {
     $table = array(
@@ -1360,9 +1359,8 @@ function spbellen_update_7031() {
         ),
         'title' => array(
           'description' => 'Title',
-          'type' => 'varchar',
-          'length' => 255,
-          'default' => '',
+          'type' => 'text',
+          'size' => 'normal',
         ),
         'date' => array(
           'description' => 'The moment when the import was finished.',
@@ -1441,5 +1439,66 @@ function spbellen_update_7031() {
       ),
     );
     db_create_table('spbellen_target_import_relation', $table);
+  }
+
+  if (db_table_exists('spbellen_campaign_groups')) {
+    // Create imports for campaign groups.
+    $import_history = array();
+    $query = "SELECT id target_id, state, campaign_id FROM  {spbellen_targets}";
+    $result = db_query($query);
+    foreach ($result as $record) {
+      // Check if import history exists.
+      if (empty($import_history[$record->campaign_id][$record->state])) {
+        // Get import title.
+        if ($record->state) {
+          // Get campaign groups.
+          $query = "SELECT civi_group_id, group_name FROM {spbellen_campaign_groups} WHERE campaign_id = :campaign_id";
+          $groups_results = db_query($query, array(':campaign_id' => $record->campaign_id));
+          $groups = $groups_results->FetchAllKeyed();
+          $import_title = 'Active contacts: ' . implode(', ', $groups);
+        }
+        else {
+          $import_title = 'Inactive contacts';
+        }
+        // Create import.
+        $import_id = db_insert('spbellen_import_history')
+          ->fields(array(
+            'campaign_id' => $record->campaign_id,
+            'date' => time(),
+            'state' => $record->state,
+            'title' => $import_title,
+          ))
+          ->execute();
+        $import_history[$record->campaign_id][$record->state] = $import_id;
+      }
+      $import_id = $import_history[$record->campaign_id][$record->state];
+      // Create target import relation.
+      db_insert('spbellen_target_import_relation')
+        ->fields(array(
+          'target_id' => $record->target_id,
+          'import_id' => $import_id,
+        ))
+        ->execute();
+      // Store quantity.
+      if (empty($quantity[$record->campaign_id][$record->state])) {
+        $quantity[$record->campaign_id][$record->state] = 1;
+      }
+      else {
+        $quantity[$record->campaign_id][$record->state]++;
+      }
+    }
+    if (!empty($import_history)) {
+      foreach ($import_history as $campaign_id => $import_data) {
+        foreach (array(0, 1) as $state) {
+          db_update('spbellen_import_history')
+            ->fields(array(
+              'quantity' => $quantity[$campaign_id][$state],
+            ))
+            ->condition('id', $import_data[$state])
+            ->execute();
+        }
+      }
+    }
+    drop_table('spbellen_campaign_groups');
   }
 }

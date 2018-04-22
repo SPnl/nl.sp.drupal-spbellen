@@ -162,7 +162,7 @@ function spbellen_csv_import_import_form_validate($form, &$form_state) {
  * Csv Import submit function.
  */
 function spbellen_csv_import_import_form_submit($form, &$form_state) {
-  $storage = $form_state['storage'];
+  $storage = &$form_state['storage'];
 
   if (!empty($form_state['triggering_element']['#name'])) {
     $trigger = $form_state['triggering_element']['#name'];
@@ -173,6 +173,11 @@ function spbellen_csv_import_import_form_submit($form, &$form_state) {
 
       case 'import_submit':
         if (!empty($storage['upload']) && !empty($storage['csv_beltool_mapping'])) {
+          // Create import.
+          $import_title = 'CSV import: ' . $storage['upload']->filename;
+          $storage['import_title'] = $import_title;
+          $import_id = spbellen_store_import_history($storage['campaign'], 0, $import_title);
+          $storage['import_id'] = $import_id;
           // Import csv.
           $batch = array(
             'operations' => array(
