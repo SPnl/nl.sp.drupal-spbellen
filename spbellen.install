@@ -1276,8 +1276,8 @@ function spbellen_update_7028() {
           $webform->webform['components'][$key]['form_key'] = 'spbellen_hidden_crm_contact_id';
           $webform->webform['components'][$key]['name'] = 'CRM contact id (verborgen)';
         }
-        $max_component_id = $key;
       }
+      $max_component_id = max(array_keys($webform->webform['components']));
       // Add contact_id component.
       $webform->webform['components'][$max_component_id + 1] = $original_component;
       $webform->webform['components'][$max_component_id + 1]['cid'] = $max_component_id + 1;
