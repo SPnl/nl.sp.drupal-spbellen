@@ -1079,13 +1079,13 @@ function spbellen_contact_block_data() {
               'username' => 'T' . $extension,
             );
             // Add optional params.
-            $calleridname = empty($call_number_list[$forceclip]) ? '' : $call_number_list[$forceclip];
-            if (!empty($calleridname)) {
-              $params['callerIDName'] = $calleridname;
-            }
             $forceclip = $campaign->click2dial_call_number;
             if (!empty($forceclip)) {
               $params['forceclip'] = $forceclip;
+              $calleridname = empty($call_number_list[$forceclip]) ? '' : $call_number_list[$forceclip];
+              if (!empty($calleridname)) {
+                $params['callerIDName'] = $calleridname;
+              }
             }
 
             $script_url = 'http://' . $asterix_ip . '/ps/call.php';
