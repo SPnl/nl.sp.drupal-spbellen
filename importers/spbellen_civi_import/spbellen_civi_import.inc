@@ -130,10 +130,10 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
           $contact_data = spbellen_civi_import_map_civi_data($result);
           $contact_id = spbellen_import_contact($import_info['campaign_id'], $import_info['id'], $contact_data);
 
-          if (empty($context['results']['count'][$group_id])) {
-            $context['results']['count'][$group_id] = 0;
+          if (empty($context['results']['count'][$group_info['id']])) {
+            $context['results']['count'][$group_info['id']] = 0;
           }
-          $context['results']['count'][$group_id]++;
+          $context['results']['count'][$group_info['id']]++;
         }
 
         // Update our progress information.
@@ -275,22 +275,31 @@ function spbellen_civi_import_create_activity($crm_contact_id, $activity_type, $
  * Map civi data to storage contact data.
  */
 function spbellen_civi_import_map_civi_data($civi_data) {
-  $contact_data['crm_contact_id'] = $civi_data['contact_id'];
-  $contact_data['phone'] = $civi_data['phone'];
+  $map = array(
+    'crm_contact_id' => 'contact_id',
+    'phone' => 'phone',
+    'display_name' => 'display_name',
+    'email' => 'email',
+    'street_address' => 'street_address',
+    'postal_code' => 'postal_code',
+    'city' => 'city',
+    'gender' => 'gender',
+    'is_lid' => 'is_member',
+    'afdeling_id' => 'afdeling_code',
+    'afdeling' => 'afdeling',
+  );
+  foreach ($map as $data_map => $civi_map) {
+    if (isset($civi_data[$civi_map])) {
+      $contact_data[$data_map] = $civi_data[$civi_map];
+    }
+  }
   // Check if has mobile phonenumer.
   if (!empty($civi_data['mobile'])) {
     $contact_data['phone'] = $civi_data['mobile'];
   }
-  $contact_data['phone'] = preg_replace('/\D/', '', $contact_data['phone']);
-  $contact_data['display_name'] = $civi_data['display_name'];
-  $contact_data['email'] = $civi_data['email'];
-  $contact_data['street_address'] = $civi_data['street_address'];
-  $contact_data['postal_code'] = $civi_data['postal_code'];
-  $contact_data['city'] = $civi_data['city'];
-  $contact_data['gender'] = $civi_data['gender'];
-  $contact_data['is_lid'] = $civi_data['is_member'];
-  $contact_data['afdeling_id'] = empty($civi_data['afdeling_code']) ? '' : $civi_data['afdeling_code'];
-  $contact_data['afdeling'] = $civi_data['afdeling'];
+  if (!empty($contact_data['phone'])) {
+    $contact_data['phone'] = preg_replace('/\D/', '', $contact_data['phone']);
+  }
   // Get notes.
   $notes = spbellen_civi_import_get_notes($civi_data['contact_id']);
   if (!empty($notes)) {
