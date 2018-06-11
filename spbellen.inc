@@ -1143,7 +1143,7 @@ function spbellen_get_general_stats() {
   $stats = &drupal_static(__FUNCTION__);
   if (!isset($stats)) {
     $stats = array();
-    $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id;";
+    $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1;";
     $result = db_query($query);
     $record = $result->fetchAssoc();
     foreach ($record as $key => $value) {
@@ -1175,7 +1175,7 @@ function spbellen_get_campaign_stats($campaign_id) {
       'all' => '',
       'no_inactive' => ' AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.state = 0)',
     ) as $type => $query_part) {
-      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id" . $query_part;
+      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id AND ta.state = 1" . $query_part;
       $result = db_query($query, array(
         ':campaign_id' => $campaign_id,
       ));
