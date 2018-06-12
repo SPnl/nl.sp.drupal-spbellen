@@ -1352,8 +1352,8 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
   }
   // Add target import relation.
   if (!empty($target_id)) {
-    db_insert('spbellen_target_import_relation')
-      ->fields(array(
+    db_merge('spbellen_target_import_relation')
+      ->key(array(
         'target_id' => $target_id,
         'import_id' => $import_id,
       ))
