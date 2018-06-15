@@ -914,15 +914,15 @@ function spbellen_assign_target($campaign) {
     // Query parts.
     $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE im.campaign_id = :cid AND ta.state = 1 AND im.state = 1 AND im.block = 0 AND ";
 
-    // Check if existing target exists.
-    $query = "SELECT ta.contact_id" . $from_where . "bl.contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND attempts < 5 AND campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
+    // Check if claimed target exists.
+    $query = "SELECT ta.contact_id" . $from_where . "bl.contact_id IS NULL AND occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND attempts < 5 AND im.campaign_id = :cid  AND ta.caller_id = :caller_id LIMIT 1";
     $result = db_query($query, array(
       ':cid' => $campaign_id,
       ':caller_id' => $user->uid,
     ))->fetchAssoc();
     if (!$result) {
       // Get appointment targets.
-          $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, attempts ASC, date ASC LIMIT 1";
+      $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND attempts < 5 AND bl.contact_id IS NULL AND im.campaign_id = :cid AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, call_order ASC, attempts ASC, ta.date ASC LIMIT 1";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
         ':current_time' => time(),
@@ -940,11 +940,12 @@ function spbellen_assign_target($campaign) {
           ->execute();
       }
       else {
-
-        // Get new target, not called before (random order).
-        $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "attempts = 0 AND bl.contact_id IS NULL AND campaign_id = :cid AND occupied = 0 ORDER BY RAND() LIMIT 1";
+        // Get target.
+        $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result IS NULL) AND attempts < 5 AND bl.contact_id IS NULL AND im.campaign_id = :cid AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_order ASC, attempts ASC, ta.date ASC LIMIT 1";
         $result = db_query($query, array(
           ':cid' => $campaign_id,
+          ':occupied_time' => time() - 1800,
+          ':current_time' => time(),
         ))->fetchAssoc();
         if ($result) {
           // Claim target.
@@ -956,26 +957,6 @@ function spbellen_assign_target($campaign) {
             ))
             ->condition('id', $result['id'])
             ->execute();
-        }
-        else {
-          // Get new target, called before.
-          $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid AND ((occupied = 0 AND (ac.call_back_time < :current_time)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY attempts ASC, date ASC LIMIT 1";
-          $result = db_query($query, array(
-            ':cid' => $campaign_id,
-            ':occupied_time' => time() - 1800,
-            ':current_time' => time(),
-          ))->fetchAssoc();
-          if ($result) {
-            // Claim target.
-            db_update('spbellen_targets')
-              ->fields(array(
-                'occupied' => 1,
-                'date' => time(),
-                'caller_id' => $user->uid,
-              ))
-              ->condition('id', $result['id'])
-              ->execute();
-          }
         }
       }
     }
@@ -993,7 +974,7 @@ function spbellen_assign_target($campaign) {
     }
     else {
       // Find occupied targets.
-      $query = "SELECT COUNT(*) number" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND campaign_id = :cid";
+      $query = "SELECT COUNT(*) number" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment') AND attempts < 5 AND bl.contact_id IS NULL AND im.campaign_id = :cid";
       $result = db_query($query, array(
         ':cid' => $campaign_id,
       ))->fetchAssoc();

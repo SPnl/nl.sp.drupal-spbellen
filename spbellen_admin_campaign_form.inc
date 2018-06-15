@@ -262,7 +262,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
           }
         }
         // Store imort state.
-        //form_set_error('title', 'TESTING');
         return;
 
       case 'delete':
