@@ -908,6 +908,12 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'template' => 'spbellen-call-back-list',
     'variables' => $variables,
   );
+
+  // Admin campaign form.
+  $registry['spbellen_campaign_form'] = array(
+    'render element' => 'form',
+    'file' => 'spbellen_admin_campaign_form.inc',
+  );
   return $registry;
 }
 

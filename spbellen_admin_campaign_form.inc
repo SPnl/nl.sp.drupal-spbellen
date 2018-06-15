@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Campaign settings form.
+ */
+
+/**
+ * Form definition.
+ */
 function spbellen_campaign_form($form, &$form_state) {
   $campaigns_list = spbellen_get_campaigns_list();
   $webforms_list = spbellen_get_webforms_list();
@@ -104,17 +111,31 @@ function spbellen_campaign_form($form, &$form_state) {
       }
 
       if ($storage['campaign'] !== 'new' && !empty($storage['campaign'])) {
-        $options = spbellen_import_history_list($storage['campaign']);
-        $defaults = spbellen_import_history_defaults($storage['campaign']);
-        if (!empty($options)) {
-          $form['blocked_imports'] = array(
-            '#type' => 'checkboxes',
-            '#title' => 'Contacten niet bellen',
-            '#name' => 'blocked_imports',
-            '#options' => $options,
-            '#empty_option' => 'Kies:',
-            '#default_value' => $defaults,
-          );
+        $import_history = spbellen_get_import_history($storage['campaign']);
+        if (!empty($import_history)) {
+          $form['import_settings']['#tree'] = TRUE;
+          foreach ($import_history as $import_id => $import_data) {
+            $form['import_settings'][$import_id] = array(
+              'name' => array(
+                '#markup' => check_plain($import_data->title),
+              ),
+              'active_import' => array(
+                '#type' => 'checkbox',
+                '#default_value' => $import_data->state,
+              ),
+              'block_import' => array(
+                '#type' => 'checkbox',
+                '#default_value' => $import_data->block,
+              ),
+              'weight' => array(
+                '#type' => 'weight',
+                '#title' => t('Weight'),
+                '#default_value' => $import_data->call_order,
+                '#delta' => 10,
+                '#title_display' => 'invisible',
+              ),
+            );
+          }
         }
       }
 
@@ -159,8 +180,11 @@ function spbellen_campaign_form($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Form validation.
+ */
 function spbellen_campaign_form_validate($form, &$form_state) {
-  $values = $form_state['values'];
+  $values = &$form_state['values'];
   $storage = &$form_state['storage'];
 
   if (!empty($form_state['triggering_element']['#name'])) {
@@ -205,6 +229,40 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         if (empty($values['title'])) {
           form_set_error('title', 'Kies een titel voor de campaigne.');
         }
+        // Set import order.
+        if (!empty($values['import_settings'])) {
+          // Disable active when blocked.
+          foreach ($values['import_settings'] as $import_id => $import_setting) {
+            if ($import_setting['block_import'] == 1 && $import_setting['active_import'] == 1) {
+              $values['import_settings'][$import_id]['active_import'] = 0;
+            }
+          }
+          // Get max weight.
+          foreach ($values['import_settings'] as $import_setting) {
+            if (!isset($max_weight)) {
+              $max_weight = $import_setting['weight'];
+            }
+            if ($import_setting['weight'] > $max_weight) {
+              $max_weight = $import_setting['weight'];
+            }
+          }
+          // Put order down when inactive.
+          foreach ($values['import_settings'] as $import_id => $import_setting) {
+            if ($import_setting['active_import'] == 0) {
+              $max_weight++;
+              $values['import_settings'][$import_id]['weight'] = $max_weight;
+            }
+          }
+          // Put order down when block.
+          foreach ($values['import_settings'] as $import_id => $import_setting) {
+            if ($import_setting['block_import'] == 1) {
+              $max_weight++;
+              $values['import_settings'][$import_id]['weight'] = $max_weight;
+            }
+          }
+        }
+        // Store imort state.
+        //form_set_error('title', 'TESTING');
         return;
 
       case 'delete':
@@ -214,6 +272,9 @@ function spbellen_campaign_form_validate($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 }
 
+/**
+ * Form submission.
+ */
 function spbellen_campaign_form_submit($form, &$form_state) {
   $storage = $form_state['storage'];
   $values = $form_state['values'];
@@ -240,11 +301,13 @@ function spbellen_campaign_form_submit($form, &$form_state) {
           }
         }
         // Store imort state.
-        if (!empty($values['blocked_imports'])) {
-          foreach ($values['blocked_imports'] as $key => $value) {
+        if (!empty($values['import_settings'])) {
+          foreach ($values['import_settings'] as $key => $values) {
             db_update('spbellen_import_history')
               ->fields(array(
-                'state' => empty($value) ? 1 : 0,
+                'state' => empty($values['active_import']) ? 0 : 1,
+                'call_order' => $values['weight'],
+                'block' => empty($values['block_import']) ? 0 : 1,
               ))
               ->condition('id', $key)
               ->execute();
@@ -264,6 +327,55 @@ function spbellen_campaign_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Implements theme_hook().
+ */
+function theme_spbellen_campaign_form($variables) {
+  $form = $variables['form'];
+  // Build form.
+  if (!empty($form['import_settings'])) {
+    foreach (element_children($form['import_settings']) as $id) {
+      $form['import_settings'][$id]['weight']['#attributes']['class'] = array('import-setting-weight');
+      $rows[] = array(
+        'data' => array(
+          drupal_render($form['import_settings'][$id]['name']),
+          drupal_render($form['import_settings'][$id]['active_import']),
+          drupal_render($form['import_settings'][$id]['block_import']),
+          drupal_render($form['import_settings'][$id]['weight']),
+        ),
+        'class' => array('draggable'),
+      );
+    }
+    $header = array('Import', 'Actief', 'Blokkeren', 'Gewicht');
+    $table_id = 'spbellen-import-settings-tabledrag';
+    $import_settings_table = theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array('id' => $table_id),
+    ));
+  }
+  // Render form.
+  $children_keys = element_children($form);
+  $output = '';
+  foreach ($children_keys as $key) {
+    if (!empty($form[$key])) {
+      $output .= drupal_render($form[$key]);
+      if ($key === 'import_settings') {
+        $output .= '<div class="form-item"><label>Belprioriteit</label>';
+        $output .= $import_settings_table;
+        $output .= '<div class="description">Sleep imports omhoog of omlaag om de belprioriteit aan te passen. Contacen in een niet actieve import worden niet gebeld, behalve als ze ook nog in een andere actieve import zitten. Contacten in een geblokkeerde import worden niet gebeld, ook niet als ze ook nog in een andere actieve import zitten.</div></div>';
+      }
+    }
+  }
+  if (!empty($table_id)) {
+    drupal_add_tabledrag($table_id, 'order', 'sibling', 'import-setting-weight');
+  }
+  return $output;
+}
+
+/**
+ * Store campaign data.
+ */
 function spbellen_store_campaign($storage, $values) {
   if ($storage['campaign'] === 'new') {
     // Create campaign.
@@ -299,6 +411,9 @@ function spbellen_store_campaign($storage, $values) {
   return $campaign;
 }
 
+/**
+ * Delete campaign.
+ */
 function spbellen_delete_campaign($campaign_id) {
   $result = entity_delete('campaign', $campaign_id);
   if ($result === FALSE) {

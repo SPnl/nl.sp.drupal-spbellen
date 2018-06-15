@@ -505,6 +505,13 @@ function spbellen_schema() {
         'type' => 'int',
         'size' => 'tiny',
       ),
+      'block' => array(
+        'description' => 'Block',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array(
       'id',
@@ -514,6 +521,7 @@ function spbellen_schema() {
       'date' => array('date'),
       'call_order' => array('call_order'),
       'state' => array('state'),
+      'block' => array('block'),
     ),
   );
 
@@ -1509,5 +1517,22 @@ function spbellen_update_7030() {
       }
     }
     db_drop_table('spbellen_campaign_groups');
+  }
+}
+
+/**
+ * Add import history block field.
+ */
+function spbellen_update_7031() {
+  if (!db_field_exists('spbellen_import_history', 'block')) {
+    $spec = array(
+      'description' => 'Block',
+      'type' => 'int',
+      'size' => 'tiny',
+      'default' => 0,
+      'not null' => TRUE,
+    );
+    db_add_field('spbellen_import_history', 'block', $spec);
+    db_add_index('spbellen_import_history', 'block', array('block'));
   }
 }

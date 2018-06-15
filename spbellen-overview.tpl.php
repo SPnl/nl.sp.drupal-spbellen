@@ -52,43 +52,43 @@
         <td>Afgerond</td>
         <td><?php print $data['all']['completed']; ?></td>
         <td><?php print $data['all']['completed_percentage']; ?>%</td>
-        <td><?php print $data['no_inactive']['completed']; ?></td>
-        <td><?php print $data['no_inactive']['completed_percentage']; ?>%</td>
+        <td><?php print $data['only_active']['completed']; ?></td>
+        <td><?php print $data['only_active']['completed_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Terugbellen</td>
         <td><?php print $data['all']['call_back']; ?></td>
         <td><?php print $data['all']['call_back_percentage']; ?>%</td>
-        <td><?php print $data['no_inactive']['call_back']; ?></td>
-        <td><?php print $data['no_inactive']['call_back_percentage']; ?>%</td>
+        <td><?php print $data['only_active']['call_back']; ?></td>
+        <td><?php print $data['only_active']['call_back_percentage']; ?>%</td>
 
       </tr>
       <tr>
         <td>Niet gebeld</td>
         <td><?php print $data['all']['not_contacted']; ?></td>
         <td><?php print $data['all']['not_contacted_percentage']; ?>%</td>
-        <td><?php print $data['no_inactive']['not_contacted']; ?></td>
-        <td><?php print $data['no_inactive']['not_contacted_percentage']; ?>%</td>
+        <td><?php print $data['only_active']['not_contacted']; ?></td>
+        <td><?php print $data['only_active']['not_contacted_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Verkeerd nummer</td>
         <td><?php print $data['all']['wrong_number']; ?></td>
         <td><?php print $data['all']['wrong_number_percentage']; ?>%</td>
-        <td><?php print $data['no_inactive']['wrong_number']; ?></td>
-        <td><?php print $data['no_inactive']['wrong_number_percentage']; ?>%</td>
+        <td><?php print $data['only_active']['wrong_number']; ?></td>
+        <td><?php print $data['only_active']['wrong_number_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Nooit meer bellen</td>
         <td><?php print $data['all']['blacklisted']; ?></td>
         <td><?php print $data['all']['blacklisted_percentage']; ?>%</td>
-        <td><?php print $data['no_inactive']['blacklisted']; ?></td>
-        <td><?php print $data['no_inactive']['blacklisted_percentage']; ?>%</td>
+        <td><?php print $data['only_active']['blacklisted']; ?></td>
+        <td><?php print $data['only_active']['blacklisted_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Totaal</td>
         <td><?php print $data['all']['total']; ?></td>
         <td>100%</td>
-        <td><?php print $data['no_inactive']['total']; ?></td>
+        <td><?php print $data['only_active']['total']; ?></td>
         <td>100%</td>
       </tr>
     </table>

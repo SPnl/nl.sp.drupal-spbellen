@@ -9,11 +9,11 @@
 
 <div id="spbellen-block-data">
   <div id="spbellen-stats">
-    <div id="spbellen_completed_percentage" style="width:<?php print $stats['no_inactive']['completed_percentage']; ?>%"></div>
-    <div id="spbellen_call_back_percentage" style="width:<?php print $stats['no_inactive']['call_back_percentage']; ?>%"></div>
-    <div id="spbellen_not_contacted_percentage" style="width:<?php print $stats['no_inactive']['not_contacted_percentage']; ?>%"></div>
-    <div id="spbellen_wrong_number_percentage" style="width:<?php print $stats['no_inactive']['wrong_number_percentage']; ?>%"></div>
-    <div id="spbellen_blacklisted_percentage" style="width:<?php print $stats['no_inactive']['blacklisted_percentage']; ?>%"></div>
+    <div id="spbellen_completed_percentage" style="width:<?php print $stats['only_active']['completed_percentage']; ?>%"></div>
+    <div id="spbellen_call_back_percentage" style="width:<?php print $stats['only_active']['call_back_percentage']; ?>%"></div>
+    <div id="spbellen_not_contacted_percentage" style="width:<?php print $stats['only_active']['not_contacted_percentage']; ?>%"></div>
+    <div id="spbellen_wrong_number_percentage" style="width:<?php print $stats['only_active']['wrong_number_percentage']; ?>%"></div>
+    <div id="spbellen_blacklisted_percentage" style="width:<?php print $stats['only_active']['blacklisted_percentage']; ?>%"></div>
   </div>
   <div class="wrapper left">
     <div class="content top">
