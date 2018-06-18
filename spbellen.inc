@@ -1040,6 +1040,13 @@ function spbellen_get_campaign_id($webform_id) {
   return (!empty($result['id'])) ? $result['id'] : FALSE;
 }
 
+function spbellen_get_target_info($campaign_id, $contact_id) {
+  // Get target id.
+  $query = "SELECT * FROM {spbellen_targets} WHERE contact_id = :contact_id AND campaign_id = :cid";
+  $result = db_query($query, array(':contact_id' => $contact_id, ':cid' => $campaign_id))->fetchAssoc();
+  return $result;
+}
+
 function spbellen_component_key_id_map($webform_node) {
   foreach ($webform_node->webform['components'] as $key => $component) {
     $map[$component['form_key']] = $key;

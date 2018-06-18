@@ -449,9 +449,8 @@ function spbellen_webform_submission_insert($node, $submission) {
       $contact_id = $submission->data[$map['spbellen_hidden_contact_id']][0];
 
       // Get target id.
-      $query = "SELECT id FROM {spbellen_targets} WHERE contact_id = :contact_id AND campaign_id = :cid";
-      $result = db_query($query, array(':contact_id' => $contact_id, ':cid' => $campaign_id))->fetchAssoc();
-      $tid = $result['id'];
+      $target_info = spbellen_get_target_info($campaign_id, $contact_id);
+      $tid = $target_info['id'];
 
       // Create action.
       if (!empty($submission->data[$map['call_answered']][0])) {
@@ -947,16 +946,24 @@ function spbellen_custom_webform_validate($form, &$form_state) {
     $form_state['triggering_element']['#value'] === 'Overslaan'
   ) {
     // Next button.
-    // Disassign target from caller.
     global $user;
-    $result = db_update('spbellen_targets')
-      ->fields(array(
-        'occupied' => 0,
-        'date' => time(),
-        'caller_id' => NULL,
-      ))
-      ->condition('caller_id', $user->uid)
-      ->execute();
+    // Get target info.
+    $campaign_id = spbellen_get_campaign_id($form['#node']->nid);
+    $contact_id = $form_state['values']['submitted']['spbellen_hidden_contact_id'];
+    $target_info = spbellen_get_target_info($campaign_id, $contact_id);
+    if (!empty($target_info)) {
+      // Create action.
+      spbellen_create_action($target_info['id'], $user->uid, 'skipped', 0, NULL, 0, NULL);
+      // Disassign target.
+      $result = db_update('spbellen_targets')
+        ->fields(array(
+          'occupied' => 0,
+          'date' => time(),
+          'caller_id' => NULL,
+        ))
+        ->condition('id', $target_info['id'])
+        ->execute();
+    }
     $path = drupal_get_path_alias('node/' . $form['#node']->nid);
     drupal_goto($path);
   }
