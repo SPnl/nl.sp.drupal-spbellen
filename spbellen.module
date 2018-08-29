@@ -1077,11 +1077,11 @@ function spbellen_contact_block_data() {
         $call_number_list = spbellen_click2dial_call_numbers_list();
         $extension = !empty($_SESSION['spbellen']['extension_number']) ? $_SESSION['spbellen']['extension_number'] : FALSE;
         if ($extension) {
-          $asterix_ip = variable_get('spbellen_click2dial_asterix_ip', FALSE);
+          $asterix_domain = variable_get('spbellen_click2dial_asterix_domain', FALSE);
           $shortname = variable_get('spbellen_click2dial_shortname', FALSE);
           $phone = $contact_data['phone'];
           if (
-            !empty($asterix_ip) &&
+            !empty($asterix_domain) &&
             !empty($shortname) &&
             !empty($phone)
           ) {
@@ -1101,7 +1101,7 @@ function spbellen_contact_block_data() {
               }
             }
 
-            $script_url = 'http://' . $asterix_ip . '/ps/call.php';
+            $script_url = 'https://' . $asterix_domain . '/ps/call.php';
             $data['click2dial']['script_params'] = $params;
             $data['click2dial']['script_url'] = $script_url;
           }

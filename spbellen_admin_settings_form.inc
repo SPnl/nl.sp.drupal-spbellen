@@ -21,10 +21,10 @@ function spbellen_settings_form($form, &$form_state) {
     '#title' => 'IP adres van locatie waar gebeld wordt',
     '#default_value' => variable_get('spbellen_click2dial_location_ip', ''),
   );
-  $form['spbellen_click2dial']['general']['spbellen_click2dial_asterix_ip'] = array(
+  $form['spbellen_click2dial']['general']['spbellen_click2dial_asterix_domain'] = array(
     '#type' => 'textfield',
-    '#title' => 'IP adres van telefooncentrale',
-    '#default_value' => variable_get('spbellen_click2dial_asterix_ip', ''),
+    '#title' => 'Domein van telefooncentrale',
+    '#default_value' => variable_get('spbellen_click2dial_asterix_domain', ''),
   );
   $form['spbellen_click2dial']['caller_ids'] = array(
     '#type' => 'fieldset',

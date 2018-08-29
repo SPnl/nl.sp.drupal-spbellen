@@ -17,6 +17,7 @@ function spbellen_uninstall() {
 
   variable_del('spbellen_campaign_select_intro');
   variable_del('spbellen_click2dial_asterix_ip');
+  variable_del('spbellen_click2dial_asterix_domain');
   variable_del('spbellen_click2dial_location_ip');
   variable_del('spbellen_click2dial_shortname');
 
@@ -1535,4 +1536,16 @@ function spbellen_update_7031() {
     db_add_field('spbellen_import_history', 'block', $spec);
     db_add_index('spbellen_import_history', 'block', array('block'));
   }
+}
+
+
+/**
+ * Renames variable with asterix ip to domain.
+ */
+function spbellen_update_7032() {
+  $asterix_ip = variable_get('spbellen_click2dial_asterix_ip', FALSE);
+  if (!empty($asterix_ip)) {
+    variable_set('spbellen_click2dial_asterix_domain', $asterix_ip);
+  }
+  variable_del('spbellen_click2dial_asterix_ip');
 }
