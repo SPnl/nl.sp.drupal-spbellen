@@ -67,6 +67,16 @@ function spbellen_campaign_form($form, &$form_state) {
           ),
         );
       }
+      else {
+        if (!empty($storage['webform'])) {
+          $webform = node_load($storage['webform']);
+          if (!empty($webform->title)) {
+            $form['webform_info'] = array(
+              '#markup' => '<p><strong>Formulier<br/></strong> <a href="/node/' . $webform->nid . '/webform" target="_blank">' . check_plain($webform->title) . '</a></p>',
+            );
+          }
+        }
+      }
 
       $form['title'] = array(
         '#type' => 'textfield',
