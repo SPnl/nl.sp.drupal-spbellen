@@ -1070,7 +1070,13 @@ function spbellen_contact_block_data() {
         }
 
         // Stats.
-        $data['stats'] = spbellen_get_campaign_stats($campaign_id);
+        if (!empty($campaign->afdeling_filter)) {
+          $caller = entity_load_single('caller', $user->uid);
+          if (!empty($caller->afdeling_id)) {
+            $afdeling_id = $caller->afdeling_id;
+          }
+        }
+        $data['stats'] = spbellen_get_campaign_stats($campaign_id, $afdeling_id);
 
         // Call button.
         $campaign = entity_load_single('campaign', $campaign_id);

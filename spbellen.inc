@@ -908,6 +908,8 @@ function spbellen_is_spbellen_form_check($nid) {
 function spbellen_assign_target($campaign) {
   global $user;
   $campaign_id = $campaign->id;
+  $caller = entity_load_single('caller', $user->uid);
+
   // Check if is logged in via spoauth.
   if (
     user_is_logged_in()
@@ -915,20 +917,34 @@ function spbellen_assign_target($campaign) {
     // Query parts.
     $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE im.campaign_id = :cid AND ta.state = 1 AND im.state = 1 AND bl.contact_id IS NULL AND attempts < 5 AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :cid AND im.block = 1) AND ";
 
-    // Check if claimed target exists.
-    $query = "SELECT ta.contact_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND ta.caller_id = :caller_id LIMIT 1";
-    $result = db_query($query, array(
+    $from_vars = array(
       ':cid' => $campaign_id,
       ':caller_id' => $user->uid,
-    ))->fetchAssoc();
+    );
+
+    // Optionally add afdeling filter.
+    if (!empty($campaign->afdeling_filter)) {
+      if (!empty($caller->afdeling_id)) {
+        $from_where .= 'cd.afdeling_id = :afdeling_id AND ';
+        $from_vars[':afdeling_id'] = $caller->afdeling_id;
+      }
+      else {
+        drupal_set_message('Afdeling beller is onbekend!', 'error');
+        drupal_goto('/bellen/error');
+        return FALSE;
+      }
+    }
+
+    // Check if claimed target exists.
+    $query = "SELECT ta.contact_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND ta.caller_id = :caller_id LIMIT 1";
+    $result = db_query($query, $from_vars)->fetchAssoc();
     if (!$result) {
       // Get appointment targets.
       $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, call_order ASC, attempts ASC, ta.date ASC LIMIT 1";
-      $result = db_query($query, array(
-        ':cid' => $campaign_id,
+      $result = db_query($query, array_merge($from_vars, array(
         ':current_time' => time(),
         ':occupied_time' => time() - 1800,
-      ))->fetchAssoc();
+      )))->fetchAssoc();
       if ($result) {
         // Claim target.
         db_update('spbellen_targets')
@@ -943,11 +959,10 @@ function spbellen_assign_target($campaign) {
       else {
         // Get target.
         $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_order ASC, attempts ASC, ta.date ASC LIMIT 1";
-        $result = db_query($query, array(
-          ':cid' => $campaign_id,
+        $result = db_query($query, array_merge($from_vars, array(
           ':occupied_time' => time() - 1800,
           ':current_time' => time(),
-        ))->fetchAssoc();
+        )))->fetchAssoc();
         if ($result) {
           // Claim target.
           db_update('spbellen_targets')
@@ -976,9 +991,7 @@ function spbellen_assign_target($campaign) {
     else {
       // Find occupied targets.
       $query = "SELECT COUNT(*) number" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')";
-      $result = db_query($query, array(
-        ':cid' => $campaign_id,
-      ))->fetchAssoc();
+      $result = db_query($query, $from_vars)->fetchAssoc();
       if ($result) {
         drupal_set_message('Er is geen beschikbaar contact gevonden (er zijn ' . $result['number'] . ' contacten die op een later moment nog gebeld kunnen worden).', 'error');
       }
@@ -988,7 +1001,7 @@ function spbellen_assign_target($campaign) {
     }
   }
   else {
-    drupal_set_message('Log in via SPNET om gebruik te kunnen maken van de spbellen.', 'error');
+    drupal_set_message('Log in gebruik te kunnen maken van de spbellen.', 'error');
   }
   drupal_goto('/bellen/error');
   return FALSE;
@@ -1154,7 +1167,7 @@ function spbellen_get_general_stats() {
   return $stats;
 }
 
-function spbellen_get_campaign_stats($campaign_id) {
+function spbellen_get_campaign_stats($campaign_id, $afdeling_id = NULL) {
   $stats = &drupal_static(__FUNCTION__);
   if (!isset($stats['campaign_id'])) {
     $stats = array();
@@ -1165,9 +1178,14 @@ function spbellen_get_campaign_stats($campaign_id) {
       'only_active' => ' AND ta.id IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.state = 1) AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.block = 1)',
     ) as $type => $query_part) {
       $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id AND ta.state = 1" . $query_part;
-      $result = db_query($query, array(
+      $vars = array(
         ':campaign_id' => $campaign_id,
-      ));
+      );
+      if (!empty($afdeling_id)) {
+        $query .= ' AND da.afdeling_id = :afdeling_id';
+        $vars[':afdeling_id'] = $afdeling_id;
+      }
+      $result = db_query($query, $vars);
       $record = $result->fetchAssoc();
       foreach ($record as $key => $value) {
         $stats[$campaign_id][$type][$key] = empty($value) ? 0 : $value;

@@ -404,6 +404,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign = entity_load_single('campaign', $storage['campaign']);
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
+    $campaign->afdeling_filter = empty($values['afdeling_filter']['enabled']) ? 0 : 1;
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];
