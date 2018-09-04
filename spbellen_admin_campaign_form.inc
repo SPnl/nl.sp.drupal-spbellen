@@ -129,6 +129,12 @@ function spbellen_campaign_form($form, &$form_state) {
               'name' => array(
                 '#markup' => check_plain($import_data->title),
               ),
+              'date' => array(
+                '#markup' => check_plain(date('j-n-Y G:i:s', $import_data->date)),
+              ),
+              'quantity' => array(
+                '#markup' => check_plain($import_data->quantity),
+              ),
               'active_import' => array(
                 '#type' => 'checkbox',
                 '#default_value' => $import_data->state,
@@ -348,6 +354,8 @@ function theme_spbellen_campaign_form($variables) {
       $rows[] = array(
         'data' => array(
           drupal_render($form['import_settings'][$id]['name']),
+          drupal_render($form['import_settings'][$id]['date']),
+          drupal_render($form['import_settings'][$id]['quantity']),
           drupal_render($form['import_settings'][$id]['active_import']),
           drupal_render($form['import_settings'][$id]['block_import']),
           drupal_render($form['import_settings'][$id]['weight']),
@@ -355,7 +363,7 @@ function theme_spbellen_campaign_form($variables) {
         'class' => array('draggable'),
       );
     }
-    $header = array('Import', 'Actief', 'Blokkeren', 'Gewicht');
+    $header = array('Import', 'Datum', 'Aantal', 'Actief', 'Blokkeren', 'Gewicht');
     $table_id = 'spbellen-import-settings-tabledrag';
     $import_settings_table = theme('table', array(
       'header' => $header,
