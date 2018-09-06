@@ -1070,6 +1070,7 @@ function spbellen_contact_block_data() {
         }
 
         // Stats.
+        $afdeling_id = NULL;
         if (!empty($campaign->afdeling_filter)) {
           $caller = entity_load_single('caller', $user->uid);
           if (!empty($caller->afdeling_id)) {
