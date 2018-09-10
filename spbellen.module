@@ -1034,13 +1034,10 @@ function spbellen_contact_block_data() {
 
       $contact_data = spbellen_assign_target($campaign);
 
-      $query = "SELECT contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
-      $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $user->uid))->fetchAssoc();
-      if (!empty($result['contact_id'])) {
+      if (!empty($contact_data['contact_id'])) {
 
         // Contact data.
-        $contact_id = $result['contact_id'];
-        $contact_data = spbellen_get_contact_data($contact_id);
+        $contact_id = $contact_data['contact_id'];
         $contact_fields = spbellen_contact_fields();
         foreach ($contact_fields as $key => $name) {
           $data[$key] = !empty($contact_data[$key]) ? check_plain($contact_data[$key]) : '';
