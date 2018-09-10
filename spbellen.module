@@ -1051,8 +1051,10 @@ function spbellen_contact_block_data() {
 
         // Call history.
         $translate = spbellen_action_translate();
-        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE ta.contact_id = :contact_id";
+        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid AND ta.contact_id = :contact_id";
         $result = db_query($query, array(
+          ':caller_id' => $user->uid,
+          ':cid' => $campaign_id,
           ':contact_id' => $contact_id,
         ));
         if (!empty($result)) {
