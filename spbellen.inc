@@ -906,62 +906,47 @@ function spbellen_is_spbellen_form_check($nid) {
 }
 
 function spbellen_assign_target($campaign) {
-  global $user;
-  $campaign_id = $campaign->id;
-  $caller = entity_load_single('caller', $user->uid);
+  $contact_data = &drupal_static(__FUNCTION__);
+  if (!isset($contact_data)) {
+    $contact_data = FALSE;
+    global $user;
+    $campaign_id = $campaign->id;
+    $caller = entity_load_single('caller', $user->uid);
 
-  // Check if is logged in via spoauth.
-  if (
-    user_is_logged_in()
-  ) {
-    // Query parts.
-    $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE im.campaign_id = :cid AND ta.state = 1 AND im.state = 1 AND bl.contact_id IS NULL AND attempts < 5 AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :cid AND im.block = 1) AND ";
+    // Check if is logged in via spoauth.
+    if (
+      user_is_logged_in()
+    ) {
+      // Query parts.
+      $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE im.campaign_id = :cid AND ta.state = 1 AND im.state = 1 AND bl.contact_id IS NULL AND attempts < 5 AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :cid AND im.block = 1) AND ";
 
-    $from_vars = array(
-      ':cid' => $campaign_id,
-      ':caller_id' => $user->uid,
-    );
+      $from_vars = array(
+        ':cid' => $campaign_id,
+        ':caller_id' => $user->uid,
+      );
 
-    // Optionally add afdeling filter.
-    if (!empty($campaign->afdeling_filter)) {
-      if (!empty($caller->afdeling_id)) {
-        $from_where .= 'cd.afdeling_id = :afdeling_id AND ';
-        $from_vars[':afdeling_id'] = $caller->afdeling_id;
+      // Optionally add afdeling filter.
+      if (!empty($campaign->afdeling_filter)) {
+        if (!empty($caller->afdeling_id)) {
+          $from_where .= 'cd.afdeling_id = :afdeling_id AND ';
+          $from_vars[':afdeling_id'] = $caller->afdeling_id;
+        }
+        else {
+          drupal_set_message('Afdeling beller is onbekend!', 'error');
+          drupal_goto('/bellen/error');
+          return $contact_data;
+        }
       }
-      else {
-        drupal_set_message('Afdeling beller is onbekend!', 'error');
-        drupal_goto('/bellen/error');
-        return FALSE;
-      }
-    }
 
-    // Check if claimed target exists.
-    $query = "SELECT ta.contact_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND ta.caller_id = :caller_id LIMIT 1";
-    $result = db_query($query, $from_vars)->fetchAssoc();
-    if (!$result) {
-      // Get appointment targets.
-      $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, call_order ASC, attempts ASC, ta.date ASC LIMIT 1";
-      $result = db_query($query, array_merge($from_vars, array(
-        ':current_time' => time(),
-        ':occupied_time' => time() - 1800,
-      )))->fetchAssoc();
-      if ($result) {
-        // Claim target.
-        db_update('spbellen_targets')
-          ->fields(array(
-            'occupied' => 1,
-            'date' => time(),
-            'caller_id' => $user->uid,
-          ))
-          ->condition('id', $result['id'])
-          ->execute();
-      }
-      else {
-        // Get target.
-        $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_order ASC, attempts ASC, ta.date ASC, RAND() LIMIT 1";
+      // Check if claimed target exists.
+      $query = "SELECT ta.contact_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')) AND ta.caller_id = :caller_id LIMIT 1";
+      $result = db_query($query, $from_vars)->fetchAssoc();
+      if (!$result) {
+        // Get appointment targets.
+        $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, call_order ASC, attempts ASC, ta.date ASC LIMIT 1";
         $result = db_query($query, array_merge($from_vars, array(
-          ':occupied_time' => time() - 1800,
           ':current_time' => time(),
+          ':occupied_time' => time() - 1800,
         )))->fetchAssoc();
         if ($result) {
           // Claim target.
@@ -974,37 +959,58 @@ function spbellen_assign_target($campaign) {
             ->condition('id', $result['id'])
             ->execute();
         }
+        else {
+          // Get target.
+          $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_order ASC, attempts ASC, ta.date ASC, RAND() LIMIT 1";
+          $result = db_query($query, array_merge($from_vars, array(
+            ':occupied_time' => time() - 1800,
+            ':current_time' => time(),
+          )))->fetchAssoc();
+          if ($result) {
+            // Claim target.
+            db_update('spbellen_targets')
+              ->fields(array(
+                'occupied' => 1,
+                'date' => time(),
+                'caller_id' => $user->uid,
+              ))
+              ->condition('id', $result['id'])
+              ->execute();
+          }
+        }
       }
-    }
-    if (!empty($result)) {
-      // A target was found!
-      $contact_id = $result['contact_id'];
-      // Get contact data.
-      $result = spbellen_get_contact_data($contact_id);
-      if ($result) {
-        return $result;
+      if (!empty($result)) {
+        // A target was found!
+        $contact_id = $result['contact_id'];
+        // Get contact data.
+        $result = spbellen_get_contact_data($contact_id);
+        if ($result) {
+          $contact_data = $result;
+        }
+        else {
+          drupal_set_message('Er kon geen contact informatie worden opgehaald.', 'error');
+        }
       }
       else {
-        drupal_set_message('Er kon geen contact informatie worden opgehaald.', 'error');
+        // Find occupied targets.
+        $query = "SELECT COUNT(*) number" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')";
+        $result = db_query($query, $from_vars)->fetchAssoc();
+        if ($result) {
+          drupal_set_message('Er is geen beschikbaar contact gevonden (er zijn ' . $result['number'] . ' contacten die op een later moment nog gebeld kunnen worden).', 'error');
+        }
+        else {
+          drupal_set_message('Er is geen beschikbaar contact gevonden.', 'error');
+        }
       }
     }
     else {
-      // Find occupied targets.
-      $query = "SELECT COUNT(*) number" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment')";
-      $result = db_query($query, $from_vars)->fetchAssoc();
-      if ($result) {
-        drupal_set_message('Er is geen beschikbaar contact gevonden (er zijn ' . $result['number'] . ' contacten die op een later moment nog gebeld kunnen worden).', 'error');
-      }
-      else {
-        drupal_set_message('Er is geen beschikbaar contact gevonden.', 'error');
-      }
+      drupal_set_message('Log in gebruik te kunnen maken van de spbellen.', 'error');
     }
   }
-  else {
-    drupal_set_message('Log in gebruik te kunnen maken van de spbellen.', 'error');
+  if (!$contact_data) {
+    drupal_goto('/bellen/error');
   }
-  drupal_goto('/bellen/error');
-  return FALSE;
+  return $contact_data;
 }
 
 function spbellen_disassign_target($tid, $last_action_id) {

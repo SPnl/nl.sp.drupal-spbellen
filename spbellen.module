@@ -362,8 +362,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       $form['#attached']['css'] = array(
         drupal_get_path('module', 'spbellen') . '/css/spbellen_webform_form.css',
       );
-      $campaign_id = spbellen_get_campaign_id($nid);
-      $campaign = entity_load_single('campaign', $campaign_id);
+      $campaign = spbellen_get_campaign($nid);
       // Assign target.
       $contact_data = spbellen_assign_target($campaign);
       // Fill data.
@@ -1032,6 +1031,8 @@ function spbellen_contact_block_data() {
     if (!empty($user->uid)) {
       $campaign = spbellen_get_campaign($node->nid);
       $campaign_id = $campaign->id;
+
+      $contact_data = spbellen_assign_target($campaign);
 
       $query = "SELECT contact_id FROM {spbellen_targets} WHERE occupied = 1 AND campaign_id = :cid AND caller_id = :caller_id";
       $result = db_query($query, array(':cid' => $campaign_id, ':caller_id' => $user->uid))->fetchAssoc();
