@@ -1110,6 +1110,7 @@ function spbellen_action_translate() {
     'answered_call_back' => 'Telefoon opgenomen, terugbellen.',
     'call_appointment' => 'Terugbelafspraak gemaakt.',
     'answered_blacklist' => 'Niet meer bellen.',
+    'skipped' => 'Overgeslagen',
   );
 }
 
