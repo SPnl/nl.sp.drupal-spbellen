@@ -120,6 +120,11 @@ function spbellen_csv_import_batch_process_row($row_number, $row, $storage) {
       $value = preg_replace('@\D@', '', $value);
     }
 
+    // Create note value.
+    if ($selected_beltool_field === 'notes') {
+      $value = serialize(array($value));
+    }
+
     // Check if component is required, and has value, else, skip row.
     if ($value == '') {
       if (in_array($selected_beltool_field, array(
