@@ -22,10 +22,11 @@ function spbellen_get_call_back_list_data() {
   $campaigns = spbellen_get_campaigns();
   foreach ($campaigns as $campaign) {
     if (!empty($campaign->webform_id) && $campaign->disabled == 0) {
-      $query = "SELECT ta.id as target_id, ta.campaign_id as campaign_id, call_back_time, display_name, phone FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE result = 'call_appointment' AND call_back_priority = 1 AND attempts < 10 AND bl.contact_id IS NULL AND campaign_id = :cid AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, attempts ASC, date ASC";
+      $query = "SELECT ta.id as target_id, ta.campaign_id as campaign_id, call_back_time, display_name, phone FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE result = 'call_appointment' AND call_back_priority = 1 AND attempts < 10 AND bl.contact_id IS NULL AND campaign_id = :cid AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) AND call_back_time  > :last_month_time ORDER BY call_back_time ASC, attempts ASC, date ASC";
       $call_back_data = db_query($query, array(
         ':cid' => $campaign->id,
         ':occupied_time' => time() - 1800,
+        ':last_month_time' => time() - (14 * 24 * 60 * 60),
       ));
       if ($call_back_data) {
         while ($call_back = $call_back_data->fetchAssoc()) {
