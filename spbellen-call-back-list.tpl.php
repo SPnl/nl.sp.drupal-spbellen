@@ -17,7 +17,7 @@
         <td><?php print format_date($call_back_data['call_back_time'], 'long'); ?></td>
         <td><?php print $call_back_data['display_name']; ?></td>
         <td><?php print $call_back_data['phone']; ?></td>
-        <td><a href="<?php print '/admin/bellen/coach/call_back/' . $call_back_data['target_id']; ?>" target="_blank">nu bellen</a></td>
+        <td><a href="<?php print '/admin/beltool/coach/call_back/' . $call_back_data['target_id']; ?>" target="_blank">nu bellen</a></td>
       </tr>
     <?php endforeach; ?>
   <?php endforeach; ?>
