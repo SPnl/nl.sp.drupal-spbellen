@@ -380,12 +380,12 @@ function theme_spbellen_campaign_form($variables) {
       if ($key === 'import_settings') {
         $output .= '<div class="form-item"><label>Belprioriteit</label>';
         $output .= $import_settings_table;
-        $output .= '<div class="description"><ul><li>Sleep imports omhoog of omlaag om de belprioriteit aan te passen. Contacten van een import met een hogere prio worden eerst gebeld, ook al zijn er contacten in andere imports die minder vaak gebeld zijn. Wil je verschillende imports gelijke prio geven zodat contacten die minder vaak gebeld zijn altijd prio krijgen boven contacten die vaker gebeld zijn, klik dan op de link "Gewicht van rijen tonen" en stel alle gewichten in op een gelijke waarde.</li><li>Contacen in een niet actieve import worden niet gebeld, behalve als ze ook nog in een andere actieve import zitten.</li><li>Contacten in een geblokkeerde import worden niet gebeld, ook niet als ze ook nog in een andere actieve import zitten.</li></ul></div></div>';
+        $output .= '<div class="description"><ul><li>Pas het gewicht van imports aan om de belprioriteit te wijzigen. Contacten van een import met een lager gewicht worden eerst gebeld, ook al zijn er contacten in andere imports die minder vaak gebeld zijn. Geef imports een gelijk gewicht als je wilt dat contacten uit die imports die minder vaak gebeld zijn altijd prio krijgen boven contacten die vaker gebeld zijn.</li><li>Contacen in een niet actieve import worden niet gebeld, behalve als ze ook nog in een andere actieve import zitten.</li><li>Contacten in een geblokkeerde import worden niet gebeld, ook niet als ze ook nog in een andere actieve import zitten.</li></ul></div></div>';
       }
     }
   }
   if (!empty($table_id)) {
-    drupal_add_tabledrag($table_id, 'order', 'sibling', 'import-setting-weight');
+    //drupal_add_tabledrag($table_id, 'order', 'sibling', 'import-setting-weight');
   }
   return $output;
 }
