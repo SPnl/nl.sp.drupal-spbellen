@@ -12,7 +12,7 @@
 ?>
 
 <?php if(!empty($general_stats)) : ?>
-  <h3><?php print($general_stats['title']); ?></h3>
+  <h3>Algemene statistieken</h3>
   <table style="width: auto">
     <tr>
       <th></th><th>aantal</th><th>percentage</th>

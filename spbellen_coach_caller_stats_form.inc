@@ -15,6 +15,11 @@ function spbellen_caller_stats_form($form, &$form_state) {
   $form['#prefix'] = '<div id="spbellen_ajax_form">';
   $form['#suffix'] = '</div>';
 
+  // Attach css.
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'spbellen') . '/css/spbellen_caller_stats.css',
+  );
+
   $campaign_list = spbellen_get_campaigns_list();
   $form['campaign'] = array(
     '#type' => 'select',
