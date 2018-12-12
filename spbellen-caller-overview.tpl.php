@@ -12,8 +12,8 @@
 ?>
 
 <?php if(!empty($general_stats_caller)) : ?>
-  <h3><?php print($general_stats_caller_campaign['campaign_title']); ?></h3>
-  <h3><?php print($general_stats_caller['caller_display_name']); ?></h3>
+  <h2><?php print($general_stats_caller_campaign['campaign_title']); ?></h2>
+  <h2><?php print($general_stats_caller['caller_display_name']); ?></h2>
   <p><br/></p>
   <h3>Algemene statistieken</h3>
   <table style="width: auto">
