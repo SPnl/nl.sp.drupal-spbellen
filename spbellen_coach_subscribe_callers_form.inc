@@ -1,7 +1,6 @@
 <?php
 
 function spbellen_coach_subscribe_callers_form($form, &$form_state) {
-  form_load_include($form_state, 'inc', 'spbellen', 'spbellen_coach_form');
 
   $storage = !empty($form_state['storage']) ? $form_state['storage'] : array();
 

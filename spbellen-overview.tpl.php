@@ -11,7 +11,7 @@
  */
 ?>
 
-<?php if(!empty($campaign_stats)) : ?>
+<?php if(!empty($general_stats)) : ?>
   <h3><?php print($general_stats['title']); ?></h3>
   <table style="width: auto">
     <tr>

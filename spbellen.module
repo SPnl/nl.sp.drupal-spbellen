@@ -1,6 +1,7 @@
 <?php
 
 /**
+ * @file
  * Beltool module file.
  */
 
@@ -69,10 +70,20 @@ function spbellen_menu() {
     'access arguments' => array('spbellen administer callers'),
   );
 
+  $items['admin/beltool/coach/caller_stats'] = array(
+    'title' => 'Beller stats',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('spbellen_caller_stats_form'),
+    'file' => 'spbellen_coach_caller_stats_form.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => '2',
+    'access arguments' => array('spbellen administer callers'),
+  );
+
   $items['admin/beltool/coach/call_back_list'] = array(
     'title' => 'Terugbellen contacten',
     'type' => MENU_LOCAL_TASK,
-    'weight' => '2',
+    'weight' => '3',
     'access arguments' => array('spbellen administer callers'),
     'page callback' => 'spbellen_call_back_list',
     'file' => 'spbellen_call_back.inc',
@@ -895,6 +906,15 @@ function spbellen_theme($existing, $type, $theme, $path) {
   );
   $registry['spbellen_overview_theme'] = array(
     'template' => 'spbellen-overview',
+    'variables' => $variables,
+  );
+
+  // Coach caller overview.
+  $variables = array(
+    'general_stats',
+  );
+  $registry['spbellen_caller_overview_theme'] = array(
+    'template' => 'spbellen-caller-overview',
     'variables' => $variables,
   );
 
