@@ -25,47 +25,47 @@
     </tr>
     <tr>
       <td width="200">Afgerond</td>
-      <td width="1" style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller['completed']; ?></td>
+      <td width="1"><?php print $general_stats_caller['completed']; ?></td>
       <td><?php print $general_stats_caller['completed_percentage']; ?>%</td>
-      <td width="1" style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller_campaign['completed']; ?></td>
+      <td width="1"><?php print $general_stats_caller_campaign['completed']; ?></td>
       <td><?php print $general_stats_caller_campaign['completed_percentage']; ?>%</td>
-      <td width="1" style="border-left: 1px solid #bebfb9"><?php print $general_stats_campaign['completed']; ?></td>
+      <td width="1"><?php print $general_stats_campaign['completed']; ?></td>
       <td><?php print $general_stats_campaign['completed_percentage']; ?>%</td>
     </tr>
     <tr>
       <td>Terugbellen</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller['call_back']; ?></td>
+      <td><?php print $general_stats_caller['call_back']; ?></td>
       <td><?php print $general_stats_caller['call_back_percentage']; ?>%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller_campaign['call_back']; ?></td>
+      <td><?php print $general_stats_caller_campaign['call_back']; ?></td>
       <td><?php print $general_stats_caller_campaign['call_back_percentage']; ?>%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_campaign['call_back']; ?></td>
+      <td><?php print $general_stats_campaign['call_back']; ?></td>
       <td><?php print $general_stats_campaign['call_back_percentage']; ?>%</td>
     </tr>
     <tr>
       <td>Verkeerd nummer</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller['wrong_number']; ?></td>
+      <td><?php print $general_stats_caller['wrong_number']; ?></td>
       <td><?php print $general_stats_caller['wrong_number_percentage']; ?>%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller_campaign['wrong_number']; ?></td>
+      <td><?php print $general_stats_caller_campaign['wrong_number']; ?></td>
       <td><?php print $general_stats_caller_campaign['wrong_number_percentage']; ?>%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_campaign['wrong_number']; ?></td>
+      <td><?php print $general_stats_campaign['wrong_number']; ?></td>
       <td><?php print $general_stats_campaign['wrong_number_percentage']; ?>%</td>
     </tr>
     <tr>
       <td>Nooit meer bellen</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller['blacklisted']; ?></td>
+      <td><?php print $general_stats_caller['blacklisted']; ?></td>
       <td><?php print $general_stats_caller['blacklisted_percentage']; ?>%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller_campaign['blacklisted']; ?></td>
+      <td><?php print $general_stats_caller_campaign['blacklisted']; ?></td>
       <td><?php print $general_stats_caller_campaign['blacklisted_percentage']; ?>%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_campaign['blacklisted']; ?></td>
+      <td><?php print $general_stats_campaign['blacklisted']; ?></td>
       <td><?php print $general_stats_campaign['blacklisted_percentage']; ?>%</td>
     </tr>
     <tr>
       <td>Totaal</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller['total']; ?></td>
+      <td><?php print $general_stats_caller['total']; ?></td>
       <td>100%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_caller_campaign['total']; ?></td>
+      <td><?php print $general_stats_caller_campaign['total']; ?></td>
       <td><?php print $general_stats_caller_campaign['total_percentage']; ?>%</td>
-      <td style="border-left: 1px solid #bebfb9"><?php print $general_stats_campaign['total']; ?></td>
+      <td><?php print $general_stats_campaign['total']; ?></td>
       <td><?php print $general_stats_campaign['total_percentage']; ?>%</td>
     </tr>
   </table>
@@ -85,9 +85,9 @@
       <?php foreach ($data['options'] as $key => $option) : ?>
         <tr>
           <td width="200"><?php print($option); ?></td>
-          <td width="1" style="border-left: 1px solid #bebfb9"><?php print($data['stats'][$key]); ?></td>
+          <td width="1"><?php print($data['stats'][$key]); ?></td>
           <td><?php print($data['stats'][$key. '_percentage']); ?>%</td>
-          <td width="1" style="border-left: 1px solid #bebfb9"><?php print($result_stats_campaign['components'][$cid]['stats'][$key]); ?></td>
+          <td width="1"><?php print($result_stats_campaign['components'][$cid]['stats'][$key]); ?></td>
           <td><?php print($result_stats_campaign['components'][$cid]['stats'][$key . '_percentage']); ?>%</td>
         </tr>
       <?php endforeach; ?>
