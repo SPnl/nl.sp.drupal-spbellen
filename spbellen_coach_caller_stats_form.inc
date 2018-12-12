@@ -48,7 +48,7 @@ function spbellen_caller_stats_form($form, &$form_state) {
       ),
     );
 
-    if (!empty($options[$values['caller']])) {
+    if (!empty($values['caller']) && !empty($options[$values['caller']])) {
       $caller_id = spbellen_parse_id_from_select_value($values['caller']);
 
       $general_stats_caller = spbellen_get_general_stats($caller_id, NULL);

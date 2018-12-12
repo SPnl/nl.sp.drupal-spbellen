@@ -1470,8 +1470,8 @@ function spbellen_get_callers_list() {
  */
 function spbellen_get_campaign_callers($campaign_id) {
   $callers = array();
-  $query = "SELECT ca.caller_id, ca.display_name, us.mail FROM {spbellen_caller} ca INNER JOIN {users} us ON ca.caller_id = us.uid INNER JOIN spbellen_action ac ON ac.caller_id = ca.caller_id INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.campaign_id = :campaign_id AND (ca.display_name LIKE :search_string OR us.mail LIKE :search_string)";
-  $result = db_query($query, array(':campaign_id' => $campaign_id, ':search_string' => "%$search_string%"));
+  $query = "SELECT ca.caller_id, ca.display_name, us.mail FROM {spbellen_caller} ca INNER JOIN {users} us ON ca.caller_id = us.uid INNER JOIN spbellen_action ac ON ac.caller_id = ca.caller_id INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.campaign_id = :campaign_id";
+  $result = db_query($query, array(':campaign_id' => $campaign_id));
   if ($result) {
     while ($row = $result->fetchAssoc()) {
       $id = check_plain($row['display_name']) . ',  ' . check_plain($row['mail']) . ' (' . $row['caller_id'] . ')';
