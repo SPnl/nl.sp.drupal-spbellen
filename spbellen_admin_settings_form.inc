@@ -1,6 +1,30 @@
 <?php
 
 function spbellen_settings_form($form, &$form_state) {
+
+  $form['spbellen_general_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Algemene instellingen',
+  );
+  $options = array(
+    '1' => '1',
+    '2' => '2',
+    '3' => '3',
+    '4' => '4',
+    '5' => '5',
+    '6' => '6',
+    '7' => '7',
+    '8' => '8',
+    '9' => '9',
+    '10' => '10',
+  );
+  $form['spbellen_general_settings']['spbellen_max_attempts'] = array(
+    '#title' => 'Maximaal aantal belpogingen',
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => variable_get('spbellen_max_attempts', '5'),
+  );
+
   // Click2dial Voclarion settings.
   $form['spbellen_click2dial'] = array(
     '#type' => 'fieldset',
