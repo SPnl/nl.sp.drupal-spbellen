@@ -49,6 +49,9 @@ function spbellen_caller_stats_form($form, &$form_state) {
     );
 
     if (!empty($values['caller']) && !empty($options[$values['caller']])) {
+      if (!empty($form_state['last_caller']) && $form_state['last_caller'] != $values['caller']) {
+        unset($values['call_date']);
+      }
       $caller_id = spbellen_parse_id_from_select_value($values['caller']);
 
       $call_dates = spbellen_get_call_dates($campaign_id, $caller_id);
@@ -56,29 +59,25 @@ function spbellen_caller_stats_form($form, &$form_state) {
         '#title' => 'Datum',
         '#type' => 'select',
         '#options' => $call_dates,
+        '#empty_option' => 'Kies:',
         '#ajax' => array(
           'wrapper' => 'spbellen_ajax_form',
           'callback' => 'spbellen_form_ajax_callback',
         ),
       );
 
-      if (empty($values['call_date'])) {
-        $call_date = reset($call_dates);
-      }
-      else {
-        $call_date = $values['call_date'];
-      }
-      $call_date = $values['call_date'];
+      $call_date = !empty($values['call_date']) ? $values['call_date'] : '';
 
       $general_stats_caller = spbellen_get_caller_general_stats($caller_id, NULL);
       $general_stats_campaign = spbellen_get_caller_general_stats(NULL, $campaign_id);
       $general_stats_caller_campaign = spbellen_get_caller_general_stats($caller_id, $campaign_id);
-      $general_stats_campaign_date = spbellen_get_caller_general_stats(NULL, $campaign_id, $call_date);
-      $general_stats_caller_campaign_date = spbellen_get_caller_general_stats($caller_id, $campaign_id, $call_date);
+      $general_stats_campaign_date = empty($call_date) ? '' : spbellen_get_caller_general_stats(NULL, $campaign_id, $call_date);
+      $general_stats_caller_campaign_date = empty($call_date) ? '' : spbellen_get_caller_general_stats($caller_id, $campaign_id, $call_date);
       $result_stats_campaign = spbellen_get_campaign_result_stats(NULL, $campaign_id);
       $result_stats_caller_campaign = spbellen_get_campaign_result_stats($caller_id, $campaign_id);
-      $result_stats_campaign_date = spbellen_get_campaign_result_stats(NULL, $campaign_id, $call_date);
-      $result_stats_caller_campaign_date = spbellen_get_campaign_result_stats($caller_id, $campaign_id, $call_date);
+      $result_stats_campaign_date = empty($call_date) ? '' : spbellen_get_campaign_result_stats(NULL, $campaign_id, $call_date);
+      $result_stats_caller_campaign_date = empty($call_date) ? '' : spbellen_get_campaign_result_stats($caller_id, $campaign_id, $call_date);
+
       $variables = array(
         'general_stats_caller' => $general_stats_caller,
         'general_stats_campaign' => $general_stats_campaign,
@@ -97,5 +96,6 @@ function spbellen_caller_stats_form($form, &$form_state) {
       );
     }
   }
+  $form_state['last_caller'] = $values['caller'];
   return $form;
 }

@@ -1373,7 +1373,7 @@ function spbellen_get_callers_list() {
  */
 function spbellen_get_campaign_callers($campaign_id) {
   $callers = array();
-  $query = "SELECT ca.caller_id, ca.display_name, us.mail FROM {spbellen_caller} ca INNER JOIN {users} us ON ca.caller_id = us.uid INNER JOIN spbellen_action ac ON ac.caller_id = ca.caller_id INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.campaign_id = :campaign_id";
+  $query = "SELECT ca.caller_id, ca.display_name, us.mail FROM {spbellen_caller} ca INNER JOIN {users} us ON ca.caller_id = us.uid INNER JOIN spbellen_action ac ON ac.caller_id = ca.caller_id INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.campaign_id = :campaign_id AND ta.state = 1";
   $result = db_query($query, array(':campaign_id' => $campaign_id));
   if ($result) {
     while ($row = $result->fetchAssoc()) {
@@ -1600,7 +1600,7 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
  */
 function spbellen_get_call_dates($campaign_id, $caller_id) {
   if (!empty($caller_id) && !empty($caller_id)) {
-    $query = "SELECT DISTINCT(DATE(FROM_UNIXTIME(timestamp))) as calldate FROM spbellen_action ac JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND campaign_id = :campaign_id ORDER BY timestamp DESC";
+    $query = "SELECT DISTINCT(DATE(FROM_UNIXTIME(timestamp))) as calldate FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.state = 1 AND ac.caller_id = :caller_id AND campaign_id = :campaign_id ORDER BY timestamp DESC";
     $result = db_query($query, array(':campaign_id' => $campaign_id, ':caller_id' => $caller_id));
     if ($result) {
       $dates = $result->FetchAllKeyed(0, 0);
