@@ -129,6 +129,26 @@
       <?php endif; ?>
     </tr>
     <tr>
+      <td>Totaal (exclusief niet opgenomen)</td>
+      <td class="numeric"><?php print $general_stats_caller['total']; ?></td>
+      <td class="numeric">100%</td>
+      <td></td>
+      <td class="numeric"><?php print $general_stats_caller_campaign['total']; ?></td>
+      <td class="numeric"><?php print $general_stats_caller_campaign['total_percentage']; ?>%</td>
+      <td></td>
+      <td class="numeric"><?php print $general_stats_campaign['total']; ?></td>
+      <td class="numeric"><?php print $general_stats_campaign['total_percentage']; ?>%</td>
+      <td></td>
+      <?php if (!empty($general_stats_caller_campaign_date)) : ?>
+        <td class="numeric" width="1"><?php print $general_stats_caller_campaign_date['total']; ?></td>
+        <td class="numeric" width="1"><?php print $general_stats_caller_campaign_date['total_percentage']; ?>%</td>
+        <td></td>
+        <td class="numeric" width="1"><?php print $general_stats_campaign_date['total']; ?></td>
+        <td class="numeric" width="1"><?php print $general_stats_campaign_date['total_percentage']; ?>%</td>
+        <td></td>
+      <?php endif; ?>
+    </tr>
+    <tr>
       <td width="200">Niet opgenomen</td>
       <td class="numeric" width="1"><?php print $general_stats_caller['not_answered']; ?></td>
       <td class="numeric" width="1"><?php print $general_stats_caller['not_answered_percentage']; ?>%</td>
@@ -145,26 +165,6 @@
         <td></td>
         <td class="numeric" width="1"><?php print $general_stats_campaign_date['not_answered']; ?></td>
         <td class="numeric" width="1"><?php print $general_stats_campaign_date['not_answered_percentage']; ?>%</td>
-        <td></td>
-      <?php endif; ?>
-    </tr>
-    <tr>
-      <td>Totaal</td>
-      <td class="numeric"><?php print $general_stats_caller['total']; ?></td>
-      <td class="numeric">100%</td>
-      <td></td>
-      <td class="numeric"><?php print $general_stats_caller_campaign['total']; ?></td>
-      <td class="numeric"><?php print $general_stats_caller_campaign['total_percentage']; ?>%</td>
-      <td></td>
-      <td class="numeric"><?php print $general_stats_campaign['total']; ?></td>
-      <td class="numeric"><?php print $general_stats_campaign['total_percentage']; ?>%</td>
-      <td></td>
-      <?php if (!empty($general_stats_caller_campaign_date)) : ?>
-        <td class="numeric" width="1"><?php print $general_stats_caller_campaign_date['total']; ?></td>
-        <td class="numeric" width="1"><?php print $general_stats_caller_campaign_date['total_percentage']; ?>%</td>
-        <td></td>
-        <td class="numeric" width="1"><?php print $general_stats_campaign_date['total']; ?></td>
-        <td class="numeric" width="1"><?php print $general_stats_campaign_date['total_percentage']; ?>%</td>
         <td></td>
       <?php endif; ?>
     </tr>

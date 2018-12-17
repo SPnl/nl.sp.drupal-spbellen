@@ -96,6 +96,8 @@ function spbellen_caller_stats_form($form, &$form_state) {
       );
     }
   }
-  $form_state['last_caller'] = $values['caller'];
+  if (!empty($values['caller'])) {
+    $form_state['last_caller'] = $values['caller'];
+  }
   return $form;
 }
