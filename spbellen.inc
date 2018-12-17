@@ -1131,105 +1131,6 @@ function spbellen_get_contact_data($contact_id) {
   return $contact_data;
 }
 
-function spbellen_get_all_stats() {
-  $stats = &drupal_static(__FUNCTION__);
-  if (!isset($stats)) {
-    $stats = array();
-    // Add campaign stats.
-    $campaigns = spbellen_get_campaigns();
-    if (!empty($campaigns)) {
-      foreach ($campaigns as $campaign_id => $campaign) {
-        $stats['campaign_stats'][$campaign_id] = spbellen_get_campaign_stats($campaign_id);
-      }
-    }
-    // Add general stats.
-    $stats['general_stats'] = spbellen_get_general_stats();
-  }
-  return $stats;
-}
-
-function spbellen_get_general_stats($caller_id = NULL, $campaign_id = NULL) {
-  $stats = array();
-  $vars = array();
-  $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1";
-  if (!empty($caller_id)) {
-    $query .= ' AND ac.caller_id = :caller_id';
-    $vars[':caller_id'] = $caller_id;
-  }
-  if (!empty($campaign_id)) {
-    $query .= ' AND ta.campaign_id = :campaign_id';
-    $vars[':campaign_id'] = $campaign_id;
-  }
-  $result = db_query($query, $vars);
-  $record = $result->fetchAssoc();
-  if (!empty($campaign_id && empty($caller_id))) {
-    $record['total'] = $record['total'] - $record['not_contacted'];
-  }
-  foreach ($record as $key => $value) {
-    $stats[$key] = empty($value) ? 0 : $value;
-    if ($record['total'] != 0) {
-      if ($key === 'not_contacted') {
-        $stats[$key.'_percentage'] = round(100 * $value / $record['total']);
-      }
-      else {
-        $stats[$key.'_percentage'] = round(100 * $value / $record['total']);
-      }
-    }
-    else {
-      $stats[$key.'_percentage'] = 0;
-    }
-  }
-  if (!empty($caller_id)) {
-    $caller = entity_load_single('caller', $caller_id);
-    $stats['caller_display_name'] = $caller->display_name;
-  }
-  if (!empty($campaign_id)) {
-    $campaign = entity_load_single('campaign', $campaign_id);
-    $stats['campaign_title'] = $campaign->title;
-  }
-  return $stats;
-}
-
-function spbellen_get_campaign_stats($campaign_id, $afdeling_id = NULL, $caller_id = NULL) {
-  $stats = &drupal_static(__FUNCTION__);
-  if (!isset($stats['campaign_id'])) {
-    $stats = array();
-    $campaign = entity_load_single('campaign', $campaign_id);
-    $webform = entity_load_single('node', $campaign->webform_id);
-    foreach (array(
-      'all' => '',
-      'only_active' => ' AND ta.id IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.state = 1) AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.block = 1)',
-    ) as $type => $query_part) {
-      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id AND ta.state = 1" . $query_part;
-      $vars = array(
-        ':campaign_id' => $campaign_id,
-      );
-      if (!empty($afdeling_id)) {
-        $query .= ' AND da.afdeling_id = :afdeling_id';
-        $vars[':afdeling_id'] = $afdeling_id;
-      }
-      if (!empty($caller_id)) {
-        $query .= ' AND ac.caller_id = :caller_id';
-        $vars[':caller_id'] = $caller_id;
-      }
-      $result = db_query($query, $vars);
-      $record = $result->fetchAssoc();
-      foreach ($record as $key => $value) {
-        $stats[$campaign_id][$type][$key] = empty($value) ? 0 : $value;
-        if ($record['total'] != 0) {
-          $stats[$campaign_id][$type][$key . '_percentage'] = round(100 * $value / $record['total']);
-        }
-        else {
-          $stats[$campaign_id][$type][$key . '_percentage'] = 0;
-        }
-      }
-      $stats[$campaign_id]['title'] = $webform->title;
-      $stats[$campaign_id]['webform_id'] = $campaign->webform_id;
-    }
-  }
-  return $stats[$campaign_id];
-}
-
 function spbellen_get_active_campaign() {
   if (arg(0) == 'node' && is_numeric(arg(1))) {
     $nid = arg(1);
@@ -1498,11 +1399,130 @@ function spbellen_caller_campaign_search_autocomplete($caller_id, $search_string
   return drupal_json_output($campaign_list);
 }
 
+function spbellen_get_all_stats() {
+  $stats = &drupal_static(__FUNCTION__);
+  if (!isset($stats)) {
+    $stats = array();
+    // Add campaign stats.
+    $campaigns = spbellen_get_campaigns();
+    if (!empty($campaigns)) {
+      foreach ($campaigns as $campaign_id => $campaign) {
+        $stats['campaign_stats'][$campaign_id] = spbellen_get_campaign_stats($campaign_id);
+      }
+    }
+    // Add general stats.
+    $stats['general_stats'] = spbellen_get_general_stats();
+  }
+  return $stats;
+}
+
+function spbellen_get_general_stats() {
+  $stats = &drupal_static(__FUNCTION__);
+  if (!isset($stats)) {
+    $stats = array();
+    $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.state = 1;";
+    $result = db_query($query);
+    $record = $result->fetchAssoc();
+    foreach ($record as $key => $value) {
+      $stats[$key] = empty($value) ? 0 : $value;
+      if ($record['total'] != 0) {
+        if ($key === 'not_contacted') {
+          $stats[$key.'_percentage'] = ceil(100 * $value / $record['total']);
+        }
+        else {
+          $stats[$key.'_percentage'] = floor(100 * $value / $record['total']);
+        }
+      }
+      else {
+        $stats[$key.'_percentage'] = 0;
+      }
+    }
+    $stats['title'] = 'Algemene statistieken';
+  }
+  return $stats;
+}
+
+function spbellen_get_campaign_stats($campaign_id, $afdeling_id = NULL) {
+  $stats = &drupal_static(__FUNCTION__);
+  if (!isset($stats['campaign_id'])) {
+    $stats = array();
+    $campaign = entity_load_single('campaign', $campaign_id);
+    $webform = entity_load_single('node', $campaign->webform_id);
+    foreach (array(
+      'all' => '',
+      'only_active' => ' AND ta.id IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.state = 1) AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.block = 1)',
+    ) as $type => $query_part) {
+      $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id AND ta.state = 1" . $query_part;
+      $vars = array(
+        ':campaign_id' => $campaign_id,
+      );
+      if (!empty($afdeling_id)) {
+        $query .= ' AND da.afdeling_id = :afdeling_id';
+        $vars[':afdeling_id'] = $afdeling_id;
+      }
+      $result = db_query($query, $vars);
+      $record = $result->fetchAssoc();
+      foreach ($record as $key => $value) {
+        $stats[$campaign_id][$type][$key] = empty($value) ? 0 : $value;
+        if ($record['total'] != 0) {
+          $stats[$campaign_id][$type][$key . '_percentage'] = round(100 * $value / $record['total']);
+        }
+        else {
+          $stats[$campaign_id][$type][$key . '_percentage'] = 0;
+        }
+      }
+      $stats[$campaign_id]['title'] = $webform->title;
+      $stats[$campaign_id]['webform_id'] = $campaign->webform_id;
+    }
+  }
+  return $stats[$campaign_id];
+}
+
+function spbellen_get_caller_general_stats($caller_id = NULL, $campaign_id = NULL, $call_date = NULL) {
+  $stats = array();
+  $vars = array();
+  $query = "SELECT COUNT(*) total, SUM(result = 'call_back') call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'skipped') skipped, SUM(result = 'answered_blacklist') blacklisted, SUM(result = 'answered_call_back') answered_call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'answered_completed') answered_completed, SUM(result = 'wrong_number') wrong_number, SUM(result = 'call_appointment') call_appointment FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.last_action_id = ac.id WHERE ta.state = 1";
+  if (!empty($caller_id)) {
+    $query .= ' AND ac.caller_id = :caller_id';
+    $vars[':caller_id'] = $caller_id;
+  }
+  if (!empty($campaign_id)) {
+    $query .= ' AND ta.campaign_id = :campaign_id';
+    $vars[':campaign_id'] = $campaign_id;
+  }
+  if (!empty($call_date)) {
+    $query .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
+    $vars[':call_date'] = $call_date;
+  }
+  $result = db_query($query, $vars);
+  $record = $result->fetchAssoc();
+  foreach ($record as $key => $value) {
+    $stats[$key] = empty($value) ? 0 : $value;
+    if ($record['total'] != 0) {
+      $stats[$key.'_percentage'] = round(100 * $value / $record['total']);
+    }
+    else {
+      $stats[$key.'_percentage'] = 0;
+    }
+  }
+  if (!empty($caller_id)) {
+    $caller = entity_load_single('caller', $caller_id);
+    $stats['caller_display_name'] = $caller->display_name;
+  }
+  if (!empty($campaign_id)) {
+    $campaign = entity_load_single('campaign', $campaign_id);
+    $stats['campaign_title'] = $campaign->title;
+  }
+  if (!empty($call_date)) {
+    $stats['call_date'] = $call_date;
+  }
+  return $stats;
+}
 
 /**
  * Get caller campaigns stats.
  */
-function spbellen_get_campaign_result_stats($caller_id = NULL, $campaign_id) {
+function spbellen_get_campaign_result_stats($caller_id = NULL, $campaign_id, $call_date = NULL) {
   $stats = array();
   $campaign = entity_load_single('campaign', $campaign_id);
   $webform_id = $campaign->webform_id;
@@ -1514,7 +1534,7 @@ function spbellen_get_campaign_result_stats($caller_id = NULL, $campaign_id) {
       $extra = unserialize($row['extra']);
       $items = $extra['items'];
       $options = spbellen_parse_webform_component_option_items($items);
-      $result_stats = spbellen_get_caller_result_stats($caller_id, $campaign_id, $row['cid'], $options);
+      $result_stats = spbellen_get_caller_result_stats($caller_id, $campaign_id, $call_date, $row['cid'], $options);
       $options['empty'] = 'Niet ingevuld';
       $options['total'] = 'Totaal';
       $stats['components'][$row['cid']] = array(
@@ -1525,13 +1545,16 @@ function spbellen_get_campaign_result_stats($caller_id = NULL, $campaign_id) {
       );
     }
   }
+  if (!empty($call_date)) {
+    $stats['call_date'] = $call_date;
+  }
   return $stats;
 }
 
 /**
  * Get caller campaign result stats.
  */
-function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $cid, $options) {
+function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call_date = NULL, $cid, $options) {
   $stats = array();
   // Create query.
   $query = 'SELECT ';
@@ -1550,6 +1573,11 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $cid,
     $query .= " AND ac.caller_id = :caller_id";
     $vars[':caller_id'] = $caller_id;
   }
+  if (!empty($call_date)) {
+    $query .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
+    $vars[':call_date'] = $call_date;
+  }
+
   $results = db_query($query, $vars);
 
   if ($results) {
@@ -1557,12 +1585,26 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $cid,
     foreach ($result as $key => $value) {
       $stats[$key] = empty($value) ? 0 : $value;
       if ($result['total'] != 0) {
-        $stats[$key.'_percentage'] = round(100 * $value / $result['total']);
+        $stats[$key . '_percentage'] = round(100 * $value / $result['total']);
       }
       else {
-        $stats[$key.'_percentage'] = 0;
+        $stats[$key . '_percentage'] = 0;
       }
     }
   }
   return $stats;
+}
+
+/**
+ * Get last called date for caller.
+ */
+function spbellen_get_call_dates($campaign_id, $caller_id) {
+  if (!empty($caller_id) && !empty($caller_id)) {
+    $query = "SELECT DISTINCT(DATE(FROM_UNIXTIME(timestamp))) as calldate FROM spbellen_action ac JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND campaign_id = :campaign_id ORDER BY timestamp DESC";
+    $result = db_query($query, array(':campaign_id' => $campaign_id, ':caller_id' => $caller_id));
+    if ($result) {
+      $dates = $result->FetchAllKeyed(0, 0);
+      return $dates;
+    }
+  }
 }
