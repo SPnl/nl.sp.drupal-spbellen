@@ -91,6 +91,25 @@
           <?php endif; ?>
         </tr>
         <tr>
+          <td>Overgeslagen</td>
+          <td class="numeric"><?php print $general_stats_caller[$caller_id]['skipped']; ?></td>
+          <td class="numeric"><?php print $general_stats_caller[$caller_id]['skipped_percentage']; ?>%</td>
+          <td></td>
+          <td class="numeric"><?php print $general_stats_caller_campaign[$caller_id]['skipped']; ?></td>
+          <td class="numeric"><?php print $general_stats_caller_campaign[$caller_id]['skipped_percentage']; ?>%</td>
+          <td></td>
+          <td class="numeric"><?php print $general_stats_campaign['skipped']; ?></td>
+          <td class="numeric"><?php print $general_stats_campaign['skipped_percentage']; ?>%</td>
+          <td></td>
+          <?php if (!empty($general_stats_caller_campaign_date)) : ?>
+            <td class="numeric" width="1"><?php print $general_stats_caller_campaign_date[$caller_id]['skipped']; ?></td>
+            <td class="numeric" width="1"><?php print $general_stats_caller_campaign_date[$caller_id]['skipped_percentage']; ?>%</td>
+            <td></td>
+            <td class="numeric" width="1"><?php print $general_stats_campaign_date['skipped']; ?></td>
+            <td class="numeric" width="1"><?php print $general_stats_campaign_date['skipped_percentage']; ?>%</td>
+            <td></td>
+          <?php endif; ?>
+        <tr>
           <td>Verkeerd nummer</td>
           <td class="numeric"><?php print $general_stats_caller[$caller_id]['wrong_number']; ?></td>
           <td class="numeric"><?php print $general_stats_caller[$caller_id]['wrong_number_percentage']; ?>%</td>
@@ -109,6 +128,7 @@
             <td class="numeric" width="1"><?php print $general_stats_campaign_date['wrong_number_percentage']; ?>%</td>
             <td></td>
           <?php endif; ?>
+        </tr>
         </tr>
         <tr>
           <td>Nooit meer bellen</td>

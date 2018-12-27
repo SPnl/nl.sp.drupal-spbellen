@@ -67,6 +67,7 @@ function spbellen_caller_stats_form($form, &$form_state) {
     if (empty($values['caller'])) {
       $variables = array(
         'general_stats' => spbellen_get_caller_stats('all', $campaign_id, $call_date),
+        'result_stats' => spbellen_get_result_stats('all', $campaign_id, $call_date),
       );
       $markup = theme('spbellen_callers_overview_theme', $variables);
       $form['callers_stats'] = array(

@@ -1503,43 +1503,28 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
   $result = db_query($query, $vars);
   while ($record = $result->fetchAssoc()) {
     foreach ($record as $key => $value) {
-      if (empty($caller_id)) {
-        if (!in_array($key, array('caller_id', 'name', 'phone'))) {
-          $stats[$key] = empty($value) ? 0 : $value;
-          if ($record['total'] != 0) {
-            if ($key == 'not_answered') {
-              $stats[$key.'_percentage'] = round(100 * $value / $record['total_including_not_answered']);
-            }
-            else {
-              $stats[$key.'_percentage'] = round(100 * $value / $record['total']);
-            }
+      if (!in_array($key, array('caller_id', 'name', 'phone'))) {
+        $data[$key] = empty($value) ? 0 : $value;
+        if ($record['total'] != 0) {
+          if ($key == 'not_answered') {
+            $data[$key . '_percentage'] = round(100 * $value / $record['total_including_not_answered']);
           }
           else {
-            $stats[$key.'_percentage'] = 0;
+            $data[$key . '_percentage'] = round(100 * $value / $record['total']);
           }
         }
         else {
-          $stats[$key] = empty($value) ? '' : $value;
+          $data[$key . '_percentage'] = 0;
         }
       }
       else {
-        if (!in_array($key, array('caller_id', 'name', 'phone'))) {
-          $stats[$record['caller_id']][$key] = empty($value) ? 0 : $value;
-          if ($record['total'] != 0) {
-            if ($key == 'not_answered') {
-              $stats[$record['caller_id']][$key.'_percentage'] = round(100 * $value / $record['total_including_not_answered']);
-            }
-            else {
-              $stats[$record['caller_id']][$key.'_percentage'] = round(100 * $value / $record['total']);
-            }
-          }
-          else {
-            $stats[$record['caller_id']][$key.'_percentage'] = 0;
-          }
-        }
-        else {
-          $stats[$record['caller_id']][$key] = empty($value) ? '' : $value;
-        }
+        $data[$key] = empty($value) ? '' : $value;
+      }
+      if (empty($caller_id)) {
+        $stats = $data;
+      }
+      else {
+        $stats[$record['caller_id']] = $data;
       }
     }
   }
@@ -1596,18 +1581,21 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
   $stats = array();
   // Create query.
   $query = 'SELECT ';
+  if ($caller_id == 'all') {
+    $query .= 'ca.caller_id, ca.display_name, ';
+  }
   foreach ($options as $key => $option) {
     $key_sanitized = preg_replace('/[^a-zA-Z_]/', '', $key);
     $query_parts[] = "SUM(da.data = '" . $key_sanitized . "') AS '" . $key_sanitized . "'";
   }
   $query .= implode(',', $query_parts);
   $query .= ", SUM(da.data NOT IN ('" . implode("','", array_keys($options)) . "')) AS empty";
-  $query .= ", COUNT(*) AS total FROM spbellen_targets ta JOIN spbellen_campaign cam ON ta.campaign_id = cam.id JOIN spbellen_action ac ON ta.id = ac.target_id INNER JOIN webform_submitted_data da ON da.sid = ac.webform_submission_id INNER JOIN spbellen_caller ca ON ac.caller_id = ca.caller_id LEFT JOIN spbellen_blacklist bl ON ta.contact_id = bl.contact_id WHERE da.nid = cam.webform_id AND result = 'answered_completed' AND ta.campaign_id = :campaign_id AND da.cid = :cid AND ta.state = 1 AND bl.contact_id IS NULL";
+  $query .= ", COUNT(*) AS total FROM spbellen_targets ta JOIN spbellen_campaign cam ON ta.campaign_id = cam.id JOIN spbellen_action ac ON ta.id = ac.target_id INNER JOIN webform_submitted_data da ON da.sid = ac.webform_submission_id AND da.cid = :cid INNER JOIN spbellen_caller ca ON ac.caller_id = ca.caller_id LEFT JOIN spbellen_blacklist bl ON ta.contact_id = bl.contact_id WHERE da.nid = cam.webform_id AND result = 'answered_completed' AND ta.campaign_id = :campaign_id AND ta.state = 1 AND bl.contact_id IS NULL";
   $vars = array(
     ':campaign_id' => $campaign_id,
     ':cid' => $cid,
   );
-  if (!empty($caller_id)) {
+  if (!empty($caller_id) && $caller_id != 'all') {
     $query .= " AND ac.caller_id = :caller_id";
     $vars[':caller_id'] = $caller_id;
   }
@@ -1615,18 +1603,29 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
     $query .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
     $vars[':call_date'] = $call_date;
   }
+  if ($caller_id == 'all') {
+    $query .= ' GROUP BY ca.caller_id';
+  }
 
   $results = db_query($query, $vars);
-
   if ($results) {
-    $result = $results->fetchAssoc();
-    foreach ($result as $key => $value) {
-      $stats[$key] = empty($value) ? 0 : $value;
-      if ($result['total'] != 0) {
-        $stats[$key . '_percentage'] = round(100 * $value / $result['total']);
-      }
-      else {
-        $stats[$key . '_percentage'] = 0;
+    while ($row = $results->fetchAssoc()) {
+      foreach ($row as $key => $value) {
+        $data[$key] = empty($value) ? 0 : $value;
+        if (!in_array($key, array('caller_id', 'display_name'))) {
+          if ($row['total'] != 0) {
+            $data[$key . '_percentage'] = round(100 * $value / $row['total']);
+          }
+          else {
+            $data[$key . '_percentage'] = 0;
+          }
+        }
+        if ($caller_id == 'all') {
+          $stats[$row['caller_id']] = $data;
+        }
+        else {
+          $stats = $data;
+        }
       }
     }
   }
