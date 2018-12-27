@@ -917,6 +917,10 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'template' => 'spbellen-caller-overview',
     'variables' => $variables,
   );
+  $registry['spbellen_callers_overview_theme'] = array(
+    'template' => 'spbellen-callers-overview',
+    'variables' => $variables,
+  );
 
   // Call back list.
   $variables = array(

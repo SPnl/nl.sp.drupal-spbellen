@@ -1478,39 +1478,72 @@ function spbellen_get_campaign_stats($campaign_id, $afdeling_id = NULL) {
   return $stats[$campaign_id];
 }
 
-function spbellen_get_caller_general_stats($caller_id = NULL, $campaign_id = NULL, $call_date = NULL) {
+function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call_date = NULL) {
   $stats = array();
   $vars = array();
-  $query = "SELECT COUNT(*) total_including_not_answered, SUM(result != 'not_answered') total, SUM(result = 'call_back') call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'skipped') skipped, SUM(result = 'answered_blacklist') blacklisted, SUM(result = 'answered_call_back') answered_call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'answered_completed') answered_completed, SUM(result = 'wrong_number') wrong_number, SUM(result = 'call_appointment') call_appointment FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE ta.state = 1";
-  if (!empty($caller_id)) {
-    $query .= ' AND ac.caller_id = :caller_id';
+  $select = "ca.caller_id caller_id, ca.display_name name, ca.phone phone, COUNT(*) total_including_not_answered, SUM(result != 'not_answered') total, SUM(result = 'call_back') call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'skipped') skipped, SUM(result = 'answered_blacklist') blacklisted, SUM(result = 'answered_call_back') answered_call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'answered_completed') answered_completed, SUM(result = 'wrong_number') wrong_number, SUM(result = 'call_appointment') call_appointment";
+  $tables = "spbellen_targets ta INNER JOIN spbellen_action ac ON ta.id = ac.target_id INNER JOIN spbellen_caller ca ON ca.caller_id = ac.caller_id";
+  $where = "ta.state = 1";
+  if ($caller_id === 'all') {
+    $conditions = ' GROUP BY ca.caller_id';
+  }
+  if (!empty($caller_id && $caller_id !== 'all')) {
+    $where .= ' AND ac.caller_id = :caller_id';
     $vars[':caller_id'] = $caller_id;
   }
   if (!empty($campaign_id)) {
-    $query .= ' AND ta.campaign_id = :campaign_id';
+    $where .= ' AND ta.campaign_id = :campaign_id';
     $vars[':campaign_id'] = $campaign_id;
   }
   if (!empty($call_date)) {
-    $query .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
+    $where .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
     $vars[':call_date'] = $call_date;
   }
+  $query = 'SELECT ' . $select . ' FROM ' . $tables . ' WHERE ' . $where . $conditions . ' ORDER BY answered_completed DESC';
   $result = db_query($query, $vars);
-  $record = $result->fetchAssoc();
-  foreach ($record as $key => $value) {
-    $stats[$key] = empty($value) ? 0 : $value;
-    if ($record['total'] != 0) {
-      if ($key == 'not_answered') {
-        $stats[$key.'_percentage'] = round(100 * $value / $record['total_including_not_answered']);
+  while ($record = $result->fetchAssoc()) {
+    foreach ($record as $key => $value) {
+      if (empty($caller_id)) {
+        if (!in_array($key, array('caller_id', 'name', 'phone'))) {
+          $stats[$key] = empty($value) ? 0 : $value;
+          if ($record['total'] != 0) {
+            if ($key == 'not_answered') {
+              $stats[$key.'_percentage'] = round(100 * $value / $record['total_including_not_answered']);
+            }
+            else {
+              $stats[$key.'_percentage'] = round(100 * $value / $record['total']);
+            }
+          }
+          else {
+            $stats[$key.'_percentage'] = 0;
+          }
+        }
+        else {
+          $stats[$key] = empty($value) ? '' : $value;
+        }
       }
       else {
-        $stats[$key.'_percentage'] = round(100 * $value / $record['total']);
+        if (!in_array($key, array('caller_id', 'name', 'phone'))) {
+          $stats[$record['caller_id']][$key] = empty($value) ? 0 : $value;
+          if ($record['total'] != 0) {
+            if ($key == 'not_answered') {
+              $stats[$record['caller_id']][$key.'_percentage'] = round(100 * $value / $record['total_including_not_answered']);
+            }
+            else {
+              $stats[$record['caller_id']][$key.'_percentage'] = round(100 * $value / $record['total']);
+            }
+          }
+          else {
+            $stats[$record['caller_id']][$key.'_percentage'] = 0;
+          }
+        }
+        else {
+          $stats[$record['caller_id']][$key] = empty($value) ? '' : $value;
+        }
       }
     }
-    else {
-      $stats[$key.'_percentage'] = 0;
-    }
   }
-  if (!empty($caller_id)) {
+  if (!empty($caller_id) && $caller_id !== 'all') {
     $caller = entity_load_single('caller', $caller_id);
     $stats['caller_display_name'] = $caller->display_name;
   }
@@ -1527,7 +1560,7 @@ function spbellen_get_caller_general_stats($caller_id = NULL, $campaign_id = NUL
 /**
  * Get caller campaigns stats.
  */
-function spbellen_get_campaign_result_stats($caller_id = NULL, $campaign_id, $call_date = NULL) {
+function spbellen_get_result_stats($caller_id = NULL, $campaign_id, $call_date = NULL) {
   $stats = array();
   $campaign = entity_load_single('campaign', $campaign_id);
   $webform_id = $campaign->webform_id;
@@ -1603,10 +1636,21 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
 /**
  * Get last called date for caller.
  */
-function spbellen_get_call_dates($campaign_id, $caller_id) {
-  if (!empty($caller_id) && !empty($caller_id)) {
-    $query = "SELECT DISTINCT(DATE(FROM_UNIXTIME(timestamp))) as calldate FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.state = 1 AND ac.caller_id = :caller_id AND campaign_id = :campaign_id ORDER BY timestamp DESC";
-    $result = db_query($query, array(':campaign_id' => $campaign_id, ':caller_id' => $caller_id));
+function spbellen_get_call_dates($campaign_id, $caller_id = NULL) {
+  if (!empty($campaign_id)) {
+    $query = "SELECT DISTINCT(DATE(FROM_UNIXTIME(timestamp))) as calldate FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id INNER JOIN spbellen_caller ca ON ac.caller_id = ca.caller_id WHERE ta.state = 1 AND campaign_id = :campaign_id";
+    $vars = array(
+      ':campaign_id' => $campaign_id,
+    );
+
+    // Filter caller.
+    if (!empty($caller_id)) {
+      $query .= ' AND ac.caller_id = :caller_id';
+      $vars[':caller_id'] = $caller_id;
+    }
+
+    $query .= ' ORDER BY timestamp DESC';
+    $result = db_query($query, $vars);
     if ($result) {
       $dates = $result->FetchAllKeyed(0, 0);
       return $dates;
