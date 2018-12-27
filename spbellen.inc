@@ -1481,7 +1481,7 @@ function spbellen_get_campaign_stats($campaign_id, $afdeling_id = NULL) {
 function spbellen_get_caller_general_stats($caller_id = NULL, $campaign_id = NULL, $call_date = NULL) {
   $stats = array();
   $vars = array();
-  $query = "SELECT COUNT(*) total_including_not_answered, SUM(result != 'not_answered') total, SUM(result = 'call_back') call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'skipped') skipped, SUM(result = 'answered_blacklist') blacklisted, SUM(result = 'answered_call_back') answered_call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'answered_completed') answered_completed, SUM(result = 'wrong_number') wrong_number, SUM(result = 'call_appointment') call_appointment FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.last_action_id = ac.id WHERE ta.state = 1";
+  $query = "SELECT COUNT(*) total_including_not_answered, SUM(result != 'not_answered') total, SUM(result = 'call_back') call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'skipped') skipped, SUM(result = 'answered_blacklist') blacklisted, SUM(result = 'answered_call_back') answered_call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'answered_completed') answered_completed, SUM(result = 'wrong_number') wrong_number, SUM(result = 'call_appointment') call_appointment FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE ta.state = 1";
   if (!empty($caller_id)) {
     $query .= ' AND ac.caller_id = :caller_id';
     $vars[':caller_id'] = $caller_id;
