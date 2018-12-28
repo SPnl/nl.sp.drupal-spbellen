@@ -1,0 +1,181 @@
+<?php
+
+/**
+ * @file
+ * Webform memberform link button.
+ */
+
+/**
+ * Implements hook_webform_component_info().
+ */
+function memberform_button_webform_component_info() {
+  $components = array();
+
+  $components['mf_button'] = array(
+    'label' => 'Lidworden knop',
+    'description' => 'Voegt een knop toe die linkt naar het lidworden formulier, en de velden die bekend zijn vast invuld.',
+    'features' => array(
+      'analysis' => FALSE,
+      'csv' => TRUE,
+      'required' => TRUE,
+      'memberform_button' => TRUE,
+      'conditional' => TRUE,
+      'title_display' => TRUE,
+      'title_inline' => TRUE,
+      'private' => FALSE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+  );
+
+  return $components;
+}
+
+/**
+ * Implements _webform_defaults_component().
+ */
+function _webform_defaults_mf_button() {
+  return array(
+    'name' => '',
+    'form_key' => NULL,
+    'required' => FALSE,
+    'pid' => 0,
+    'weight' => 0,
+    'extra' => array(
+      'key' => '',
+      'secret' => '',
+      'private' => FALSE,
+      'ref_campaign' => '',
+      'ref_source' => '',
+      'memberform_url' => 'https://spnet.nl/aanmelden/lid',
+    ),
+  );
+}
+
+/**
+ * Implements _webform_edit_component().
+ */
+function _webform_edit_mf_button($component) {
+  $form = array();
+
+  $form['extra']['memberform_url'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Lidworden formulier url',
+    '#default_value' => $component['extra']['memberform_url'],
+  );
+
+  $form['extra']['ref_campaign'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Referentie: campagne',
+    '#default_value' => $component['extra']['ref_campaign'],
+  );
+
+  $form['extra']['ref_source'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Referenctie: bron',
+    '#default_value' => $component['extra']['ref_source'],
+  );
+
+  return $form;
+}
+
+/**
+ * Implements _webform_render_component().
+ */
+function _webform_render_mf_button($component) {
+  $markup = '<a href="https://spnet.nl/aanmelden/lid" target="_blank" class="button">Lidworden formulier</a>';
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $nid = arg(1);
+    if (spbellen_is_spbellen_form($nid)) {
+      $campaign = spbellen_get_campaign($nid);
+      $contact_data = spbellen_assign_target($campaign);
+      if (!empty($contact_data['street_address'])) {
+        $split_address = memberform_button_split_street_and_number($contact_data['street_address']);
+        if ($split_address) {
+          $contact_data['street_address'] = $split_address[1];
+          $split_house_number = memberform_button_split_house_number($split_address[1]);
+          if ($split_house_number) {
+            $contact_data['house_number'] = $split_house_number[1];
+            $contact_data['house_number_addition'] = $split_house_number[2];
+          }
+          else {
+            $contact_data['house_number'] = $split_address[2];
+          }
+        }
+      }
+      $mapping = array(
+        'display_name' => 'page_start_name',
+        'phone' => 'page_start_phone',
+        'email' => 'page_start_email',
+        'street_address' => 'page_address_street',
+        'house_number' => 'page_address_house_number',
+        'house_number_addition' => 'page_address_house_number_addition',
+        'postal_code' => 'page_address_postal_code',
+        'city' => 'page_address_locality',
+      );
+      foreach ($mapping as $contact_data_key => $memberform_element_name) {
+        if (!empty($contact_data[$contact_data_key])) {
+          $params[$memberform_element_name] = $contact_data[$contact_data_key];
+        }
+      }
+      if (!empty($component['extra']['ref_campaign'])) {
+        $params['ref_campaign'] = $component['extra']['ref_campaign'];
+      }
+      if (!empty($component['extra']['ref_source'])) {
+        $params['ref_source'] = $component['extra']['ref_source'];
+      }
+      if (!empty($params)) {
+        $markup = l('Lidworden formulier', $component['extra']['memberform_url'], array('query' => $params, 'attributes' => array('target' => '_blank')));
+      }
+    }
+  }
+  $elements = array(
+    '#markup' => $markup,
+    '#weight' => $component['weight'],
+    '#theme_wrappers' => array('webform_element'),
+    '#webform_component' => $component,
+    '#attached' => array(
+      'css' => array(
+        drupal_get_path('module', 'memberform_button') . '/css/memberform_button.css',
+      ),
+    ),
+  );
+  return $elements;
+}
+
+/**
+ * Split street and number.
+ */
+function memberform_button_split_street_and_number($street_and_number) {
+  $matches = array();
+  // Street and number and addition.
+  $regex = "@^(.+)((?<![0-9])[0-9]+)([^0-9].*)$@";
+  if (!preg_match($regex, $street_and_number, $matches)) {
+    // Only street and number.
+    $regex = "@^(.+)((?<![0-9])[0-9]+)$@";
+    preg_match($regex, $street_and_number, $matches);
+  }
+  if (!empty($matches[2])) {
+    foreach ($matches as $key => $match) {
+      $matches[$key] = trim($match);
+    }
+    return $matches;
+  }
+  return FALSE;
+}
+
+/**
+ * Split house number.
+ */
+function memberform_button_split_house_number($house_number) {
+  $house_number = trim($house_number);
+  $regex = "@^([0-9]+)([^0-9].*)$@";
+  if (preg_match($regex, $house_number, $matches)) {
+    $matches[2] = trim($matches[2]);
+    if (!empty($matches[2])) {
+      return $matches;
+    }
+  }
+  return FALSE;
+}

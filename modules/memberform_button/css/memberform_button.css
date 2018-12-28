@@ -1,0 +1,13 @@
+.content .webform-component-mf-button a,
+.content .webform-component-mf-button a:link {
+  display: inline-block;
+  background-color: #f00;
+  font-family: HelveticaInseratLTPro, Impact, 'Sans serif';
+  font-weight: normal;
+  text-transform: uppercase;
+  background: #f60000;
+  margin-right: .4em;
+  padding: .4em .72em;
+  color: #fff;
+  border: 1px solid #d00;
+}
