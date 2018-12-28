@@ -1,4 +1,4 @@
-name = Memberform link button component
+name = Memberform button component
 description = Adds a webform component with a button that links to and prefills the SP memberform.
 core = 7.x
 dependencies[] = webform
