@@ -1499,7 +1499,7 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
     $where .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
     $vars[':call_date'] = $call_date;
   }
-  $query = 'SELECT ' . $select . ' FROM ' . $tables . ' WHERE ' . $where . $conditions; // . ' ORDER BY answered_completed DESC';
+  $query = 'SELECT ' . $select . ' FROM ' . $tables . ' WHERE ' . $where . $conditions . ' ORDER BY ca.display_name ASC';
   $result = db_query($query, $vars);
   while ($record = $result->fetchAssoc()) {
     foreach ($record as $key => $value) {
@@ -1607,6 +1607,8 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
   if ($caller_id == 'all') {
     $query .= ' GROUP BY ca.caller_id';
   }
+
+  $query .= ' ORDER BY ca.display_name ASC';
 
   $results = db_query($query, $vars);
   if ($results) {

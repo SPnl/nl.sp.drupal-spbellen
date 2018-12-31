@@ -49,7 +49,7 @@
   <p><strong><?php print $component_data['name']; ?></strong></p>
   <table style = "width: auto">
     <tr>
-      <th>Beller</th>
+      <th width="10%">Beller</th>
       <?php foreach ($component_data['options'] as $key => $value) : ?>
         <?php if ($key == 'answered') : ?>
           <?php $colspan = 2; ?>
@@ -65,16 +65,16 @@
       <tr>
         <td><?php print $caller_data['display_name']; ?></td>
         <?php foreach ($component_data['options'] as $key => $value) : ?>
-          <td class="numeric">
+          <td class="numeric" width="1">
             <?php print $caller_data[$key]; ?>
           </td>
           <?php if (!in_array($key, array('answered'))) : ?>
             <?php if (!in_array($key, array('answered_completed'))) : ?>
-              <td class="numeric">
+              <td class="numeric" width="1">
                 <?php print $caller_data[$key . '_percentage_answered_completed']; ?>%
               </td>
             <?php endif; ?>
-            <td class="numeric">
+            <td class="numeric" width="1">
               <?php print $caller_data[$key . '_percentage_answered']; ?>%
             </td>
           <?php endif; ?>
