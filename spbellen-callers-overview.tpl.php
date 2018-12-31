@@ -51,7 +51,14 @@
     <tr>
       <th>Beller</th>
       <?php foreach ($component_data['options'] as $key => $value) : ?>
-        <th colspan="3"><?php print $value; ?></th>
+        <?php if ($key == 'answered') : ?>
+          <?php $colspan = 2; ?>
+        <?php elseif ($key == 'answered_completed') : ?>
+          <?php $colspan = 3; ?>
+        <?php else : ?>
+          <?php $colspan = 4; ?>
+        <?php endif; ?>
+        <th colspan=<?php print $colspan; ?>><?php print $value; ?></th>
       <?php endforeach; ?>
     </tr>
     <?php foreach ($component_data['stats'] as $caller_id => $caller_data) : ?>
@@ -61,9 +68,16 @@
           <td class="numeric">
             <?php print $caller_data[$key]; ?>
           </td>
-          <td class="numeric">
-            <?php print $caller_data[$key . '_percentage']; ?>%
-          </td>
+          <?php if (!in_array($key, array('answered'))) : ?>
+            <?php if (!in_array($key, array('answered_completed'))) : ?>
+              <td class="numeric">
+                <?php print $caller_data[$key . '_percentage_answered_completed']; ?>%
+              </td>
+            <?php endif; ?>
+            <td class="numeric">
+              <?php print $caller_data[$key . '_percentage_answered']; ?>%
+            </td>
+          <?php endif; ?>
           <td></td>
         <?php endforeach; ?>
       </tr>

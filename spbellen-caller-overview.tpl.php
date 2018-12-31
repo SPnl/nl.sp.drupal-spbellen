@@ -151,6 +151,24 @@
           <?php endif; ?>
         </tr>
         <tr>
+          <td>&nbsp;</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
           <td>Totaal (exclusief niet opgenomen)</td>
           <td class="numeric"><?php print $general_stats_caller[$caller_id]['total']; ?></td>
           <td class="numeric">100%</td>
@@ -203,25 +221,36 @@
     <table style="width: auto">
       <tr>
         <th></th>
-        <th colspan="2">beller</th>
-        <th colspan="2">campagne</th>
+        <th colspan="3">beller</th>
+        <th colspan="3">campagne</th>
         <?php if (!empty($result_stats_caller_campaign_date)) : ?>
-          <th colspan="2">beller<br/><?php print $result_stats_caller_campaign_date['call_date']; ?></th>
-          <th colspan="2">campagne<br/><?php print $result_stats_caller_campaign_date['call_date']; ?></th>
+          <th colspan="3">beller<br/><?php print $result_stats_caller_campaign_date['call_date']; ?></th>
+          <th colspan="3">campagne<br/><?php print $result_stats_caller_campaign_date['call_date']; ?></th>
         <?php endif; ?>
       </tr>
       <?php foreach ($data['options'] as $key => $option) : ?>
+        <?php if ($key == 'answered_completed') : ?>
+          <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td>
+          <?php if (!empty($result_stats_caller_campaign_date)) : ?>
+            <td></td><td></td><td></td><td></td><td></td><td></td>
+          <?php endif; ?>
+          </tr>
+        <?php endif; ?>
         <tr>
           <td width="200"><?php print($option); ?></td>
           <td class="numeric" width="1"><?php print($data['stats'][$key]); ?></td>
-          <td class="numeric"><?php print($data['stats'][$key. '_percentage']); ?>%</td>
+          <td class="numeric"><?php print($data['stats'][$key. '_percentage_answered_completed']); ?>%</td>
+          <td class="numeric"><?php print($data['stats'][$key. '_percentage_answered']); ?>%</td>
           <td class="numeric" width="1"><?php print($result_stats_campaign['components'][$cid]['stats'][$key]); ?></td>
-          <td class="numeric"><?php print($result_stats_campaign['components'][$cid]['stats'][$key . '_percentage']); ?>%</td>
+          <td class="numeric"><?php print($result_stats_campaign['components'][$cid]['stats'][$key . '_percentage_answered_completed']); ?>%</td>
+          <td class="numeric"><?php print($result_stats_campaign['components'][$cid]['stats'][$key . '_percentage_answered']); ?>%</td>
           <?php if (!empty($result_stats_caller_campaign_date)) : ?>
             <td class="numeric" width="1"><?php print($result_stats_caller_campaign_date['components'][$cid]['stats'][$key]); ?></td>
-            <td class="numeric"><?php print($result_stats_caller_campaign_date['components'][$cid]['stats'][$key . '_percentage']); ?>%</td>
+            <td class="numeric"><?php print($result_stats_caller_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered_completed']); ?>%</td>
+            <td class="numeric"><?php print($result_stats_caller_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered']); ?>%</td>
             <td class="numeric" width="1"><?php print($result_stats_campaign_date['components'][$cid]['stats'][$key]); ?></td>
-            <td class="numeric"><?php print($result_stats_campaign_date['components'][$cid]['stats'][$key . '_percentage']); ?>%</td>
+            <td class="numeric"><?php print($result_stats_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered_completed']); ?>%</td>
+            <td class="numeric"><?php print($result_stats_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered']); ?>%</td>
           <?php endif; ?>
         </tr>
       <?php endforeach; ?>

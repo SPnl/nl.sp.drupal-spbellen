@@ -1499,7 +1499,7 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
     $where .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
     $vars[':call_date'] = $call_date;
   }
-  $query = 'SELECT ' . $select . ' FROM ' . $tables . ' WHERE ' . $where . $conditions . ' ORDER BY answered_completed DESC';
+  $query = 'SELECT ' . $select . ' FROM ' . $tables . ' WHERE ' . $where . $conditions; // . ' ORDER BY answered_completed DESC';
   $result = db_query($query, $vars);
   while ($record = $result->fetchAssoc()) {
     foreach ($record as $key => $value) {
@@ -1559,7 +1559,8 @@ function spbellen_get_result_stats($caller_id = NULL, $campaign_id, $call_date =
       $options = spbellen_parse_webform_component_option_items($items);
       $result_stats = spbellen_get_caller_result_stats($caller_id, $campaign_id, $call_date, $row['cid'], $options);
       $options['empty'] = 'Niet ingevuld';
-      $options['total'] = 'Totaal';
+      $options['answered_completed'] = 'Vragen beantwoord';
+      $options['answered'] = 'Opgenomen';
       $stats['components'][$row['cid']] = array(
         'cid' => $row['cid'],
         'name' => check_plain($row['name']),
@@ -1586,11 +1587,11 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
   }
   foreach ($options as $key => $option) {
     $key_sanitized = preg_replace('/[^a-zA-Z_]/', '', $key);
-    $query_parts[] = "SUM(da.data = '" . $key_sanitized . "') AS '" . $key_sanitized . "'";
+    $query_parts[] = "SUM(result = 'answered_completed' AND da.data = '" . $key_sanitized . "') AS '" . $key_sanitized . "'";
   }
   $query .= implode(',', $query_parts);
-  $query .= ", SUM(da.data NOT IN ('" . implode("','", array_keys($options)) . "')) AS empty";
-  $query .= ", COUNT(*) AS total FROM spbellen_targets ta JOIN spbellen_campaign cam ON ta.campaign_id = cam.id JOIN spbellen_action ac ON ta.id = ac.target_id INNER JOIN webform_submitted_data da ON da.sid = ac.webform_submission_id AND da.cid = :cid INNER JOIN spbellen_caller ca ON ac.caller_id = ca.caller_id LEFT JOIN spbellen_blacklist bl ON ta.contact_id = bl.contact_id WHERE da.nid = cam.webform_id AND result = 'answered_completed' AND ta.campaign_id = :campaign_id AND ta.state = 1 AND bl.contact_id IS NULL";
+  $query .= ", SUM(result = 'answered_completed' AND da.data NOT IN ('" . implode("','", array_keys($options)) . "')) AS empty";
+  $query .= ", SUM(result = 'answered_completed') AS answered_completed, SUM(result != 'not_answered') AS answered FROM spbellen_targets ta JOIN spbellen_campaign cam ON ta.campaign_id = cam.id JOIN spbellen_action ac ON ta.id = ac.target_id LEFT JOIN webform_submitted_data da ON da.sid = ac.webform_submission_id AND da.cid = :cid AND da.nid = cam.webform_id INNER JOIN spbellen_caller ca ON ac.caller_id = ca.caller_id LEFT JOIN spbellen_blacklist bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id AND ta.state = 1";
   $vars = array(
     ':campaign_id' => $campaign_id,
     ':cid' => $cid,
@@ -1613,11 +1614,17 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
       foreach ($row as $key => $value) {
         $data[$key] = empty($value) ? 0 : $value;
         if (!in_array($key, array('caller_id', 'display_name'))) {
-          if ($row['total'] != 0) {
-            $data[$key . '_percentage'] = round(100 * $value / $row['total']);
+          if ($row['answered_completed'] != 0) {
+            $data[$key . '_percentage_answered_completed'] = round(100 * $value / $row['answered_completed']);
           }
           else {
-            $data[$key . '_percentage'] = 0;
+            $data[$key . '_percentage_answered_completed'] = 0;
+          }
+          if ($row['answered'] != 0) {
+            $data[$key . '_percentage_answered'] = round(100 * $value / $row['answered']);
+          }
+          else {
+            $data[$key . '_percentage_answered'] = 0;
           }
         }
         if ($caller_id == 'all') {
