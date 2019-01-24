@@ -45,6 +45,7 @@
 </table>
 
 <h3>Resultaat statistieken</h3>
+<p>(Aantal - Percentage vragen afgerond - percentage telefoon opgenomen)</p>
 <?php foreach ($result_stats['components'] as $component_id => $component_data) : ?>
   <p><strong><?php print $component_data['name']; ?></strong></p>
   <table style = "width: auto">

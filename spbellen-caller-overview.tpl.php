@@ -216,6 +216,7 @@
 <?php if (!empty($result_stats_caller_campaign)) : ?>
   <p><br/></p>
   <h3>Resultaat statistieken</h3>
+  <p>(Aantal - Percentage vragen afgerond - percentage telefoon opgenomen)</p>
   <?php foreach ($result_stats_caller_campaign['components'] as $cid => $data) : ?>
     <p><strong><?php print($data['name']); ?></strong></p>
     <table style="width: auto">
