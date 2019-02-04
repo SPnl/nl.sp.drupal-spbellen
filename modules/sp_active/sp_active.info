@@ -1,0 +1,5 @@
+name = SP active component
+description = Adds a webform component that stores information about contact activeness.
+core = 7.x
+dependencies[] = webform
+package = Webform
