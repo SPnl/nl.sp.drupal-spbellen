@@ -284,9 +284,9 @@ function _webform_csv_data_sp_active($component, $export_options, $value) {
  */
 function sp_active_get_active_options() {
   $options = array(
-    '7513' => 'Structureel actief',
-    '7514' => 'Incidenteel actief',
-    '7515' => 'Niet actief',
+    'structureel' => 'Structureel actief',
+    'incidenteel' => 'Incidenteel actief',
+    'niet' => 'Niet actief',
   );
   return $options;
 }
@@ -299,16 +299,26 @@ function sp_active_get_active_options() {
  */
 function sp_active_get_activity_options() {
   $options = array(
-    '7516' => 'Administratief werk',
-    '7517' => 'Afdelingsbestuur',
-    '7518' => 'Belteam',
-    '7519' => 'Folderen',
-    '7520' => 'Hulpdienst',
-    '7521' => 'Klussen',
-    '7522' => 'Ledenbezoek',
-    '7523' => 'Markt',
-    '7524' => 'Media/website',
-    '7525' => 'Meehelpen campagnes/acties',
+    'administratief werk' => 'Administratief werk',
+    'afdelingsbestuur' => 'Afdelingsbestuur',
+    'belteam' => 'Belteam',
+    'folderen' => 'Folderen',
+    'hulpdienst' => 'Hulpdienst',
+    'klussen' => 'Klussen',
+    'ledenbezoek' => 'Ledenbezoek',
+    'markt' => 'Markt',
+    'media/website' => 'Media/website',
+    'campagnes/acties' => 'Meehelpen campagnes/acties',
+    'plakken' => 'Plakken',
+    'politieke basisvorming' => 'Politieke basisvorming',
+    'postverzending' => 'postverzending',
+    'raadsfractie' => 'raadsfractie',
+    'rijden' => 'Rijden',
+    'rood' => 'Rood',
+    'specifieke kunde' => 'Specifieke kunde',
+    'tribune rondbrengen' => 'Tribune rondbrengen',
+    'wijkcontactpersoon' => 'wijkcontactpersoon',
+    'kloppen' => 'Kloppen',
   );
   return $options;
 }
@@ -332,7 +342,7 @@ function _webform_analysis_sp_active($component, $sids = array(), $single = FALS
     );
     $parts = array();
     foreach ($option_group as $key => $group) {
-      $parts[] = 'SUM(data = ' . $key . ") AS '" . $key . "'";
+      $parts[] = "SUM(data = '" . $key . "') AS '" . $key . "'";
     }
     $query = 'SELECT ' . implode(', ', $parts) . ' FROM webform_submitted_data WHERE nid = :nid AND cid = :cid';
     $result = db_query($query, array('nid' => $component['nid'], 'cid' => $component['cid']))->fetchAssoc();
