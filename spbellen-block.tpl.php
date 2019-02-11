@@ -41,7 +41,7 @@
         <?php endforeach; ?>
       </ul>
     <?php else : ?>
-        <p>Er is nog niet eerder gebeld</p>
+        <p>Er is geen belinformatie beschikbaar</p>
     <?php endif; ?>
     <?php if (!empty($notes)) : ?>
       <p><strong>Notities</strong></p>
