@@ -1075,7 +1075,7 @@ function spbellen_contact_block_data() {
 
         // Call history.
         $translate = spbellen_action_translate();
-        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid AND ta.contact_id = :contact_id AND result NOT IN ('not_answered', 'skipped')";
+        $query = "SELECT attempts, timestamp, result, webform_submission_id, caller_message, call_back_priority, call_back_time FROM {spbellen_targets} ta INNER JOIN {spbellen_action} ac ON ta.id = ac.target_id WHERE occupied = 1 AND ta.caller_id = :caller_id AND ta.campaign_id = :cid AND ta.contact_id = :contact_id AND result NOT IN ('not_answered', 'skipped')";
         $result = db_query($query, array(
           ':caller_id' => $user->uid,
           ':cid' => $campaign_id,
@@ -1084,11 +1084,21 @@ function spbellen_contact_block_data() {
         if (!empty($result)) {
           while ($row = $result->fetchAssoc()) {
             $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
+            switch ($row['result']) {
+              case 'call_appointment':
+                $text = 'Terugbelafspraak (' . format_date($row['call_back_time'], 'custom', "D j-n-Y G:i") . ')';
+                break;
+
+              default:
+                $text = $translate[$row['result']];
+                break;
+            }
             $data['history'][] = array(
               'date' => $date_formatted,
-              'result' => $translate[$row['result']],
+              'result' => $text,
               'caller_message' => check_plain($row['caller_message']),
               'call_back_priority' => $row['call_back_priority'],
+              'call_back_time' => format_date($row['call_back_time'], 'custom', "D j-n-Y G:i"),
             );
           }
         }
