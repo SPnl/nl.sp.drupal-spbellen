@@ -55,6 +55,10 @@
       <div>
         <a id="spbellen-click2dial-button" href="#">Bel</a>
       </div>
+    <?php else : ?>
+      <div>
+        <a id="spbellen-dial-button" href="tel:<?php print $phone; ?>">Bel</a>
+      </div>
     <?php endif; ?>
   </div>
 </div>
