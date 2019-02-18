@@ -8,5 +8,7 @@ dependencies[] = sp_webformautoaddress
 dependencies[] = entity
 dependencies[] = pathauto
 dependencies[] = nodejs
+dependencies[] = nodejs_config
+dependencies[] = nodejs_ajax
 
 scripts[] = js/spbellen.js
