@@ -25,6 +25,13 @@ function spbellen_menu() {
     'access callback' => TRUE,
   );
 
+  $items['bellen/belknop'] = array(
+    'title' => '',
+    'page callback' => 'spbellen_call_button',
+    'file' => 'spbellen_call_button.inc',
+    'access callback' => TRUE,
+  );
+
   $items['bellen/error'] = array(
     'title' => '',
     'page callback' => 'drupal_get_form',
@@ -376,6 +383,9 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       $campaign = spbellen_get_campaign($nid);
       // Assign target.
       $contact_data = spbellen_assign_target($campaign);
+      // Push target phone to phone button page.
+      spbellen_send_phone_number($contact_data['phone']);
+
       // Fill data.
       $form['submitted']['valid_test']['#default_value'] = $contact_data['contact_id'];
       $is_old_form = FALSE;
@@ -917,10 +927,6 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'template' => 'spbellen-caller-overview',
     'variables' => $variables,
   );
-  $registry['spbellen_callers_overview_theme'] = array(
-    'template' => 'spbellen-callers-overview',
-    'variables' => $variables,
-  );
 
   // Call back list.
   $variables = array(
@@ -936,6 +942,16 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'render element' => 'form',
     'file' => 'spbellen_admin_campaign_form.inc',
   );
+
+  // Belknop page.
+  $variables = array(
+    'username',
+  );
+  $registry['spbellen_call_button'] = array(
+    'template' => 'spbellen_call_button',
+    'variables' => $variables,
+  );
+
   return $registry;
 }
 
@@ -1222,4 +1238,29 @@ function spbellen_importer_info() {
     }
   }
   return $importer_info;
+}
+
+/**
+ * Implements hook_nodejs_handlers_info().
+ */
+function spbellen_nodejs_handlers_info() {
+  return array(
+    drupal_get_path('module', 'spbellen') . '/js/nodejs.spbellen.js',
+  );
+}
+
+/**
+ * Pushed phone number to user pages.
+ */
+function spbellen_send_phone_number($phone_number) {
+  global $user;
+  $message = (object) array(
+    'data' => (object) array(
+      'phone_number' => $phone_number,
+    ),
+    'channel' => 'nodejs_user_' . $user->uid,
+    'callback' => 'spbellen_update_phone_number',
+  );
+
+  Nodejs::enqueueMessage($message);
 }

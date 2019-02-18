@@ -7,5 +7,6 @@ dependencies[] = spwebform_email_verify
 dependencies[] = sp_webformautoaddress
 dependencies[] = entity
 dependencies[] = pathauto
+dependencies[] = nodejs
 
 scripts[] = js/spbellen.js

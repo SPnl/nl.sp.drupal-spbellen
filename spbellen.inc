@@ -1665,3 +1665,18 @@ function spbellen_get_call_dates($campaign_id, $caller_id = NULL) {
     }
   }
 }
+
+function spbellen_get_caller_target_contact_data($caller_id) {
+  $contact_data = &drupal_static(__FUNCTION__);
+  if (!isset($contact_data)) {
+    $contact_data = array();
+    if (!empty($caller_id)) {
+      $query = "SELECT contact_id FROM {spbellen_targets} WHERE occupied = 1 AND caller_id = :caller_id ORDER BY date DESC";
+      $contact_id = db_query($query, array('caller_id' => $caller_id))->fetchField(0);
+      if (!empty($contact_id)) {
+        $contact_data = spbellen_get_contact_data($contact_id);
+      }
+    }
+    return $contact_data;
+  }
+}
