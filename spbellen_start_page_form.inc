@@ -7,11 +7,25 @@ function spbellen_start_page_form($form, &$form_state) {
     $form['intro'] = array(
       '#markup' => check_markup($intro['value'], $intro['format']),
     );
-    $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => 'Verder',
-      '#name' => 'submit_intro',
-    );
+    if (spbellen_click2dial_location()) {
+      $form['call_script'] = array(
+        '#type' => 'submit',
+        '#value' => 'Verder',
+        '#name' => 'call_script',
+      );
+    }
+    else {
+      $form['call_script'] = array(
+        '#type' => 'submit',
+        '#value' => 'Belscript',
+        '#name' => 'call_script',
+      );
+      $form['call_button'] = array(
+        '#type' => 'submit',
+        '#value' => 'Belknop',
+        '#name' => 'call_button',
+      );
+    }
   }
   else {
     // Select campaign page.
@@ -68,11 +82,19 @@ function spbellen_start_page_form_validate($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'submit_intro':
-      $form_state['general_start_page_visited'] = TRUE;
-      $_SESSION['general_start_page_visited'] = TRUE;
-      $form_state['rebuild'] = TRUE;
-      break;
+      case 'call_script':
+        $_SESSION['spbellen_page_type'] = 'call_script';
+        $form_state['general_start_page_visited'] = TRUE;
+        $_SESSION['general_start_page_visited'] = TRUE;
+        $form_state['rebuild'] = TRUE;
+        break;
+
+      case 'call_button':
+        $_SESSION['spbellen_page_type'] = 'call_button';
+        $form_state['general_start_page_visited'] = TRUE;
+        $_SESSION['general_start_page_visited'] = TRUE;
+        $form_state['rebuild'] = TRUE;
+        break;
     }
   }
 }
@@ -84,14 +106,12 @@ function spbellen_start_page_form_submit($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-    case 'submit_select_campaign':
-      $webform_id = $form_state['values']['campaign'];
-      $alias = spbellen_get_campaign_form_alias($webform_id);
-      $path = 'aanmelden/campagne/' . $alias;
-      drupal_goto($path);
-      break;
+      case 'submit_select_campaign':
+        $webform_id = $form_state['values']['campaign'];
+        $alias = spbellen_get_campaign_form_alias($webform_id);
+        $path = 'aanmelden/campagne/' . $alias;
+        drupal_goto($path);
+        break;
     }
   }
 }
-
-

@@ -29,7 +29,12 @@ function spbellen_subscription_form($form, &$form_state) {
   global $user;
   if ($user->uid !== 0) {
     if (spbellen_campaign_form_access($webform_id)) {
-      drupal_goto($webform_alias);
+      if ($_SESSION['spbellen_page_type'] == 'call_button') {
+        drupal_goto('bellen/belknop');
+      }
+      else {
+        drupal_goto($webform_alias);
+      }
     }
     else {
       $form['feedback'] = array(
@@ -473,7 +478,12 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           global $user;
           $user = user_load($account->uid);
           user_login_finalize($account);
-          drupal_goto($form_state['webform_alias']);
+          if ($_SESSION['spbellen_page_type'] == 'call_button') {
+            drupal_goto('bellen/belknop');
+          }
+          else {
+            drupal_goto($form_state['webform_alias']);
+          }
         }
         else {
           $form_state['account_pass_error'] = TRUE;
