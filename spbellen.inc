@@ -1254,7 +1254,7 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
       $contact_id = $result;
     }
   }
-  elseif (!empty($values['phone']) && strlen($phone) > 8) {
+  elseif (!empty($values['phone']) && strlen($values['phone']) > 8) {
     // Get contact_id from phone.
     $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE :phone", array(':phone' => '%' . db_like($values['phone']) . '%'))->fetchField();
     if (!empty($result)) {
