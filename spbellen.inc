@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Helper function.
+ */
+
+/**
+ * Get webforms.
+ */
 function spbellen_get_webforms() {
   $webforms = &drupal_static(__FUNCTION__);
   if (!isset($webforms)) {
@@ -20,6 +27,9 @@ function spbellen_get_webforms() {
   return $webforms;
 }
 
+/**
+ * Return list of webforms usable for form.
+ */
 function spbellen_get_webforms_list() {
   $webforms_list = array();
   $webforms = spbellen_get_webforms();
@@ -31,6 +41,9 @@ function spbellen_get_webforms_list() {
   return $webforms_list;
 }
 
+/**
+ * Get campaign by webform id.
+ */
 function spbellen_get_campaign($webform_id) {
   $campaign_id = spbellen_get_campaign_id($webform_id);
   if (!empty($campaign_id)) {
@@ -42,6 +55,9 @@ function spbellen_get_campaign($webform_id) {
   return FALSE;
 }
 
+/**
+ * Returns campaigns.
+ */
 function spbellen_get_campaigns() {
   $campaigns = &drupal_static(__FUNCTION__);
   if (!isset($campaigns)) {
@@ -61,6 +77,9 @@ function spbellen_get_campaigns() {
   return $campaigns;
 }
 
+/**
+ * Returns list of campaigns, usable for forms.
+ */
 function spbellen_get_campaigns_list() {
   $campaigns_list = &drupal_static(__FUNCTION__);
   if (!isset($campaigns)) {
@@ -80,6 +99,9 @@ function spbellen_get_campaigns_list() {
   return $campaigns_list;
 }
 
+/**
+ * Returns contacts for autocomplete contact search form.
+ */
 function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
   $matches = array();
   if (!empty($string)) {
@@ -111,10 +133,13 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
     }
   }
 
-  //Return the result to the form in json
+  // Return the result to the form in json.
   drupal_json_output($matches);
 }
 
+/**
+ * Helper function to parse id from select value.
+ */
 function spbellen_parse_id_from_select_value($id_raw) {
   $id = '';
   preg_match('@^.+\(([0-9]+)\)$@', $id_raw, $matches);
@@ -124,6 +149,9 @@ function spbellen_parse_id_from_select_value($id_raw) {
   return $id;
 }
 
+/**
+ * Create campaign form.
+ */
 function spbellen_create_campaign_form($campaign) {
   $error = FALSE;
   $campaign_webform = node_load($campaign->webform_id);
@@ -133,7 +161,6 @@ function spbellen_create_campaign_form($campaign) {
     $campaign_conditionals = !empty($form['conditionals']) ? $form['conditionals'] : array();
 
     // Create new campaign webform.
-
     $joined_component_id = 1;
     $parent = 0;
 
@@ -152,14 +179,14 @@ function spbellen_create_campaign_form($campaign) {
       'weight' => $joined_component_id,
       'page_num' => 1,
     );
-    $joined_component_id ++;
+    $joined_component_id++;
 
     // Add contact components.
     $contact_fields = spbellen_contact_fields();
     foreach ($contact_fields as $key => $name) {
       $joined_components[$joined_component_id] = array(
         'pid' => $parent,
-        'form_key' => 'spbellen_hidden_'.$key,
+        'form_key' => 'spbellen_hidden_' . $key,
         'name' => $name . ' (verborgen)',
         'type' => 'hidden',
         'value' => '',
@@ -1116,19 +1143,18 @@ function spbellen_action_translate() {
 
 function spbellen_get_contact_data($contact_id) {
   $contact_data = &drupal_static(__FUNCTION__);
-  if (!isset($contact_data)) {
-    $contact_data = array();
+  if (!isset($contact_data[$contact_id])) {
     $fields = array_keys(spbellen_contact_fields());
     foreach ($fields as $key => $field) {
       $fields[$key] = 'cd.' . $field;
     }
     $fields_list = implode(',', $fields);
     // Get contact data.
-    $query = "SELECT " . $fields_list . " FROM {spbellen_targets} ta INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id WHERE ta.contact_id = :contact_id";
+    $query = "SELECT " . $fields_list . " FROM {spbellen_contact_data} cd WHERE cd.contact_id = :contact_id";
     $result = db_query($query, array(':contact_id' => $contact_id));
-    $contact_data = $result->fetchAssoc();
+    $contact_data[$contact_id] = $result->fetchAssoc();
   }
-  return $contact_data;
+  return $contact_data[$contact_id];
 }
 
 function spbellen_get_active_campaign() {
@@ -1243,58 +1269,60 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
     $values['phone'] = preg_replace('/^(\31|0031)/', '0', $values['phone']);
   }
 
-  // Get contact id.
-  if (!empty($values['contact_id'])) {
-    $contact_id = $values['contact_id'];
-  }
-  elseif (!empty($values['crm_contact_id'])) {
-    // Get contact_id from crm_contact_id.
-    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE crm_contact_id = :crm_contact_id", array(':crm_contact_id' => $values['crm_contact_id']))->fetchField();
-    if (!empty($result)) {
-      $contact_id = $result;
+  if (strlen($values['phone']) > 8) {
+    // Get contact id.
+    if (!empty($values['contact_id'])) {
+      $contact_id = $values['contact_id'];
     }
-  }
-  elseif (!empty($values['phone']) && strlen($values['phone']) > 8) {
-    // Get contact_id from phone.
-    $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE :phone", array(':phone' => '%' . db_like($values['phone']) . '%'))->fetchField();
-    if (!empty($result)) {
-      $contact_id = $result;
+    elseif (!empty($values['crm_contact_id'])) {
+      // Get contact_id from crm_contact_id.
+      $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE crm_contact_id = :crm_contact_id", array(':crm_contact_id' => $values['crm_contact_id']))->fetchField();
+      if (!empty($result)) {
+        $contact_id = $result;
+      }
     }
+    elseif (!empty($values['phone'])) {
+      // Get contact_id from phone.
+      $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE :phone", array(':phone' => '%' . db_like($values['phone']) . '%'))->fetchField();
+      if (!empty($result)) {
+        $contact_id = $result;
+      }
+    }
+    // Store contact data.
+    if (empty($contact_id)) {
+      $contact_id = db_insert('spbellen_contact_data')
+        ->fields($values)
+        ->execute();
+    }
+    else {
+      db_update('spbellen_contact_data')
+        ->fields($values)
+        ->condition('contact_id', $contact_id)
+        ->execute();
+    }
+    // Add target.
+    $target_id = db_query("SELECT id FROM {spbellen_targets} WHERE contact_id = :contact_id AND campaign_id = :campaign_id", array(':contact_id' => $contact_id, ':campaign_id' => $campaign_id))->fetchField();
+    if (empty($target_id)) {
+      $target_id = db_insert('spbellen_targets')
+        ->fields(array(
+          'campaign_id' => $campaign_id,
+          'state' => 1,
+          'occupied' => 0,
+          'contact_id' => $contact_id,
+        ))
+        ->execute();
+    }
+    // Add target import relation.
+    if (!empty($target_id)) {
+      db_merge('spbellen_target_import_relation')
+        ->key(array(
+          'target_id' => $target_id,
+          'import_id' => $import_id,
+        ))
+        ->execute();
+    }
+    return $contact_id;
   }
-  // Store contact data.
-  if (empty($contact_id)) {
-    $contact_id = db_insert('spbellen_contact_data')
-      ->fields($values)
-      ->execute();
-  }
-  else {
-    db_update('spbellen_contact_data')
-      ->fields($values)
-      ->condition('contact_id', $contact_id)
-      ->execute();
-  }
-  // Add target.
-  $target_id = db_query("SELECT id FROM {spbellen_targets} WHERE contact_id = :contact_id AND campaign_id = :campaign_id", array(':contact_id' => $contact_id, ':campaign_id' => $campaign_id))->fetchField();
-  if (empty($target_id)) {
-    $target_id = db_insert('spbellen_targets')
-      ->fields(array(
-        'campaign_id' => $campaign_id,
-        'state' => 1,
-        'occupied' => 0,
-        'contact_id' => $contact_id,
-      ))
-      ->execute();
-  }
-  // Add target import relation.
-  if (!empty($target_id)) {
-    db_merge('spbellen_target_import_relation')
-      ->key(array(
-        'target_id' => $target_id,
-        'import_id' => $import_id,
-      ))
-      ->execute();
-  }
-  return $contact_id;
 }
 
 /**
@@ -1666,6 +1694,9 @@ function spbellen_get_call_dates($campaign_id, $caller_id = NULL) {
   }
 }
 
+/**
+ * Gets caller target contact data.
+ */
 function spbellen_get_caller_target_contact_data($caller_id) {
   $contact_data = &drupal_static(__FUNCTION__);
   if (!isset($contact_data)) {
@@ -1679,4 +1710,141 @@ function spbellen_get_caller_target_contact_data($caller_id) {
     }
     return $contact_data;
   }
+}
+
+/**
+ * Merge contacts.
+ */
+function spbellen_merge_contacts($contact_ids) {
+  // Find best contact.
+  $best_contact_id = spbellen_find_best_contact($contact_ids);
+  $best_contact_data = spbellen_get_contact_data($best_contact_id);
+  // Merge contact data.
+  foreach ($contact_ids as $contact_id) {
+    if ($contact_id !== $best_contact_id) {
+      $contact_data = spbellen_get_contact_data($contact_id);
+      if (empty($contact_data['crm_contact_id'])) {
+        drush_print("");
+        drush_print('Phone: ' . $best_contact_data['phone']);
+        drush_print('Merging contact ' . $contact_id . ' with ' . $best_contact_id);
+        $output = drush_format($contact_data);
+        drush_print($output);
+        $output = drush_format($best_contact_data);
+        drush_print($output);
+
+        // Check if contacts share campaign.
+        $query = "SELECT t1.campaign_id campaign_id, t1.contact_id contact_id, t1.id contact_target_id, ac1.result contact_result, t2.contact_id best_contact_id, t2.id best_contact_target_id, ac2.result best_contact_result FROM spbellen_targets t1 INNER JOIN spbellen_targets t2 ON t1.contact_id = :contact_id AND t2.contact_id = :best_contact_id AND t1.campaign_id = t2.campaign_id LEFT JOIN spbellen_action ac1 ON t1.last_action_id = ac1.id LEFT JOIN spbellen_action ac2 ON t2.last_action_id = ac2.id";
+        $result = db_query($query, array('contact_id' => $contact_id, 'best_contact_id' => $best_contact_id));
+        if ($result) {
+          if ($result->rowCount()) {
+            // Contacts share campaign, remove one of the targets and actions that belong to it.
+            while ($row = $result->fetchAssoc()) {
+              if (empty($row['campaign_id'])) {
+                drush_print('Empty!');
+              }
+              $output = drush_format($row);
+              drush_print($output);
+              $campaign_id = $row['campaign_id'];
+              $contact_target_id = $row['contact_target_id'];
+              $contact_result = $row['contact_result'];
+              $best_contact_target_id = $row['best_contact_target_id'];
+              $best_contact_result = $row['best_contact_result'];
+              // Find best target.
+              if (empty($contact_result)) {
+                $keep_target_id = $best_contact_target_id;
+                $remove_target_id = $contact_target_id;
+              }
+              elseif (empty($best_contact_result)) {
+                $keep_target_id = $contact_target_id;
+                $remove_target_id = $best_contact_target_id;
+              }
+              elseif ($best_contact_result === 'answered_completed') {
+                $keep_target_id = $best_contact_target_id;
+                $remove_target_id = $contact_target_id;
+              }
+              elseif ($contact_result === 'answered_completed') {
+                $keep_target_id = $contact_target_id;
+                $remove_target_id = $best_contact_target_id;
+              }
+              elseif ($best_contact_result === 'call_appointment') {
+                $keep_target_id = $best_contact_target_id;
+                $remove_target_id = $contact_target_id;
+              }
+              elseif ($contact_result === 'call_appointment') {
+                $keep_target_id = $contact_target_id;
+                $remove_target_id = $best_contact_target_id;
+              }
+              elseif ($best_contact_result === 'answered_call_back') {
+                $keep_target_id = $best_contact_target_id;
+                $remove_target_id = $contact_target_id;
+              }
+              elseif ($contact_result === 'answered_call_back') {
+                $keep_target_id = $contact_target_id;
+                $remove_target_id = $best_contact_target_id;
+              }
+              elseif ($best_contact_result === 'answered_blacklist') {
+                $keep_target_id = $best_contact_target_id;
+                $remove_target_id = $contact_target_id;
+              }
+              elseif ($contact_result === 'answered_blacklist') {
+                $keep_target_id = $contact_target_id;
+                $remove_target_id = $best_contact_target_id;
+              }
+              else {
+                $keep_target_id = $best_contact_target_id;
+                $remove_target_id = $contact_target_id;
+              }
+              // Remove target with less interesting result.
+              $query = "DELETE ta, ac FROM spbellen_targets ta LEFT JOIN spbellen_action ac ON ac.target_id = ta.id WHERE ta.id = $remove_target_id";
+              drush_print($query);
+              $query = "DELETE ta, ac FROM spbellen_targets ta LEFT JOIN spbellen_action ac ON ac.target_id = ta.id WHERE ta.id = :remove_target_id";
+              db_query($query, array('remove_target_id' => $remove_target_id));
+              // Assign best target to best contact.
+              $query = "UPDATE spbellen_targets ta SET ta.contact_id = $best_contact_id WHERE ta.id = $keep_target_id";
+              drush_print($query);
+              $query = "UPDATE spbellen_targets ta SET ta.contact_id = :best_contact_id WHERE ta.id = :keep_target_id";
+              db_query($query, array('best_contact_id' => $best_contact_id, 'keep_target_id' => $keep_target_id));
+              // Delete inferior contact data.
+              $query = "DELETE FROM spbellen_contact_data WHERE contact_id = $contact_id";
+              drush_print($query);
+              $query = "DELETE FROM spbellen_contact_data WHERE contact_id = :contact_id";
+              db_query($query, array('contact_id' => $contact_id));
+            }
+          }
+          else {
+            // Contacts do not share campaign, just change contact_id.
+            $query = "UPDATE spbellen_targets SET contact_id = $best_contact_id WHERE contact_id = $contact_id";
+            drush_print($query);
+            $query = "UPDATE spbellen_targets SET contact_id = :best_contact_id WHERE contact_id = :contact_id";
+            db_query($query, array('best_contact_id' => $best_contact_id, 'contact_id' => $contact_id));
+            $query = "DELETE FROM spbellen_contact_data WHERE contact_id = $contact_id";
+            drush_print($query);
+            $query = "DELETE FROM spbellen_contact_data WHERE contact_id = :contact_id";
+            db_query($query, array('contact_id' => $contact_id));
+          }
+        }
+        drush_print('-------------------------------------');
+      }
+    }
+  }
+}
+
+/**
+ * Find best contact.
+ */
+function spbellen_find_best_contact($contact_ids) {
+  foreach ($contact_ids as $contact_id) {
+    $contact_data = spbellen_get_contact_data($contact_id);
+    $scores[$contact_id] = 0;
+    if (!empty($contact_data['crm_contact_id'])) {
+      $scores[$contact_id] = 3;
+    }
+    foreach ($contact_data as $value) {
+      if (!empty($value)) {
+        $scores[$contact_id]++;
+      }
+    }
+  }
+  arsort($scores);
+  return key($scores);
 }
