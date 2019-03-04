@@ -126,6 +126,7 @@ function _webform_render_mf_button($component) {
         $params['ref_source'] = $component['extra']['ref_source'];
       }
       if (!empty($params)) {
+        $params['prefill_form'] = 1;
         $markup = l('Lidworden formulier', $component['extra']['memberform_url'], array('query' => $params, 'attributes' => array('target' => '_blank')));
       }
     }

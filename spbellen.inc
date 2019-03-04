@@ -1263,13 +1263,9 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
     }
   }
 
-  // Cleanup phone.
-  if (!empty($values['phone'])) {
-    $values['phone'] = preg_replace('/\D/', '', $values['phone']);
-    $values['phone'] = preg_replace('/^(\31|0031)/', '0', $values['phone']);
-  }
+  $values['phone'] = spbellen_cleanup_phone($values['phone']);
 
-  if (strlen($values['phone']) > 8) {
+  if (spbellen_valid_phone($values['phone'])) {
     // Get contact id.
     if (!empty($values['contact_id'])) {
       $contact_id = $values['contact_id'];
@@ -1281,7 +1277,7 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
         $contact_id = $result;
       }
     }
-    elseif (!empty($values['phone'])) {
+    elseif (!empty($values['phone']) && empty($values['crm_contact_id'])) {
       // Get contact_id from phone.
       $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE :phone", array(':phone' => '%' . db_like($values['phone']) . '%'))->fetchField();
       if (!empty($result)) {
@@ -1323,6 +1319,7 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
     }
     return $contact_id;
   }
+  return FALSE;
 }
 
 /**
@@ -1710,6 +1707,24 @@ function spbellen_get_caller_target_contact_data($caller_id) {
     }
     return $contact_data;
   }
+}
+
+function spbellen_cleanup_phone($phone) {
+  // Cleanup phone.
+  if (!empty($phone)) {
+    $phone = preg_replace('/\D/', '', $phone);
+    $phone = preg_replace('/^(\31|0031)/', '0', $phone);
+  }
+  return $phone;
+}
+
+function spbellen_valid_phone($phone) {
+  if (!empty($phone)) {
+    if (strlen($phone) > 8) {
+      return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 /**
