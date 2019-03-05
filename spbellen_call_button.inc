@@ -14,6 +14,7 @@ function spbellen_call_button() {
 
   $variables = array(
     'phone_number' => empty($contact_data['phone']) ? '' : $contact_data['phone'],
+    'display_name' => empty($contact_data['display_name']) ? '' : $contact_data['display_name'],
   );
   return theme('spbellen_call_button', $variables);
 }

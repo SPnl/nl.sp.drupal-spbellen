@@ -384,7 +384,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       // Assign target.
       $contact_data = spbellen_assign_target($campaign);
       // Push target phone to phone button page.
-      spbellen_send_phone_number($contact_data['phone']);
+      spbellen_send_phone_number($contact_data['phone'], $contact_data['display_name']);
 
       // Fill data.
       $form['submitted']['valid_test']['#default_value'] = $contact_data['contact_id'];
@@ -1257,11 +1257,12 @@ function spbellen_nodejs_handlers_info() {
 /**
  * Pushed phone number to user pages.
  */
-function spbellen_send_phone_number($phone_number) {
+function spbellen_send_phone_number($phone_number, $display_name) {
   global $user;
   $message = (object) array(
     'data' => (object) array(
       'phone_number' => $phone_number,
+      'display_name' => $display_name,
     ),
     'channel' => 'nodejs_user_' . $user->uid,
     'callback' => 'spbellen_update_phone_number',
