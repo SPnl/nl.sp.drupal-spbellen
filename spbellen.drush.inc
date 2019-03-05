@@ -35,6 +35,10 @@ function spbellen_drush_command() {
  * Remove fake phone numbers.
  */
 function spbellen_remove_fake_phone_numbers() {
+  // Remove untargeted contact data.
+  drush_print('Removing untargeted contact data.');
+  $query = "DELETE cd FROM spbellen_contact_data cd LEFT JOIN spbellen_targets ta ON ta.contact_id = cd.contact_id WHERE ta.contact_id IS NULL";
+  $result = db_query($query);
   // Cleanup false phone numbers.
   drush_print('Removing fake phone numbers with repetetive digits.');
   $regexp = '0{6}|1{6}2{6}|3{6}|4{6}|5{6}|6{6}|7{6}|8{6}|9{6}';
