@@ -121,7 +121,7 @@ function _webform_render_sp_active($component) {
  *   An array of values to be saved into the database. Note that this should be
  *   a numerically keyed array.
  */
-function _webform_submit_sp_active(array $component, array $value) {
+function _webform_submit_sp_active(array $component, $value) {
   $data[0] = $value['active'];
   foreach ($value['activities'] as $activity) {
     $data[] = $activity;
