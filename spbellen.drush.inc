@@ -51,7 +51,7 @@ function spbellen_remove_fake_phone_numbers() {
       $pattern2 = '';
       for ($k = 0; $k < 4; $k++) {
         $pattern1 .= $i . $j;
-        $pattern2 .= $i . $j;
+        $pattern2 .= $j . $i;
       }
       $query = "DELETE cd, ta, ac FROM {spbellen_contact_data} cd LEFT JOIN {spbellen_targets} ta ON cd.contact_id = ta.contact_id LEFT JOIN {spbellen_action} ac ON ac.target_id = ta.id WHERE phone LIKE :pattern";
       $result = db_query($query, array('pattern' => '%' . db_like($pattern1) . '%'));
