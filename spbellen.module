@@ -984,6 +984,21 @@ function spbellen_error_page_submit($form, &$form_state) {
  * Belform custom validation.
  */
 function spbellen_custom_webform_validate($form, &$form_state) {
+  // Check if appointment in past.
+  $values = $form_state['values']['submitted'];
+  if (!empty($values['call_back']['call_appointment']['call_appointment'])) {
+    if ($values['call_back']['call_appointment']['call_appointment'] === 'call_appointment') {
+      $year = $values['call_back']['call_back_date']['year'];
+      $month = $values['call_back']['call_back_date']['month'];
+      $day = $values['call_back']['call_back_date']['day'];
+      $hour = $values['call_back']['call_back_time']['hour'];
+      $minute = $values['call_back']['call_back_time']['minute'];
+      $datetime = $year . '-' . $month . '-' . $day . 'T' . $hour . ':' . $minute;
+      if (time() >= strtotime($datetime)) {
+        form_set_error('', 'Corrigeer de datum van de belafspraak, deze ligt in het verleden!');
+      }
+    }
+  }
   // Check if submit button or next button.
   if (
     !empty($form_state['triggering_element']['#value']) &&
