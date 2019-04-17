@@ -466,10 +466,14 @@ function spbellen_subscription_form_submit($form, &$form_state) {
             // Store postal_code and afdeling caller data.
             $caller = $form_state['caller_data'];
             $caller->postal_code = str_replace(' ', '', $values['postal_code']);
-            $afdeling_data = spbellen_get_branch($values['postal_code']);
-            if (!empty($afdeling_data)) {
-              $caller->afdeling = $afdeling_data['display_name'];
-              $caller->afdeling_id = $afdeling_data['id'];
+            $chapter_and_region = spbellen_get_chapter_and_region($values['postal_code']);
+            if (!empty($chapter_and_region['afdeling_id'])) {
+              $caller->afdeling = $chapter_and_region['afdeling'];
+              $caller->afdeling_id = $chapter_and_region['afdeling_id'];
+            }
+            if (!empty($chapter_and_region['regio_id'])) {
+              $caller->regio = $chapter_and_region['regio'];
+              $caller->regio_id = $chapter_and_region['regio_id'];
             }
             entity_save('caller', $caller);
           }
@@ -539,10 +543,14 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           'postal_code' => $values['postal_code'],
         );
         // Get afdeling.
-        $afdeling_data = spbellen_get_branch($values['postal_code']);
-        if (!empty($afdeling_data)) {
-          $caller_fields['afdeling'] = $afdeling_data['display_name'];
-          $caller_fields['afdeling_id'] = $afdeling_data['id'];
+        $chapter_and_region = spbellen_get_chapter_and_region($values['postal_code']);
+        if (!empty($chapter_and_region['afdeling_id'])) {
+          $caller_fields['afdeling'] = $chapter_and_region['afdeling'];
+          $caller_fields['afdeling_id'] = $chapter_and_region['afdeling_id'];
+        }
+        if (!empty($chapter_and_region['regio_id'])) {
+          $caller_fields['regio'] = $chapter_and_region['regio'];
+          $caller_fields['regio_id'] = $chapter_and_region['regio_id'];
         }
         $caller = entity_create('caller', $caller_fields);
         entity_save('caller', $caller);

@@ -254,7 +254,7 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
         $fields = array('first_name', 'middle_name', 'last_name');
         $name_parts = array();
         $caller_state = empty($values['caller_state']['no_campaign_key_needed']) ? 'registered' : 'master';
-        $afdeling_data = spbellen_get_branch($values['postal_code']);
+        $chapter_and_region = spbellen_get_chapter_and_region($values['postal_code']);
         foreach ($fields as $field) {
           if (!empty($values[$field])) {
             $name_parts[$field] = $values[$field];
@@ -277,9 +277,13 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
           $caller->display_name = $display_name;
           $caller->phone = $values['phone'];
           $caller->postal_code = $values['postal_code'];
-          if (!empty($afdeling_data)) {
-            $caller->afdeling = $afdeling_data['display_name'];
-            $caller->afdeling_id = $afdeling_data['id'];
+          if (!empty($chapter_and_region['afdeling_id'])) {
+            $caller->afdeling = $chapter_and_region['afdeling'];
+            $caller->afdeling_id = $chapter_and_region['afdeling_id'];
+          }
+          if (!empty($chapter_and_region['regio_id'])) {
+            $caller->regio = $chapter_and_region['regio'];
+            $caller->regio_id = $chapter_and_region['regio_id'];
           }
         }
         else {
@@ -295,9 +299,13 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
             'phone' => $values['phone'],
             'postal_code' => $values['postal_code'],
           );
-          if (!empty($afdeling_data)) {
-            $caller_fields['afdeling'] = $afdeling_data['display_name'];
-            $caller_fields['afdeling_id'] = $afdeling_data['id'];
+          if (!empty($chapter_and_region['afdeling_id'])) {
+            $caller_fields['afdeling'] = $chapter_and_region['afdeling'];
+            $caller_fields['afdeling_id'] = $chapter_and_region['afdeling_id'];
+          }
+          if (!empty($chapter_and_region['regio_id'])) {
+            $caller_fields['regio'] = $chapter_and_region['regio'];
+            $caller_fields['regio_id'] = $chapter_and_region['regio_id'];
           }
           $caller = entity_create('caller', $caller_fields);
         }

@@ -1275,10 +1275,10 @@ function spbellen_get_contact_id($crm_contact_id) {
   return FALSE;
 }
 
-function spbellen_get_branch($postal_code) {
+function spbellen_get_chapter_and_region($postal_code) {
   // Get afdeling.
-  foreach (module_implements('spbellen_get_branch') as $module) {
-    $function = $module . '_spbellen_get_branch';
+  foreach (module_implements('spbellen_get_chapter_and_region') as $module) {
+    $function = $module . '_spbellen_get_chapter_and_region';
     $afdeling_data = $function($postal_code);
     if (!empty($afdeling_data)) {
       return $afdeling_data;

@@ -189,20 +189,29 @@ function spbellen_civi_import_form_ajax_callback($form, &$form_state) {
 }
 
 /**
- * Implements hook_spbellen_get_branch().
+ * Implements hook_spbellen_get_chapter_and_region().
  */
-function spbellen_civi_import_spbellen_get_branch($postal_code) {
+function spbellen_civi_import_spbellen_get_chapter_and_region($postal_code) {
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
   $params = array(
     'name' => $postal_code,
+    'api.Relationship.getsingle' => array('contact_id_a' => '$value.id', 'relationship_type_id' => 93),
+    'api.Contact.getsingle' => array('id' => '$value.api.Relationship.getsingle.contact_id_b'),
   );
   $result = $spcivi->api('Geostelsel', 'getafdeling', $params);
-  if (spbellen_check_result($result, 'afdelingsinformatie', 'get', $params)) {
+  if (spbellen_check_result($result, 'afdelingsinformatie', 'getsingle', $params)) {
     if (!empty($result['values'])) {
-      $value = array_shift($result['values']);
-      $afdeling_data = $value;
-      return $value;
+      $data_raw = array_shift($result['values']);
+      if (!empty($data_raw['id'])) {
+        $data['afdeling_id'] = $data_raw['id'];
+        $data['afdeling'] = $data_raw['display_name'];
+        if (!empty($data_raw['api.Contact.getsingle'])) {
+          $data['regio_id'] = $data_raw['api.Contact.getsingle']['contact_id'];
+          $data['regio'] = $data_raw['api.Contact.getsingle']['display_name'];
+        }
+      }
+      return $data;
     }
   }
 }
