@@ -287,6 +287,8 @@ function spbellen_civi_import_map_civi_data($civi_data) {
     'is_lid' => 'is_member',
     'afdeling_id' => 'afdeling_code',
     'afdeling' => 'afdeling',
+    'regio_id' => 'regio_code',
+    'regio' => 'regio',
   );
   foreach ($map as $data_map => $civi_map) {
     if (isset($civi_data[$civi_map])) {
