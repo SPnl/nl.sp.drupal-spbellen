@@ -335,6 +335,16 @@ function spbellen_schema() {
         'type' => 'int',
         'size' => 'big',
       ),
+      'regio' => array(
+        'description' => 'Regio',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'regio_id' => array(
+        'description' => 'Regio id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
       'notes' => array(
         'description' => 'Contact notes important for caller.',
         'type' => 'text',
@@ -450,6 +460,16 @@ function spbellen_schema() {
       ),
       'afdeling_id' => array(
         'description' => 'Afdeling id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'regio' => array(
+        'description' => 'Regio',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'regio_id' => array(
+        'description' => 'Regio id',
         'type' => 'int',
         'size' => 'big',
       ),
@@ -1548,4 +1568,86 @@ function spbellen_update_7032() {
     variable_set('spbellen_click2dial_asterix_domain', $asterix_ip);
   }
   variable_del('spbellen_click2dial_asterix_ip');
+}
+
+/**
+ * Add regio(_id) fields to {spbellen_caller}, {spbellen_contact_data} tables.
+ */
+function spbellen_update_7033() {
+  $spec = array(
+    'description' => 'Regio',
+    'type' => 'varchar',
+    'length' => 255,
+  );
+
+  if (!db_field_exists('spbellen_caller', 'regio')) {
+    db_add_field('spbellen_caller', 'regio', $spec);
+  }
+
+  if (!db_field_exists('spbellen_contact_data', 'regio')) {
+    db_add_field('spbellen_contact_data', 'regio', $spec);
+  }
+
+  $spec = array(
+    'description' => 'Regio id',
+    'type' => 'int',
+    'size' => 'big',
+  );
+
+  if (!db_field_exists('spbellen_contact_data', 'regio_id')) {
+    db_add_field('spbellen_caller', 'regio_id', $spec);
+  }
+
+  if (!db_field_exists('spbellen_contact_data', 'regio_id')) {
+    db_add_field('spbellen_contact_data', 'regio_id', $spec);
+  }
+
+  // Set regio for existing contacts and callers.
+  // Get afdeling, regio data.
+  $module_path = drupal_get_path('module', 'spbellen');
+  $afd_regio_data = array_map('str_getcsv', file($module_path . '/afd-regio.csv'));
+
+  // Create temporary table.
+  $schema['afd_regio'] = array(
+    'fields' => array(
+      'afdeling_id' => array(
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'afdeling' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'regio_id' => array(
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'regio' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+  );
+  db_create_table('afd_regio', $schema['afd_regio']);
+
+  // Import afd, regio data into table.
+  foreach ($afd_regio_data as $data) {
+    db_insert('afd_regio')
+      ->fields(array(
+        'afdeling_id' => $data[0],
+        'afdeling' => $data[1],
+        'regio_id' => $data[2],
+        'regio' => $data[3],
+      ))
+      ->execute();
+  }
+
+  // Insert regio data into contact and caller tables.
+  $query = "UPDATE spbellen_contact_data cd INNER JOIN afd_regio ar ON cd.afdeling_id = ar.afdeling_id SET cd.regio_id = ar.regio_id, cd.regio = ar.regio";
+  db_query($query);
+  $query = "UPDATE spbellen_caller ca INNER JOIN afd_regio ar ON ca.afdeling_id = ar.afdeling_id SET ca.regio_id = ar.regio_id, ca.regio = ar.regio";
+  db_query($query);
+
+  // Cleanup temporary table.
+  db_drop_table('afd_regio');
 }
