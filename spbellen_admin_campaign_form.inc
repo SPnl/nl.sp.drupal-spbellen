@@ -1,6 +1,7 @@
 <?php
 
 /**
+ * @file
  * Campaign settings form.
  */
 
@@ -19,7 +20,6 @@ function spbellen_campaign_form($form, &$form_state) {
   if (empty($storage['campaign'])) {
     if (!empty($campaigns_list)) {
       // Select campaign.
-      // ----------------------------------------------------------
       $form['select_campaign'] = array(
         '#type' => 'select',
         '#title' => 'Kies een bestaande belcampagne, of maak een nieuwe campagne aan.',
@@ -159,11 +159,16 @@ function spbellen_campaign_form($form, &$form_state) {
         '#markup' => '<strong>Overig</strong>',
       );
 
+      $options = array(
+        '0' => 'Toon eerst de contacten uit de afdeling of regio beller, en daarna pas andere contacten',
+        '1' => 'Toon alle contacten',
+        '2' => 'Toon alleen contacten uit afdeling beller',
+      );
       $form['afdeling_filter'] = array(
-        '#type' => 'checkboxes',
+        '#type' => 'radios',
         '#name' => 'afdeling_filter',
-        '#options' => array('enabled' => 'Toon alleen contacten uit afdeling beller'),
-        '#default_value' => empty($storage['afdeling_filter']) ? array() : array('enabled'),
+        '#options' => $options,
+        '#default_value' => empty($storage['afdeling_filter']) ? '0' : $storage['afdeling_filter'],
       );
 
       $form['disabled'] = array(
@@ -363,7 +368,14 @@ function theme_spbellen_campaign_form($variables) {
         'class' => array('draggable'),
       );
     }
-    $header = array('Import', 'Datum', 'Aantal', 'Actief', 'Blokkeren', 'Gewicht');
+    $header = array(
+      'Import',
+      'Datum',
+      'Aantal',
+      'Actief',
+      'Blokkeren',
+      'Gewicht',
+    );
     $table_id = 'spbellen-import-settings-tabledrag';
     $import_settings_table = theme('table', array(
       'header' => $header,
@@ -384,9 +396,6 @@ function theme_spbellen_campaign_form($variables) {
       }
     }
   }
-  if (!empty($table_id)) {
-    //drupal_add_tabledrag($table_id, 'order', 'sibling', 'import-setting-weight');
-  }
   return $output;
 }
 
@@ -399,7 +408,7 @@ function spbellen_store_campaign($storage, $values) {
     $properties = array(
       'webform_id' => $values['webform'],
       'disabled' => empty($values['disabled']['disabled']) ? 0 : 1,
-      'afdeling_filter' => empty($values['afdeling_filter']['enabled']) ? 0 : 1,
+      'afdeling_filter' => $values['afdeling_filter'],
       'campaign_code' => $values['campaign_code'],
       'intro_text' => $values['intro_text'],
       'title' => $values['title'],
@@ -412,7 +421,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign = entity_load_single('campaign', $storage['campaign']);
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
-    $campaign->afdeling_filter = empty($values['afdeling_filter']['enabled']) ? 0 : 1;
+    $campaign->afdeling_filter = empty($values['afdeling_filter']) ? '0' : $values['afdeling_filter'];
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];
