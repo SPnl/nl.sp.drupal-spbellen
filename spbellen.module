@@ -21,14 +21,14 @@ function spbellen_menu() {
     'title' => 'SP bellen',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_start_page_form'),
-    'file' => 'spbellen_start_page_form.inc',
+    'file' => 'includes/spbellen_start_page_form.inc',
     'access callback' => TRUE,
   );
 
   $items['bellen/belknop'] = array(
     'title' => '',
     'page callback' => 'spbellen_call_button',
-    'file' => 'spbellen_call_button.inc',
+    'file' => 'includes/spbellen_call_button.inc',
     'access callback' => TRUE,
   );
 
@@ -61,7 +61,7 @@ function spbellen_menu() {
   $items['admin/beltool/coach/overview'] = array(
     'title' => 'Overzicht belcampagnes',
     'page callback' => 'spbellen_overview',
-    'file' => 'spbellen_admin_overview.inc',
+    'file' => 'includes/spbellen_admin_overview.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => '0',
     'access arguments' => array('spbellen administer callers'),
@@ -71,7 +71,7 @@ function spbellen_menu() {
     'title' => 'Inschrijven bellers',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_coach_subscribe_callers_form'),
-    'file' => 'spbellen_coach_subscribe_callers_form.inc',
+    'file' => 'includes/spbellen_coach_subscribe_callers_form.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => '1',
     'access arguments' => array('spbellen administer callers'),
@@ -81,7 +81,7 @@ function spbellen_menu() {
     'title' => 'Beller stats',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_caller_stats_form'),
-    'file' => 'spbellen_coach_caller_stats_form.inc',
+    'file' => 'includes/spbellen_coach_caller_stats_form.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => '2',
     'access arguments' => array('spbellen administer callers'),
@@ -93,7 +93,7 @@ function spbellen_menu() {
     'weight' => '3',
     'access arguments' => array('spbellen administer callers'),
     'page callback' => 'spbellen_call_back_list',
-    'file' => 'spbellen_call_back.inc',
+    'file' => 'includes/spbellen_call_back.inc',
   );
 
   $items['admin/beltool/coach/call_back/%'] = array(
@@ -102,7 +102,7 @@ function spbellen_menu() {
     'page arguments' => array(4),
     'access arguments' => array('spbellen administer callers'),
     'type' => MENU_CALLBACK,
-    'file' => 'spbellen_call_back.inc',
+    'file' => 'includes/spbellen_call_back.inc',
   );
 
   $items['admin/beltool/config'] = array(
@@ -116,7 +116,7 @@ function spbellen_menu() {
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_campaign_form'),
-    'file' => 'spbellen_admin_campaign_form.inc',
+    'file' => 'includes/spbellen_admin_campaign_form.inc',
     'access arguments' => array('spbellen administer campaigns'),
     'weight' => '1',
   );
@@ -126,7 +126,7 @@ function spbellen_menu() {
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_import_form'),
-    'file' => 'spbellen_import_form.inc',
+    'file' => 'includes/spbellen_import_form.inc',
     'access arguments' => array('spbellen administer campaigns'),
     'weight' => '2',
   );
@@ -136,7 +136,7 @@ function spbellen_menu() {
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('spbellen_settings_form'),
-    'file' => 'spbellen_admin_settings_form.inc',
+    'file' => 'includes/spbellen_admin_settings_form.inc',
     'access arguments' => array('spbellen administer campaigns'),
     'weight' => '3',
   );
@@ -160,7 +160,7 @@ function spbellen_menu() {
           'title' => 'Aanmelden ' . $webform->title,
           'page callback' => 'drupal_get_form',
           'page arguments' => array('spbellen_subscription_form'),
-          'file' => 'spbellen_subscription_form.inc',
+          'file' => 'includes/spbellen_subscription_form.inc',
           'access callback' => TRUE,
           'type' => MENU_CALLBACK,
         );
@@ -171,7 +171,7 @@ function spbellen_menu() {
       'title' => 'Aanmelding bevestigen',
       'page callback' => 'spbellen_confirm_account',
       'page arguments' => array(2),
-      'file' => 'spbellen_subscription_form.inc',
+      'file' => 'includes/spbellen_subscription_form.inc',
       'access callback' => TRUE,
       'type' => MENU_CALLBACK,
     );
@@ -905,7 +905,7 @@ function spbellen_theme($existing, $type, $theme, $path) {
   }
   $variables['history'] = NULL;
   $registry['spbellen_block_theme'] = array(
-    'template' => 'spbellen-block',
+    'template' => 'templates/spbellen-block',
     'variables' => $variables,
   );
 
@@ -915,7 +915,7 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'general_stats',
   );
   $registry['spbellen_overview_theme'] = array(
-    'template' => 'spbellen-overview',
+    'template' => 'templates/spbellen-overview',
     'variables' => $variables,
   );
 
@@ -924,11 +924,11 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'general_stats',
   );
   $registry['spbellen_caller_overview_theme'] = array(
-    'template' => 'spbellen-caller-overview',
+    'template' => 'templates/spbellen-caller-overview',
     'variables' => $variables,
   );
   $registry['spbellen_callers_overview_theme'] = array(
-    'template' => 'spbellen-callers-overview',
+    'template' => 'templates/spbellen-callers-overview',
     'variables' => $variables,
   );
 
@@ -938,14 +938,14 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'call_back_data',
   );
   $registry['spbellen_call_back_list_theme'] = array(
-    'template' => 'spbellen-call-back-list',
+    'template' => 'templates/spbellen-call-back-list',
     'variables' => $variables,
   );
 
   // Admin campaign form.
   $registry['spbellen_campaign_form'] = array(
     'render element' => 'form',
-    'file' => 'spbellen_admin_campaign_form.inc',
+    'file' => 'includes/spbellen_admin_campaign_form.inc',
   );
 
   // Belknop page.
@@ -953,7 +953,7 @@ function spbellen_theme($existing, $type, $theme, $path) {
     'username',
   );
   $registry['spbellen_call_button'] = array(
-    'template' => 'spbellen_call_button',
+    'template' => 'templates/spbellen_call_button',
     'variables' => $variables,
   );
 
