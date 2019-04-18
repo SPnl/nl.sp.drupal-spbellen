@@ -958,7 +958,7 @@ function spbellen_assign_target($campaign) {
       );
 
       // Order defaults.
-      $order_defaults = 'call_order ASC, attempts ASC, ta.date ASC, afdeling_id IS NULL DESC, RAND()';
+      $order_defaults = 'call_order ASC, attempts ASC, afdeling_id IS NULL DESC, ta.date ASC, RAND()';
 
       // Optionally filter or sort by geo information.
       $order_by_geo = '';
