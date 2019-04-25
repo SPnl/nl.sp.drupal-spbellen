@@ -7,10 +7,6 @@ function spbellen_start_page_form($form, &$form_state) {
     $form['intro'] = array(
       '#markup' => check_markup($intro['value'], $intro['format']),
     );
-    $call_button_text = variable_get('spbellen_general_call_button_text', NULL);
-    $form['belknop-intro'] = array(
-      '#markup' => check_markup($call_button_text['value'], $call_button_text['format']),
-    );
     if (spbellen_click2dial_location()) {
       $form['call_script'] = array(
         '#type' => 'submit',
@@ -28,6 +24,10 @@ function spbellen_start_page_form($form, &$form_state) {
         '#type' => 'submit',
         '#value' => 'Belknop (mobiel)',
         '#name' => 'call_button',
+      );
+      $call_button_text = variable_get('spbellen_general_call_button_text', NULL);
+      $form['belknop-intro'] = array(
+        '#markup' => check_markup($call_button_text['value'], $call_button_text['format']),
       );
     }
   }
