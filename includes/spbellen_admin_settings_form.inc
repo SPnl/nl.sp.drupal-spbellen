@@ -82,6 +82,13 @@ function spbellen_settings_form($form, &$form_state) {
     '#format' => isset($default['format']) ? $default['format'] : NULL,
     '#default_value' => isset($default['value']) ? $default['value'] : '',
   );
+  $default = variable_get('spbellen_general_call_button_text', array('value' => '<p>Log in op uw computer en klik op "Belscript". Log vervolgens in op uw mobiele telefoon en klik op "Belknop". U ziet vervolgens op uw telefoon een knop waarmee u het contact kunt bellen dat u ziet op uw computerscherm.</p>'));
+  $form['spbellen_text_settings']['spbellen_general_call_button_text'] = array(
+    '#type' => 'text_format',
+    '#title' => 'Belknop uitleg',
+    '#format' => isset($default['format']) ? $default['format'] : NULL,
+    '#default_value' => isset($default['value']) ? $default['value'] : '',
+  );
   $default = variable_get('spbellen_campaign_select_intro', array('value' => '<p>Kies hieronder een campagne waarvoor je wil bellen.</p>'));
   $form['spbellen_text_settings']['spbellen_campaign_select_intro'] = array(
     '#type' => 'text_format',
