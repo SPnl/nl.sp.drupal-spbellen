@@ -94,6 +94,7 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
   $spcivi = \SPCivi::getInstance();
 
   $context['results']['import_id'] = $import_info['id'];
+  $context['results']['external_group_id'] = $group_info['id'];
 
   if (empty($context['sandbox'])) {
     // Get total number of contacts.
@@ -109,16 +110,17 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
     }
 
     $context['sandbox'] = array();
-    $context['sandbox']['progress'] = 0;
+    $context['results']['progress'] = $group_info['last_imported_id'];
     $context['sandbox']['current_contact'] = 0;
     $context['sandbox']['max'] = $number_of_contacts;
     $context['sandbox']['current_chunk'] = 0;
   }
 
   $params = array(
-    'options' => array('limit' => $chunk_size, 'offset' => $context['sandbox']['progress']),
+    'options' => array('limit' => $chunk_size, 'offset' => $context['results']['progress']),
     'group' => $group_info['id'],
     'include_non_menmbers' => 1,
+    'order_by_group_contact_id' => 1,
   );
   $results = $spcivi->api('Contact', 'getspdata', $params);
   if (spbellen_check_result($results, 'contacten', 'get', $params)) {
@@ -137,7 +139,7 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
         }
 
         // Update our progress information.
-        $context['sandbox']['progress']++;
+        $context['results']['progress']++;
         $context['sandbox']['current_contact'] = $crm_contact_id;
       }
 
@@ -165,6 +167,9 @@ function spbellen_civi_import_get_targets_batch_finished($success, $results, $op
     db_update('spbellen_import_history')
       ->fields(array(
         'quantity' => $total,
+        'importer' => 'spbellen_civi_import',
+        'external_group_id' => $results['external_group_id'],
+        'external_last_imported_id' => $results['progress'],
       ))
       ->condition('id', $results['import_id'])
       ->execute();
@@ -309,4 +314,14 @@ function spbellen_civi_import_map_civi_data($civi_data) {
     $contact_data['notes'] = $notes_serialized;
   }
   return $contact_data;
+}
+
+/**
+ * Gets last imported id within external group for campaign or returns 0.
+ */
+function spbellen__civi_import_get_last_imported($campaign_id, $external_group_id) {
+  $query = "SELECT external_last_imported_id FROM {spbellen_import_history} WHERE campaign_id = :campaign_id AND external_group_id = :external_group_id ORDER BY id DESC";
+  $result = db_query($query, array(':campaign_id' => $campaign_id, ':external_group_id' => $external_group_id));
+  $record = $result->fetchField();
+  return empty($record) ? 0 : $record;
 }

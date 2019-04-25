@@ -176,7 +176,7 @@ function spbellen_csv_import_import_form_submit($form, &$form_state) {
           // Create import.
           $import_title = 'CSV import: ' . $storage['upload']->filename;
           $storage['import_title'] = $import_title;
-          $import_id = spbellen_store_import_history($storage['campaign'], 0, $import_title);
+          $import_id = spbellen_create_import_history($storage['campaign'], $import_title);
           $storage['import_id'] = $import_id;
           // Import csv.
           $batch = array(

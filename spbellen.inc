@@ -1367,14 +1367,14 @@ function spbellen_import_contact($campaign_id, $import_id, array $contact_data) 
 /**
  * Store import history.
  */
-function spbellen_store_import_history($campaign_id, $quantity, $title, $state = 1) {
+function spbellen_create_import_history($campaign_id, $title, $importer = '', $external_group_id = '') {
   if (!empty($campaign_id) && !empty($title)) {
     $fields = array(
       'campaign_id' => $campaign_id,
       'date' => time(),
-      'quantity' => $quantity,
+      'quantity' => 0,
       'title' => $title,
-      'state' => $state,
+      'state' => 1,
     );
     $import_history = entity_create('import_history', $fields);
     entity_save('import_history', $import_history);
@@ -1387,7 +1387,7 @@ function spbellen_get_import_history($campaign_id) {
   if (!isset($rows)) {
     $rows = array();
     if (!empty($campaign_id)) {
-      $query = "SELECT * FROM {spbellen_import_history} WHERE campaign_id = :campaign_id ORDER BY call_order";
+      $query = "SELECT * FROM {spbellen_import_history} WHERE campaign_id = :campaign_id ORDER BY date";
       $result = db_query($query, array(':campaign_id' => $campaign_id));
       $rows = $result->FetchAllAssoc('id');
     }

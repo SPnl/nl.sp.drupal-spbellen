@@ -533,6 +533,21 @@ function spbellen_schema() {
         'default' => 0,
         'not null' => TRUE,
       ),
+      'importer' => array(
+        'description' => 'Name of the importer',
+        'type' => 'varchar',
+        'length' => '255',
+      ),
+      'external_campaign_id' => array(
+        'description' => 'External campaign_id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'external_last_imported_id' => array(
+        'description' => 'Last imported external contact id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
     ),
     'primary key' => array(
       'id',
@@ -1600,5 +1615,37 @@ function spbellen_update_7033() {
 
   if (!db_field_exists('spbellen_contact_data', 'regio_id')) {
     db_add_field('spbellen_contact_data', 'regio_id', $spec);
+  }
+}
+
+/**
+ * Adds fields to import history table.
+ */
+function spbellen_update_7034() {
+  $spec = array(
+    'description' => 'Name of the importer module',
+    'type' => 'varchar',
+    'length' => '255',
+  );
+  if (!db_field_exists('spbellen_import_history', 'importer')) {
+    db_add_field('spbellen_import_history', 'importer', $spec);
+  }
+
+  $spec = array(
+    'description' => 'External group id',
+    'type' => 'int',
+    'size' => 'big',
+  );
+  if (!db_field_exists('spbellen_import_history', 'external_group_id')) {
+    db_add_field('spbellen_import_history', 'external_group_id', $spec);
+  }
+
+  $spec = array(
+    'description' => 'Last imported external contact id',
+    'type' => 'int',
+    'size' => 'big',
+  );
+  if (!db_field_exists('spbellen_import_history', 'external_last_imported_id')) {
+    db_add_field('spbellen_import_history', 'external_last_imported_id', $spec);
   }
 }

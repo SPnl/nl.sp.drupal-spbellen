@@ -135,22 +135,20 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
     // Import contacts.
     $operations = array();
     $groups = $storage['groups'];
-    // Create import_title.
-    foreach ($groups as $group_id => $group_title) {
-      $import_sub_titles[$group_id] = $group_title . ' (' . $group_id . ')';
-    }
-    if (!empty($import_sub_titles)) {
-      $import_title = 'Civi-import: ' . implode(', ', $import_sub_titles);
-      $import_id = spbellen_store_import_history($storage['campaign'], 0, $import_title);
-    }
     // Creae batch operations.
     foreach ($groups as $group_id => $group_title) {
+      $import_title = 'Civi-import: ' . $group_title;
+      // Get last imported id from group.
+      $last_imported_id = spbellen__civi_import_get_last_imported($storage['campaign'], $group_id);
+
+      $import_id = spbellen_create_import_history($storage['campaign'], $import_title, 'spbellen_civi_import', $group_id);
       $group_name = spbellen_civi_import_get_group_machine_name($group_id);
       if (!empty($group_name)) {
         $group_info = array(
           'id' => $group_id,
           'name' => $group_name,
           'title' => $group_title,
+          'last_imported_id' => $last_imported_id,
         );
         $import_info = array(
           'id' => $import_id,
@@ -165,18 +163,16 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
             $group_info,
           ),
         );
+        $batch = array(
+          'operations' => $operations,
+          'finished' => 'spbellen_civi_import_get_targets_batch_finished',
+          'title' => 'Ophalen contacten',
+          'init_message' => '0',
+          'progress_message' => 'Groep @current van @total',
+          'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
+        );
+        batch_set($batch);
       }
-    }
-    if (!empty($operations)) {
-      $batch = array(
-        'operations' => $operations,
-        'finished' => 'spbellen_civi_import_get_targets_batch_finished',
-        'title' => 'Ophalen contacten',
-        'init_message' => '0',
-        'progress_message' => 'Groep @current van @total',
-        'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
-      );
-      batch_set($batch);
     }
   }
 }

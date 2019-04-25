@@ -125,32 +125,34 @@ function spbellen_campaign_form($form, &$form_state) {
         if (!empty($import_history)) {
           $form['import_settings']['#tree'] = TRUE;
           foreach ($import_history as $import_id => $import_data) {
-            $form['import_settings'][$import_id] = array(
-              'name' => array(
-                '#markup' => check_plain($import_data->title),
-              ),
-              'date' => array(
-                '#markup' => check_plain(date('j-n-Y G:i:s', $import_data->date)),
-              ),
-              'quantity' => array(
-                '#markup' => check_plain($import_data->quantity),
-              ),
-              'active_import' => array(
-                '#type' => 'checkbox',
-                '#default_value' => $import_data->state,
-              ),
-              'block_import' => array(
-                '#type' => 'checkbox',
-                '#default_value' => $import_data->block,
-              ),
-              'weight' => array(
-                '#type' => 'weight',
-                '#title' => t('Weight'),
-                '#default_value' => $import_data->call_order,
-                '#delta' => 10,
-                '#title_display' => 'invisible',
-              ),
-            );
+            if ($import_data->quantity > 0) {
+              $form['import_settings'][$import_id] = array(
+                'name' => array(
+                  '#markup' => check_plain($import_data->title),
+                ),
+                'date' => array(
+                  '#markup' => check_plain(date('j-n-Y G:i:s', $import_data->date)),
+                ),
+                'quantity' => array(
+                  '#markup' => check_plain($import_data->quantity),
+                ),
+                'active_import' => array(
+                  '#type' => 'checkbox',
+                  '#default_value' => $import_data->state,
+                ),
+                'block_import' => array(
+                  '#type' => 'checkbox',
+                  '#default_value' => $import_data->block,
+                ),
+                'weight' => array(
+                  '#type' => 'weight',
+                  '#title' => t('Weight'),
+                  '#default_value' => $import_data->call_order,
+                  '#delta' => 10,
+                  '#title_display' => 'invisible',
+                ),
+              );
+            }
           }
         }
       }
