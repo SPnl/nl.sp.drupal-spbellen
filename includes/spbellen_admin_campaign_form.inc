@@ -162,9 +162,9 @@ function spbellen_campaign_form($form, &$form_state) {
       );
 
       $options = array(
-        '0' => 'Toon eerst de contacten uit de afdeling of regio beller, en daarna pas andere contacten',
-        '1' => 'Toon alle contacten',
-        '2' => 'Toon alleen contacten uit afdeling beller',
+        '0' => 'Toon eerst de contacten uit de afdeling of regio beller, en daarna pas andere contacten (ook als deze minder vaak gebeld zijn, waarbij contacten in een import met een hoger gewicht altijd voor gaan)',
+        '1' => 'Toon alle contacten.',
+        '2' => 'Toon alleen contacten uit afdeling beller.',
       );
       $form['afdeling_filter'] = array(
         '#type' => 'radios',
