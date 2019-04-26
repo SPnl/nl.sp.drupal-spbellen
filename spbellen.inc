@@ -110,10 +110,10 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
       $campaign_id = spbellen_get_campaign_id($webform_id);
       if (!empty($campaign_id)) {
         $max_attempts = variable_get('spbellen_max_attempts', '5');
-        $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND im.campaign_id = :campaign_id AND ta.state = 1 AND im.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.block = 1) AND ";
+        $from_where = spbellen_get_from_where();
         $query = "SELECT ta.id, cd.phone, cd.display_name" . $from_where . "(cd.phone LIKE :phonenumber OR cd.display_name LIKE :display_name) AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND (ta.date < :occupied_time OR ta.caller_id = :caller_id))) ORDER BY call_order ASC, attempts ASC, ta.date ASC, RAND() LIMIT 10";
         $substitutions = array(
-          ':campaign_id' => $campaign_id,
+          ':cid' => $campaign_id,
           ':phonenumber' => '%' . db_like($string) . '%',
           ':display_name' => '%' . db_like($string) . '%',
           ':caller_id' => $user_id,
@@ -949,16 +949,13 @@ function spbellen_assign_target($campaign) {
       user_is_logged_in()
     ) {
       // Query parts.
-      $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND im.campaign_id = :cid AND ta.state = 1 AND im.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :cid AND im.block = 1) AND ";
+      $from_where = spbellen_get_from_where();
 
       $from_vars = array(
         ':cid' => $campaign_id,
         ':caller_id' => $user->uid,
         ':max_attempts' => $max_attempts,
       );
-
-      // Order defaults.
-      $order_defaults = 'call_order ASC, attempts ASC, afdeling_id IS NULL DESC, ta.date ASC, RAND()';
 
       // Optionally filter or sort by geo information.
       $order_by_geo = '';
@@ -992,12 +989,15 @@ function spbellen_assign_target($campaign) {
           break;
       }
 
+      // Order defaults.
+      $order_defaults = 'call_order ASC, attempts ASC, ' . $order_by_geo . ' afdeling_id IS NULL DESC, ta.date ASC, RAND()';
+
       // Check if claimed target exists.
       $query = "SELECT ta.contact_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped')) AND ta.caller_id = :caller_id LIMIT 1";
       $result = db_query($query, $from_vars)->fetchAssoc();
       if (!$result) {
         // Get appointment targets.
-        $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_by_geo . "call_back_time ASC, " . $order_defaults . " LIMIT 1";
+        $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, " . $order_defaults . " LIMIT 1";
         $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
           ':current_time' => time(),
           ':occupied_time' => time() - 1800,
@@ -1015,7 +1015,7 @@ function spbellen_assign_target($campaign) {
         }
         else {
           // Get target.
-          $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_by_geo . $order_defaults . " LIMIT 1";
+          $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
           $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
             ':occupied_time' => time() - 1800,
             ':current_time' => time(),
@@ -1904,4 +1904,12 @@ function spbellen_find_best_contact($contact_ids) {
   }
   arsort($scores);
   return key($scores);
+}
+
+/**
+ * Return from where query part to select contact.
+ */
+function spbellen_get_from_where() {
+  $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND im.campaign_id = :cid AND ta.state = 1 AND im.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :cid AND im.block = 1) AND ";
+  return $from_where;
 }
