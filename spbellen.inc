@@ -1276,12 +1276,14 @@ function spbellen_get_contact_id($crm_contact_id) {
 }
 
 function spbellen_get_chapter_and_region($postal_code) {
-  // Get afdeling.
-  foreach (module_implements('spbellen_get_chapter_and_region') as $module) {
-    $function = $module . '_spbellen_get_chapter_and_region';
-    $afdeling_data = $function($postal_code);
-    if (!empty($afdeling_data)) {
-      return $afdeling_data;
+  if (! empty($postal_code)) {
+    // Get afdeling.
+    foreach (module_implements('spbellen_get_chapter_and_region') as $module) {
+      $function = $module . '_spbellen_get_chapter_and_region';
+      $afdeling_data = $function($postal_code);
+      if (!empty($afdeling_data)) {
+        return $afdeling_data;
+      }
     }
   }
 }

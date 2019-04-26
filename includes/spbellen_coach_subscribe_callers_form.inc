@@ -74,7 +74,6 @@ function spbellen_coach_subscribe_callers_form($form, &$form_state) {
   $form['postal_code'] = array(
     '#type' => 'textfield',
     '#title' => 'Postcode',
-    '#required' => TRUE,
     '#default_value' => empty($values['postal_code']) ? $default['postal_code'] : $values['postal_code'],
   );
 
@@ -166,10 +165,12 @@ function spbellen_coach_subscribe_callers_form_validate($form, &$form_state) {
         $error = TRUE;
       }
 
-      // Validatie postcode.
-      if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
-        form_set_error('phone', 'Vul een geldige postcode in!');
-        $error = TRUE;
+      // Validatie .
+      if (!empty($values['postal_code'])) {
+        if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
+          form_set_error('phone', 'Vul een geldige postcode in!');
+          $error = TRUE;
+        }
       }
 
       if (!empty($values['account_pass'])) {
