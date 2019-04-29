@@ -123,6 +123,7 @@ function _webform_render_sp_active($component) {
  */
 function _webform_submit_sp_active(array $component, $value) {
   $data[0] = $value['active'];
+
   foreach ($value['activities'] as $activity) {
     $data[] = $activity;
   }
@@ -197,8 +198,9 @@ function sp_active_display_format(array $value) {
 
   $output_tmp = '';
   $no = 1;
+
   foreach ($activity_options as $key => $option) {
-    if (!empty($value[$no])) {
+    if (in_array($key, $value)) {
       $output_tmp .= '<li>' . $option . '</li>';
     }
     $no++;
@@ -224,12 +226,12 @@ function _webform_table_sp_active($component, $value) {
   }
 
   $output_tmp = '';
-  $no = 1;
-  foreach ($activity_options as $key => $option) {
-    if (!empty($value[$no])) {
-      $output_tmp .= ', ' . $option;
+  if (!empty($value)) {
+    foreach ($activity_options as $key => $option) {
+      if (in_array($key, $value)) {
+        $output_tmp .= ', ' . $option;
+      }
     }
-    $no++;
   }
 
   if (!empty($output_tmp)) {
@@ -270,7 +272,12 @@ function _webform_csv_data_sp_active($component, $export_options, $value) {
 
   $no = 1;
   foreach ($activity_options as $key => $option) {
-    $return[] = empty($value[$no]) ? '' : 'x';
+    if (in_array($key, $value)) {
+      $return[] = 'x';
+    }
+    else {
+      $return[] = '';
+    }
     $no++;
   }
   return $return;
