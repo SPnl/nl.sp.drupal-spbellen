@@ -91,7 +91,7 @@ function spbellen_get_campaigns_list() {
         if (!empty($campaign->webform_id)) {
           $webform = entity_load_single('node', $campaign->webform_id);
           if (!empty($webform)) {
-            $campaigns_list[$campaign->id] = $webform->title;
+            $campaigns_list[$campaign->id] = $webform->title . ' (' . $campaign->id . ')';
           }
         }
       }
