@@ -472,6 +472,8 @@ function spbellen_webform_submission_insert($node, $submission) {
       $target_info = spbellen_get_target_info($campaign_id, $contact_id);
       $tid = $target_info['id'];
 
+      $max_attempts = variable_get('spbellen_max_attempts');
+
       // Create action.
       if (!empty($submission->data[$map['call_answered']][0])) {
         $result = $submission->data[$map['call_answered']][0];
@@ -530,6 +532,33 @@ function spbellen_webform_submission_insert($node, $submission) {
         $text = '<p>Het telefoonnummer ' . $phone . ' is volgens een vrijwilliger van het belteam niet correct.</p>';
         $text .= $caller_text;
         module_invoke_all('spbellen_process_phone_invalid_message', $crm_contact_id, $text);
+      }
+
+      // Check if contact is not reachable, and send e-mail if set in campaign.
+      if (($result === 'not_answered' && $target_info['attempts'] + 1 == $max_attempts) || $result == 'wrong_number') {
+        $campaign = spbellen_get_campaign($node->nid);
+        if (
+          !empty($campaign->send_fail_mail) &&
+          !empty($campaign->fail_mail_from) &&
+          !empty($campaign->fail_mail_content) &&
+          !empty($campaign->fail_mail_subject
+        )) {
+          $to = $submission->data[$map['spbellen_hidden_email']][0];
+          if (!empty($to)) {
+            $fail_mail_content = json_decode($campaign->fail_mail_content, TRUE);
+            $fail_mail_content_value = str_replace('[naam]', $submission->data[$map['spbellen_hidden_display_name']][0], $fail_mail_content['value']);
+            $fail_mail_content_value = str_replace('[telefoonnummer]', $submission->data[$map['spbellen_hidden_phone']][0], $fail_mail_content_value);
+            $fail_mail_content_format = $fail_mail_content['format'];
+            $params = array(
+              'fail_mail_content' => array(
+                'value' => $fail_mail_content_value,
+                'format' => $fail_mail_content_format,
+              ),
+              'fail_mail_subject' => $ccampaign->fail_mail_subject,
+            );
+            drupal_mail('spbellen', 'fail_mail', $to, language_default(), $params, $campaign->fail_mail_from);
+          }
+        }
       }
 
       // Disassign target.
@@ -1061,6 +1090,12 @@ function spbellen_mail($key, &$message, $params) {
       $message['body'][] = '<p>User:</p><pre>' . print_r($params['caller'], TRUE) . '</pre>';
       $message['body'][] = '<p>Submission:</p><pre>' . print_r($params['call_submission'], TRUE) . '</pre>';
       $message['body'][] = '<p>Node:</p><pre>' . print_r($params['campaign_node'], TRUE) . '</pre>';
+      break;
+
+    case 'fail_mail':
+      $content = check_markup($params['fail_mail_content']['value'], $params['fail_mail_content']['format']);
+      $message['subject'] = $params['fail_mail_subject'];
+      $message['body'][] = $content;
       break;
   }
 }

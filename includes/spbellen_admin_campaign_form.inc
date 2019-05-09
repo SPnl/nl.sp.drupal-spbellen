@@ -180,6 +180,61 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['disabled']) ? array() : array('disabled'),
       );
 
+      $form['send_fail_mail'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Stuur een e-mail als het contact niet bereikt kon worden',
+        '#default_value' => empty($storage['send_fail_mail']) ? FALSE : $storage['send_fail_mail'],
+      );
+
+      $form['fail_mail'] = array(
+        '#type' => 'fieldset',
+        '#title' => 'Mail contact indien niet bereikt',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="send_fail_mail"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+
+      $form['fail_mail']['fail_mail_subject'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Onderwerp',
+        '#default_value' => empty($storage['fail_mail_subject']) ? '' : $storage['fail_mail_subject'],
+      );
+
+      $form['fail_mail']['tokens'] = array(
+        '#markup' => 'Beschikbare tokens: [naam] en [telefoonnummer].',
+      );
+
+      $default = $storage['fail_mail_content'];
+      $form['fail_mail']['fail_mail_content'] = array(
+        '#type' => 'text_format',
+        '#title' => 'Inhoud',
+        '#format' => isset($default['format']) ? $default['format'] : 'filtered_html',
+        '#default_value' => isset($default['value']) ? $default['value'] : 'Beste <naam>,',
+      );
+
+      $form['fail_mail']['fail_mail_from'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Afzender e-mailadres',
+        '#default_value' => empty($storage['fail_mail_from']) ? '' : $storage['fail_mail_from'],
+      );
+
+      $form['fail_mail']['fail_mail_to_test'] = array(
+        '#type' => 'textfield',
+        '#title' => 'Test e-mailadres',
+      );
+
+      $form['fail_mail']['send'] = array(
+        '#type' => 'button',
+        '#value' => 'Verstuur een testmail',
+        '#name' => 'send',
+        '#ajax' => array(
+          'wrapper' => 'spbellen_ajax_form',
+          'callback' => 'spbellen_form_ajax_callback',
+        ),
+      );
+
       $form['submit'] = array(
         '#type' => 'submit',
         '#value' => 'Sla op',
@@ -217,6 +272,15 @@ function spbellen_campaign_form_validate($form, &$form_state) {
       case 'sync_targets':
         return;
 
+      case 'send':
+        if (!empty($values['send_fail_mail']) && !empty($values['fail_mail_to_test'])  && !empty($values['fail_mail_from']) && !empty($values['fail_mail_subject'])) {
+          spbellen_send_test_mail($values);
+        }
+        else {
+          form_set_error('fail_mail', 'Kon de test mail niet verzenden, er zijn lege velden in de mail!');
+        }
+        break;
+
       case 'select_campaign':
         // Store selected campaign.
         if (!empty($values['select_campaign'])) {
@@ -231,6 +295,10 @@ function spbellen_campaign_form_validate($form, &$form_state) {
             $storage['campaign_code'] = $campaign->campaign_code;
             $storage['campaign_start_page_text'] = $campaign->start_page_text;
             $storage['click2dial_call_number'] = $campaign->click2dial_call_number;
+            $storage['fail_mail_subject'] = $campaign->fail_mail_subject;
+            $storage['fail_mail_content'] = json_decode($campaign->fail_mail_content, TRUE);
+            $storage['fail_mail_from'] = $campaign->fail_mail_from;
+            $storage['send_fail_mail'] = $campaign->send_fail_mail;
             if (!empty($campaign->title)) {
               $storage['title'] = $campaign->title;
             }
@@ -416,6 +484,10 @@ function spbellen_store_campaign($storage, $values) {
       'title' => $values['title'],
       'start_page_text' => !empty($values['campaign_intro_text']) ? $values['campaign_intro_text'] : '',
       'click2dial_call_number' => !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '',
+      'fail_mail_subject' => !empty($values['fail_mail_subject']) ? $values['fail_mail_subject'] : '',
+      'fail_mail_content' => !empty($values['fail_mail_content']) ? json_encode($values['fail_mail_content']) : '',
+      'fail_mail_from' => !empty($values['fail_mail_from']) ? $values['fail_mail_from'] : '',
+      'send_fail_mail' => !empty($values['send_fail_mail']) ? 1 : 0,
     );
     $campaign = entity_create('campaign', $properties);
   }
@@ -428,6 +500,10 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];
     $campaign->click2dial_call_number = !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '';
+    $campaign->fail_mail_subject = empty($values['fail_mail_subject']) ? '' : $values['fail_mail_subject'];
+    $campaign->fail_mail_content = empty($values['fail_mail_content']) ? '' : json_encode($values['fail_mail_content']);
+    $campaign->fail_mail_from = empty($values['fail_mail_from']) ? '' : $values['fail_mail_from'];
+    $campaign->send_fail_mail = empty($values['send_fail_mail']) ? 0 : 1;
   }
   $result = entity_save('campaign', $campaign);
 
@@ -451,4 +527,11 @@ function spbellen_delete_campaign($campaign_id) {
   else {
     drupal_set_message('Campagne is verwijderd.');
   }
+}
+
+/**
+ * Send a test mail.
+ */
+function spbellen_send_test_mail($values) {
+  drupal_mail('spbellen', 'fail_mail', $values['fail_mail_to_test'], language_default(), $values, $values['fail_mail_from']);
 }

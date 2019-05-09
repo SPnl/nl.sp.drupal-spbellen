@@ -95,6 +95,31 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
       ),
+      'fail_mail_subject' => array(
+        'description' => 'Failed to reach email subject.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'fail_mail_content' => array(
+        'description' => 'Failed to reach email content.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
+      'fail_mail_from' => array(
+        'description' => 'Failed to reach email from address.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'send_fail_mail' => array(
+        'description' => 'Wether to send a mail when contact not reached.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
     ),
     'primary key' => array(
       'id',
@@ -1649,3 +1674,53 @@ function spbellen_update_7034() {
     db_add_field('spbellen_import_history', 'external_last_imported_id', $spec);
   }
 }
+
+/**
+ * Adds fail to contact mail fields to campaign table.
+ */
+function spbellen_update_7035() {
+  $spec = array(
+    'description' => 'Failed to reach email subject.',
+    'type' => 'varchar',
+    'length' => '255',
+  );
+  if (!db_field_exists('spbellen_campaign', 'fail_mail_subject')) {
+    db_add_field('spbellen_campaign', 'fail_mail_subject', $spec);
+  }
+
+  $spec = array(
+    'description' => 'Failed to reach email content.',
+    'type' => 'text',
+    'size' => 'normal',
+    'not null' => FALSE,
+  );
+  if (!db_field_exists('spbellen_campaign', 'fail_mail_content')) {
+    db_add_field('spbellen_campaign', 'fail_mail_content', $spec);
+  }
+
+  $spec = array(
+    'description' => 'Failed to reach email from address.',
+    'type' => 'varchar',
+    'length' => '255',
+    'not null' => FALSE,
+  );
+  if (!db_field_exists('spbellen_campaign', 'fail_mail_from')) {
+    db_add_field('spbellen_campaign', 'fail_mail_from', $spec);
+  }
+}
+
+/**
+ * Adds send fail mail field to campaign table.
+ */
+function spbellen_update_7036() {
+  $spec = array(
+    'description' => 'Wether to send a mail when contact not reached.',
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'not null' => TRUE,
+  );
+  if (!db_field_exists('spbellen_campaign', 'send_fail_mail')) {
+    db_add_field('spbellen_campaign', 'send_fail_mail', $spec);
+  }
+};
