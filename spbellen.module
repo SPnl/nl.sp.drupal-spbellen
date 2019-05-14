@@ -1154,7 +1154,7 @@ function spbellen_contact_block_data() {
         ));
         if (!empty($result)) {
           while ($row = $result->fetchAssoc()) {
-            $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i", 'Europe/Amsterdam');
+            $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
             $call_back_time_formatted = '';
             switch ($row['result']) {
               case 'call_appointment':
