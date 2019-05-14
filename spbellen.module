@@ -1154,10 +1154,12 @@ function spbellen_contact_block_data() {
         ));
         if (!empty($result)) {
           while ($row = $result->fetchAssoc()) {
-            $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i");
+            $date_formatted = format_date($row['timestamp'], 'custom', "D j-n-Y G:i", 'Europe/Amsterdam');
+            $call_back_time_formatted = '';
             switch ($row['result']) {
               case 'call_appointment':
-                $text = 'Terugbelafspraak (' . format_date($row['call_back_time'], 'custom', "D j-n-Y G:i") . ')';
+                $call_back_time_formatted = format_date($row['call_back_time'], 'custom', "D j-n-Y G:i");
+                $text = 'Terugbelafspraak (' . $call_back_time_formatted . ')';
                 break;
 
               default:
@@ -1169,7 +1171,7 @@ function spbellen_contact_block_data() {
               'result' => $text,
               'caller_message' => check_plain($row['caller_message']),
               'call_back_priority' => $row['call_back_priority'],
-              'call_back_time' => format_date($row['call_back_time'], 'custom', "D j-n-Y G:i"),
+              'call_back_time' => empty($call_back_time_formatted) ? '' : $call_back_time_formatted,
             );
           }
         }
