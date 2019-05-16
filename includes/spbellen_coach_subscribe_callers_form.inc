@@ -282,9 +282,17 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
             $caller->afdeling = $chapter_and_region['afdeling'];
             $caller->afdeling_id = $chapter_and_region['afdeling_id'];
           }
+          else {
+            $caller->afdeling = '';
+            $caller->afdeling_id = NULL;
+          }
           if (!empty($chapter_and_region['regio_id'])) {
             $caller->regio = $chapter_and_region['regio'];
             $caller->regio_id = $chapter_and_region['regio_id'];
+          }
+          else {
+            $caller->regio = '';
+            $caller->regio_id = NULL;
           }
         }
         else {
@@ -304,9 +312,17 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
             $caller_fields['afdeling'] = $chapter_and_region['afdeling'];
             $caller_fields['afdeling_id'] = $chapter_and_region['afdeling_id'];
           }
+          else {
+            $caller_fields['afdeling'] = '';
+            $caller_fields['afdeling_id'] = NULL;
+          }
           if (!empty($chapter_and_region['regio_id'])) {
             $caller_fields['regio'] = $chapter_and_region['regio'];
             $caller_fields['regio_id'] = $chapter_and_region['regio_id'];
+          }
+          else {
+            $caller_fields['regio'] = '';
+            $caller_fields['regio_id'] = NULL;
           }
           $caller = entity_create('caller', $caller_fields);
         }
