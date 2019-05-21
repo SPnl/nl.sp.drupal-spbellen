@@ -195,7 +195,7 @@ function spbellen_subscription_form($form, &$form_state) {
             $form['postal_code'] = array(
               '#type' => 'textfield',
               '#title' => 'Postcode',
-              '#required' => TRUE,
+              '#required' => FALSE,
             );
           }
 
@@ -342,9 +342,11 @@ function spbellen_subscription_form_validate($form, &$form_state) {
 
       if (empty($form_state['caller_data']->afdeling_id)) {
         // Verify postal code.
-        if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
-          form_set_error('postal_code', 'Vul een geldige postcode in!');
-          $error = TRUE;
+        if (!empty($values['postal_code'])) {
+          if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
+            form_set_error('postal_code', 'Vul een geldige postcode in!');
+            $error = TRUE;
+          }
         }
       }
       return;
