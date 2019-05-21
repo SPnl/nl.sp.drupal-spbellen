@@ -990,7 +990,7 @@ function spbellen_assign_target($campaign) {
       }
 
       // Order defaults.
-      $order_defaults = 'call_order ASC, ' . $order_by_geo . ' attempts ASC, afdeling_id IS NULL DESC, ta.date ASC, RAND()';
+      $order_defaults = 'call_order ASC, attempts ASC, ' . $order_by_geo . ' afdeling_id IS NULL DESC, ta.date ASC, RAND()';
 
       // Check if claimed target exists.
       $query = "SELECT ta.contact_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped')) AND ta.caller_id = :caller_id LIMIT 1";
