@@ -479,6 +479,13 @@ function spbellen_store_campaign($storage, $values) {
   }
   else {
     $campaign = entity_load_single('campaign', $storage['campaign']);
+    // Delete existing local access when campaign code is changed.
+    if ($campaign->campaign_code !== $values['campaign_code']) {
+      db_delete('spbellen_local_access')
+        ->condition('campaign_id', $campaign->id)
+        ->execute();
+      drupal_set_message('Campagnecode is gewijzigd. Bestaande toegangsrechten van bellers zijn verwijderd.');
+    }
     $campaign->webform_id = $storage['webform'];
     $campaign->disabled = empty($values['disabled']['disabled']) ? 0 : 1;
     $campaign->afdeling_filter = empty($values['afdeling_filter']) ? '0' : $values['afdeling_filter'];
