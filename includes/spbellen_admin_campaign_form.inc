@@ -337,20 +337,6 @@ function spbellen_campaign_form_validate($form, &$form_state) {
               $max_weight = $import_setting['weight'];
             }
           }
-          // Put order down when inactive.
-          foreach ($values['import_settings'] as $import_id => $import_setting) {
-            if ($import_setting['active_import'] == 0) {
-              $max_weight++;
-              $values['import_settings'][$import_id]['weight'] = $max_weight;
-            }
-          }
-          // Put order down when block.
-          foreach ($values['import_settings'] as $import_id => $import_setting) {
-            if ($import_setting['block_import'] == 1) {
-              $max_weight++;
-              $values['import_settings'][$import_id]['weight'] = $max_weight;
-            }
-          }
         }
         // Store imort state.
         return;
@@ -392,14 +378,14 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         }
         // Store imort state.
         if (!empty($values['import_settings'])) {
-          foreach ($values['import_settings'] as $key => $values) {
+          foreach ($values['import_settings'] as $import_settings_key => $import_settings_values) {
             db_update('spbellen_import_history')
               ->fields(array(
-                'state' => empty($values['active_import']) ? 0 : 1,
-                'call_order' => $values['weight'],
-                'block' => empty($values['block_import']) ? 0 : 1,
+                'state' => empty($import_settings_values['active_import']) ? 0 : 1,
+                'call_order' => $import_settings_values['weight'],
+                'block' => empty($import_settings_values['block_import']) ? 0 : 1,
               ))
-              ->condition('id', $key)
+              ->condition('id', $import_settings_key)
               ->execute();
           }
         }
