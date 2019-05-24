@@ -331,6 +331,8 @@ function spbellen_coach_subscribe_callers_form_submit($form, &$form_state) {
           }
           $caller = entity_create('caller', $caller_fields);
         }
+        $afdeling = empty($caller->afdeling) ? '-' : $caller->afdeling;
+        drupal_set_message('Afdeling: ' . $afdeling);
         entity_save('caller', $caller);
         $form_state['finish'] = TRUE;
         $form_state['values'] = array();
