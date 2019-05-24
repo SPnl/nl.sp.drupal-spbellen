@@ -77,6 +77,11 @@ function spbellen_coach_subscribe_callers_form($form, &$form_state) {
     '#default_value' => empty($values['postal_code']) ? $default['postal_code'] : $values['postal_code'],
   );
 
+  $afdeling = empty($caller->afdeling) ? '-' : $caller->afdeling;
+  $form['afdeling'] = array(
+    '#markup' => '<p><strong>Afdeling</strong><br/>' . $afdeling . '</p>',
+  );
+
   $form['account_pass'] = array(
     '#type' => 'password_confirm',
     '#title' => 'Kies een wachtwoord',
