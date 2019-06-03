@@ -961,32 +961,34 @@ function spbellen_assign_target($campaign) {
       $order_by_geo = '';
       $order_by_geo_vars = array();
 
-      switch ($campaign->afdeling_filter) {
-        case 0:
-          // By preference chapter or regional contacts.
-          if (!empty($caller->afdeling_id) && !empty($caller->regio_id)) {
-            $order_by_geo = 'afdeling_id = :afdeling_id DESC, regio_id = :regio_id DESC, ';
-            $order_by_geo_vars[':afdeling_id'] = $caller->afdeling_id;
-            $order_by_geo_vars[':regio_id'] = $caller->regio_id;
-          }
-          break;
+      if (!user_access('spbellen administer campaigns', $user) && !user_access('spbellen administer callers', $user)) {
+        switch ($campaign->afdeling_filter) {
+          case 0:
+            // By preference chapter or regional contacts.
+            if (!empty($caller->afdeling_id) && !empty($caller->regio_id)) {
+              $order_by_geo = 'afdeling_id = :afdeling_id DESC, regio_id = :regio_id DESC, ';
+              $order_by_geo_vars[':afdeling_id'] = $caller->afdeling_id;
+              $order_by_geo_vars[':regio_id'] = $caller->regio_id;
+            }
+            break;
 
-        case 1:
-          // All contacts.
-          break;
+          case 1:
+            // All contacts.
+            break;
 
-        case 2:
-          // Only chapter contacts.
-          if (!empty($caller->afdeling_id)) {
-            $from_where .= 'cd.afdeling_id = :afdeling_id AND ';
-            $from_vars[':afdeling_id'] = $caller->afdeling_id;
-          }
-          else {
-            drupal_set_message('Afdeling beller is onbekend!', 'error');
-            drupal_goto('/bellen/error');
-            return $contact_data;
-          }
-          break;
+          case 2:
+            // Only chapter contacts.
+            if (!empty($caller->afdeling_id)) {
+              $from_where .= 'cd.afdeling_id = :afdeling_id AND ';
+              $from_vars[':afdeling_id'] = $caller->afdeling_id;
+            }
+            else {
+              drupal_set_message('Afdeling beller is onbekend!', 'error');
+              drupal_goto('/bellen/error');
+              return $contact_data;
+            }
+            break;
+        }
       }
 
       // Order defaults.
@@ -1104,6 +1106,12 @@ function spbellen_check_result($result, $dataname, $action, $data = NULL, $submi
 }
 
 function spbellen_campaign_form_access($form_nid) {
+  // Give access to campaign administrator and caller admin.
+  global $user;
+  if (user_access('spbellen administer campaigns', $user) || user_access('spbellen administer callers', $user)) {
+    return TRUE;
+  }
+
   // Check session.
   if (
     !empty($_SESSION['spbellen']['local_access'][$form_nid]) ||
