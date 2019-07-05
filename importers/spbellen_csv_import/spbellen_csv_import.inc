@@ -156,6 +156,7 @@ function spbellen_csv_import_batch_finished($success, $results, $operations) {
     db_update('spbellen_import_history')
       ->fields(array(
         'quantity' => $total,
+        'importer' => 'spbellen_csv_import',
       ))
       ->condition('id', $results['import_id'])
       ->execute();
