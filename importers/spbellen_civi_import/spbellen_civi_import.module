@@ -4,6 +4,7 @@
  * Main module file for SP Beltool Civi importer.
  */
 
+module_load_include('inc', 'spbellen', 'includes/spbellen_import');
 module_load_include("inc", "spbellen_civi_import", "spbellen_civi_import");
 
  /**
@@ -134,47 +135,47 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
   if (!empty($storage['groups'])) {
     // Import contacts.
     $operations = array();
-    $groups = $storage['groups'];
+    $civi_groups = $storage['groups'];
     // Creae batch operations.
-    foreach ($groups as $group_id => $group_title) {
-      $import_title = 'Civi-import: ' . $group_title . ' (' . $group_id . ')';
+    foreach ($civi_groups as $civi_group_id => $civi_group_title) {
+      $group_title = 'Civi-import: ' . $civi_group_title . '(' . $civi_group_id . ')';
       // Get last imported id from group.
-      $last_imported_id = spbellen__civi_import_get_last_imported($storage['campaign'], $group_id);
+      $last_imported_id = spbellen_import_get_last_imported($civi_group_id);
 
-      $import_id = spbellen_create_import_history($storage['campaign'], $import_title, 'spbellen_civi_import', $group_id);
-      $group_name = spbellen_civi_import_get_group_machine_name($group_id);
-      if (!empty($group_name)) {
-        $group_info = array(
-          'id' => $group_id,
-          'name' => $group_name,
-          'title' => $group_title,
+      $group_id = spbellen_import_merge_group($group_title, 'spbellen_civi_import', $civi_group_id);
+      $import_id = spbellen_import_insert_import($group_id);
+      spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
+
+      $civi_group_name = spbellen_civi_import_get_group_machine_name($civi_group_id);
+      if (!empty($civi_group_name)) {
+        $import_data = array(
+          'group_id' => $group_id,
+          'import_id' => $import_id,
+          'civi_group_id' => $civi_group_id,
+          'civi_group_name' => $civi_group_name,
           'last_imported_id' => $last_imported_id,
-        );
-        $import_info = array(
-          'id' => $import_id,
-          'title' => $import_title,
-          'campaign_id' => $storage['campaign'],
         );
         // Add operation for each campaign group.
         $operations[] = array(
           'spbellen_civi_import_get_targets_batch',
           array(
-            $import_info,
-            $group_info,
+            $import_data,
           ),
         );
-        $batch = array(
-          'operations' => $operations,
-          'finished' => 'spbellen_civi_import_get_targets_batch_finished',
-          'title' => 'Ophalen contacten',
-          'init_message' => '0',
-          'progress_message' => 'Groep @current van @total',
-          'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
-        );
-        batch_set($batch);
       }
     }
+    $batch = array(
+      'operations' => $operations,
+      'finished' => 'spbellen_civi_import_get_targets_batch_finished',
+      'title' => 'Ophalen contacten',
+      'init_message' => '0',
+      'progress_message' => 'Groep @current van @total',
+      'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
+    );
+    batch_set($batch);
+    return;
   }
+  drupal_set_message('Er is iets misgegaan bij het importeren, probeer het opnieuw.', 'error');
 }
 
 /**

@@ -625,6 +625,176 @@ function spbellen_schema() {
     ),
   );
 
+  $schema['spbellen_imports'] = array(
+    'description' => 'Contact imports',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'group_id' => array(
+        'description' => 'Group id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'date' => array(
+        'description' => 'The moment when the import was finished.',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'quantity' => array(
+        'description' => 'Number of contacts imported',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'indexes' => array(
+      'group_id' => array('group_id'),
+      'date' => array('date'),
+    ),
+  );
+
+  $schema['spbellen_target_import_relation_new'] = array(
+    'description' => 'Target import relation.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'target_id' => array(
+        'description' => 'Target_id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'import_id' => array(
+        'description' => 'Group id.',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'unique keys' => array(
+      'target_import_id' => array(
+        'target_id',
+        'import_id',
+      ),
+    ),
+    'indexes' => array(
+      'target_id' => array('target_id'),
+      'import_id' => array('import_id'),
+      'target_import' => array(
+        'target_id',
+        'import_id',
+      ),
+    ),
+  );
+
+  $schema['spbellen_groups'] = array(
+    'description' => 'Contact groups.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'Title',
+        'type' => 'text',
+        'size' => 'normal',
+      ),
+      'importer' => array(
+        'description' => 'Name of the importer',
+        'type' => 'varchar',
+        'length' => '255',
+      ),
+      'external_group_id' => array(
+        'description' => 'External group id',
+        'type' => 'varchar',
+        'length' => '255',
+      ),
+      'external_last_imported_id' => array(
+        'description' => 'Last imported external contact id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+
+  $schema['spbellen_group_campaign_relation'] = array(
+    'description' => 'Group campaign relation.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Id.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'group_id' => array(
+        'description' => 'Group id',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'campaign_id' => array(
+        'description' => 'Campaign id.',
+        'type' => 'int',
+        'size' => 'big',
+      ),
+      'state' => array(
+        'description' => 'State (0 => inactive, 1 => active).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 1,
+        'not null' => TRUE,
+      ),
+      'call_order' => array(
+        'description' => 'Sync_id',
+        'type' => 'int',
+        'size' => 'tiny',
+      ),
+      'block' => array(
+        'description' => 'Block',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'unique keys' => array(
+      'group_campaign_id' => array(
+        'group_id',
+        'campaign_id',
+      ),
+    ),
+    'indexes' => array(
+      'campaign_id' => array('campaign_id'),
+      'group_id' => array('group_id'),
+      'call_order' => array('call_order'),
+      'state' => array('state'),
+      'block' => array('block'),
+      'order_state_block' => array(
+        'state',
+        'block',
+        'call_order',
+      ),
+    ),
+  );
+
   return $schema;
 }
 
@@ -678,59 +848,9 @@ function spbellen_update_7003() {
  */
 function spbellen_update_7004() {
   if (!db_table_exists('spbellen_contact_data')) {
-    $table = array(
-      'description' => 'Contact data.',
-      'fields' => array(
-        'contact_id' => array(
-          'description' => 'Contact id',
-          'type' => 'int',
-          'size' => 'big',
-        ),
-        'phone' => array(
-          'description' => 'Contact phone number.',
-          'type' => 'varchar',
-          'length' => 255,
-        ),
-        'display_name' => array(
-          'description' => 'Display name',
-          'type' => 'varchar',
-          'length' => 255,
-        ),
-        'email' => array(
-          'description' => 'Email address',
-          'type' => 'varchar',
-          'length' => 255,
-        ),
-        'street_address' => array(
-          'description' => 'Street address',
-          'type' => 'varchar',
-          'length' => 255,
-        ),
-        'postal_code' => array(
-          'description' => 'Postal code',
-          'type' => 'varchar',
-          'length' => 255,
-        ),
-        'city' => array(
-          'description' => 'City',
-          'type' => 'varchar',
-          'length' => 255,
-        ),
-        'gender' => array(
-          'description' => 'Gender',
-          'type' => 'varchar',
-          'length' => 255,
-        ),
-        'is_lid' => array(
-          'description' => 'Membership status',
-          'type' => 'int',
-          'size' => 'tiny',
-        ),
-      ),
-      'primary key' => array(
-        'contact_id',
-      ),
-    );
+    $schema = spbellen_schema();
+    // Create tables.
+    $table = $schema['spbellen_contact_data'];
     db_create_table('spbellen_contact_data', $table);
   }
 }
@@ -769,37 +889,9 @@ function spbellen_update_7006() {
  */
 function spbellen_update_7007() {
   if (!db_table_exists('spbellen_local_access')) {
-    $table = array(
-      'description' => 'Local account campaign access.',
-      'fields' => array(
-        'id' => array(
-          'description' => 'Primary key.',
-          'type' => 'serial',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'uid' => array(
-          'description' => 'Local account user id.',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'campaign_id' => array(
-          'description' => 'Campaign id.',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'hash' => array(
-          'description' => 'Hash',
-          'type' => 'varchar',
-          'length' => '255',
-        ),
-      ),
-      'primary key' => array(
-        'id',
-      ),
-    );
+    $schema = spbellen_schema();
+    // Create tables.
+    $table = $schema['spbellen_local_access'];
     db_create_table('spbellen_local_access', $table);
   }
 }
@@ -856,69 +948,9 @@ function spbellen_update_7012() {
  */
 function spbellen_update_7013() {
   if (!db_table_exists('spbellen_caller')) {
-    $table = array(
-      'description' => 'Local account campaign access.',
-      'fields' => array(
-        'caller_id' => array(
-          'description' => 'Caller account id',
-          'type' => 'int',
-          'size' => 'big',
-        ),
-        'access_type' => array(
-          'description' => 'Caller access type.',
-          'type' => 'varchar',
-          'length' => '255',
-          'not null' => TRUE,
-        ),
-        'state' => array(
-          'description' => 'Caller state.',
-          'type' => 'varchar',
-          'length' => '255',
-          'not null' => TRUE,
-          'default' => 'registered',
-        ),
-        'first_name' => array(
-          'description' => 'First name',
-          'type' => 'varchar',
-          'length' => 255,
-          'default' => '',
-        ),
-        'middle_name' => array(
-          'description' => 'Middle name',
-          'type' => 'varchar',
-          'length' => 255,
-          'default' => '',
-        ),
-        'last_name' => array(
-          'description' => 'Last name',
-          'type' => 'varchar',
-          'length' => 255,
-          'default' => '',
-        ),
-        'display_name' => array(
-          'description' => 'Display name',
-          'type' => 'varchar',
-          'length' => 255,
-          'default' => '',
-        ),
-        'phone' => array(
-          'description' => 'Display name',
-          'type' => 'varchar',
-          'length' => 255,
-          'default' => '',
-        ),
-      ),
-      'primary key' => array(
-        'caller_id',
-      ),
-      'unique keys' => array(
-        'caller_access' => array(
-          'caller_id',
-          'access_type',
-        ),
-      ),
-    );
-
+    $schema = spbellen_schema();
+    // Create tables.
+    $table = $schema['spbellen_caller'];
     db_create_table('spbellen_caller', $table);
   }
 
@@ -1419,101 +1451,17 @@ function spbellen_update_7029() {
 function spbellen_update_7030() {
   // Add spbelen_import_history table.
   if (!db_table_exists('spbellen_import_history')) {
-    $table = array(
-      'description' => 'Campaign import history',
-      'fields' => array(
-        'id' => array(
-          'description' => 'Id.',
-          'type' => 'serial',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'campaign_id' => array(
-          'description' => 'Campaign_id',
-          'type' => 'int',
-          'size' => 'big',
-        ),
-        'title' => array(
-          'description' => 'Title',
-          'type' => 'text',
-          'size' => 'normal',
-        ),
-        'date' => array(
-          'description' => 'The moment when the import was finished.',
-          'type' => 'int',
-          'size' => 'big',
-        ),
-        'quantity' => array(
-          'description' => 'Number of contacts imported',
-          'type' => 'int',
-          'size' => 'big',
-        ),
-        'state' => array(
-          'description' => 'State (0 => inactive, 1 => active).',
-          'type' => 'int',
-          'size' => 'tiny',
-          'default' => 1,
-          'not null' => TRUE,
-        ),
-        'call_order' => array(
-          'description' => 'Sync_id',
-          'type' => 'int',
-          'size' => 'tiny',
-        ),
-      ),
-      'primary key' => array(
-        'id',
-      ),
-      'indexes' => array(
-        'campaign_id' => array('campaign_id'),
-        'date' => array('date'),
-        'call_order' => array('call_order'),
-        'state' => array('state'),
-      ),
-    );
+    $schema = spbellen_schema();
+    // Create tables.
+    $table = $schema['spbellen_import_history'];
     db_create_table('spbellen_import_history', $table);
   }
 
   // Add spbellen_target_import_relation table.
   if (!db_table_exists('spbellen_target_import_relation')) {
-    $table = array(
-      'description' => 'Target import relation.',
-      'fields' => array(
-        'id' => array(
-          'description' => 'Id.',
-          'type' => 'serial',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'target_id' => array(
-          'description' => 'Target_id',
-          'type' => 'int',
-          'size' => 'big',
-        ),
-        'import_id' => array(
-          'description' => 'Import id.',
-          'type' => 'int',
-          'size' => 'big',
-        ),
-      ),
-      'primary key' => array(
-        'id',
-      ),
-      'unique keys' => array(
-        'target_import_id' => array(
-          'target_id',
-          'import_id',
-        ),
-      ),
-      'indexes' => array(
-        'target_id' => array('target_id'),
-        'import_id' => array('import_id'),
-        'target_import' => array(
-          'target_id',
-          'import_id',
-        ),
-      ),
-    );
+    $schema = spbellen_schema();
+    // Create tables.
+    $table = $schema['spbellen_target_import_relation'];
     db_create_table('spbellen_target_import_relation', $table);
   }
 
@@ -1722,5 +1670,164 @@ function spbellen_update_7036() {
   );
   if (!db_field_exists('spbellen_campaign', 'send_fail_mail')) {
     db_add_field('spbellen_campaign', 'send_fail_mail', $spec);
+  }
+};
+
+/**
+ * Adds groups, target_group_relation and imports tables..
+ */
+function spbellen_update_7037() {
+  if (!db_table_exists('spbellen_imports')) {
+    // Set importer where not set yet.
+    $query = "UPDATE spbellen_import_history SET importer = 'spbellen_civi_import' WHERE importer IS NULL AND title LIKE 'Civi-import: %'";
+    db_query($query);
+    $query = "UPDATE spbellen_import_history SET importer = 'spbellen_csv_import' WHERE importer IS NULL AND title LIKE 'CSV import: %'";
+    db_query($query);
+
+    $schema = spbellen_schema();
+    // Create tables.
+    $tables = array(
+      'spbellen_imports' => $schema['spbellen_imports'],
+      'spbellen_groups' => $schema['spbellen_groups'],
+      'spbellen_group_campaign_relation' => $schema['spbellen_group_campaign_relation'],
+      'spbellen_target_import_relation_new' => $schema['spbellen_target_import_relation_new'],
+    );
+    foreach ($tables as $name => $definition) {
+      if (!db_table_exists($name)) {
+        db_create_table($name, $definition);
+      }
+    }
+
+    // Import existing data into new groups table.
+    $query = "SELECT title, importer, external_group_id, external_last_imported_id FROM spbellen_import_history WHERE title <> 'Inactive contacts' GROUP BY title";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        db_merge('spbellen_groups')
+          ->key(array(
+            'title' => $row['title'],
+          ))
+          ->fields(array(
+            'importer' => $row['importer'],
+            'external_group_id' => $row['external_group_id'],
+            'external_last_imported_id' => $row['external_last_imported_id'],
+          ))
+          ->execute();
+      }
+    }
+    $query = "SELECT title, importer, external_group_id, external_last_imported_id, campaign_id FROM spbellen_import_history WHERE title = 'Inactive contacts'";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        db_insert('spbellen_groups')
+          ->fields(array(
+            'title' => $row['title'] . ' (' . $row['campaign_id'] . ')',
+          ))
+          ->execute();
+      }
+    }
+    // Import import history into spbellen_imports table.
+    $import_mapping = array();
+    $query = "SELECT gr.id group_id, ih.id import_history_id, quantity, date FROM spbellen_groups gr INNER JOIN spbellen_import_history ih ON gr.title = ih.title WHERE ih.title <> 'Inactive contacts'";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        $new_import_id = db_insert('spbellen_imports')
+          ->fields(array(
+            'group_id' => $row['group_id'],
+            'quantity' => $row['quantity'],
+            'date' => $row['date'],
+          ))
+          ->execute();
+        // Store mapping old import id, new import id.
+        $import_mapping[$row['import_history_id']] = $new_import_id;
+      }
+    }
+    $query = "SELECT gr.id group_id, ih.id import_history_id, quantity, date FROM spbellen_groups gr INNER JOIN spbellen_import_history ih ON gr.title = CONCAT(ih.title, ' (', ih.campaign_id, ')') WHERE ih.title = 'Inactive contacts'";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        $new_import_id = db_insert('spbellen_imports')
+          ->fields(array(
+            'group_id' => $row['group_id'],
+            'quantity' => $row['quantity'],
+            'date' => $row['date'],
+          ))
+          ->execute();
+        // Store mapping old import id, new import id.
+        $import_mapping[$row['import_history_id']] = $new_import_id;
+      }
+    }
+    // Import target import relation to new target import relation table.
+    $query = "SELECT target_id, ih.id import_history_id, gr.id group_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history ih ON tir.import_id = ih.id INNER JOIN spbellen_groups gr ON ih.title = gr.title WHERE ih.title <> 'Inactive contacts'";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        db_merge('spbellen_target_import_relation_new')
+          ->key(array(
+            'target_id' => $row['target_id'],
+            'import_id' => $import_mapping[$row['import_history_id']],
+          ))
+          ->execute();
+      }
+    }
+    $query = "SELECT target_id, ih.id import_history_id, gr.id group_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history ih ON tir.import_id = ih.id INNER JOIN spbellen_groups gr ON CONCAT(ih.title, ' (', ih.campaign_id, ')') = gr.title WHERE ih.title = 'Inactive contacts'";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        db_merge('spbellen_target_import_relation_new')
+          ->key(array(
+            'target_id' => $row['target_id'],
+            'import_id' => $import_mapping[$row['import_history_id']],
+          ))
+          ->execute();
+      }
+    }
+    // Import group campaign relation to group_campaign relation table.
+    $query = "SELECT gr.id group_id, ih.campaign_id campaign_id, state, call_order, block FROM spbellen_import_history ih INNER JOIN spbellen_groups gr ON ih.title = gr.title WHERE ih.title <> 'Inactive contacts'";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        db_merge('spbellen_group_campaign_relation')
+          ->key(array(
+            'group_id' => $row['group_id'],
+            'campaign_id' => $row['campaign_id'],
+          ))
+          ->fields(array(
+            'state' => $row['state'],
+            'call_order' => $row['call_order'],
+            'block' => $row['block'],
+          ))
+          ->execute();
+      }
+    }
+    $query = "SELECT gr.id group_id, ih.campaign_id campaign_id, state, call_order, block FROM spbellen_import_history ih INNER JOIN spbellen_groups gr ON CONCAT(ih.title, ' (', ih.campaign_id, ')') = gr.title WHERE ih.title = 'Inactive contacts'";
+    $result = db_query($query);
+    if ($result) {
+      while ($row = $result->fetchAssoc()) {
+        // Create import.
+        db_merge('spbellen_group_campaign_relation')
+          ->key(array(
+            'group_id' => $row['group_id'],
+            'campaign_id' => $row['campaign_id'],
+          ))
+          ->fields(array(
+            'state' => $row['state'],
+            'call_order' => $row['call_order'],
+            'block' => $row['block'],
+          ))
+          ->execute();
+      }
+    }
+    // Cleanup.
+    db_drop_table('spbellen_import_history');
+    db_drop_table('spbellen_target_import_relation');
   }
 };

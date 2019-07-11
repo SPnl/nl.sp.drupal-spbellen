@@ -271,17 +271,6 @@ function spbellen_entity_info() {
     'fieldable' => FALSE,
   );
 
-  $info['import_history'] = array(
-    'label' => 'Import history',
-    'entity class' => 'Entity',
-    'controller class' => 'EntityAPIController',
-    'base table' => 'spbellen_import_history',
-    'entity keys' => array(
-      'id' => 'id',
-    ),
-    'fieldable' => FALSE,
-  );
-
   return $info;
 }
 
@@ -296,7 +285,6 @@ function campaign_entity_property_info_alter(&$info) {
     'contact_data',
     'local_access',
     'caller',
-    'import_history',
   );
   foreach ($tables as $table) {
     $properties = &$info[$table]['properties'];
