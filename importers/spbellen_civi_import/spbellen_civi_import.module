@@ -137,7 +137,7 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
     $groups = $storage['groups'];
     // Creae batch operations.
     foreach ($groups as $group_id => $group_title) {
-      $import_title = 'Civi-import: ' . $group_title . '(' . $group_id . ')';
+      $import_title = 'Civi-import: ' . $group_title . ' (' . $group_id . ')';
       // Get last imported id from group.
       $last_imported_id = spbellen__civi_import_get_last_imported($storage['campaign'], $group_id);
 
