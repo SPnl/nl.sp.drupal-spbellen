@@ -1297,117 +1297,6 @@ function spbellen_get_chapter_and_region($postal_code) {
 }
 
 /**
- * Import contact in campaign.
- *
- * @param int $campaign_id
- *   Campaign id.
- * @param int $import_id
- *   Import id.
- * @param array $contact_data
- *   See spbellen_contact_fields() for keys.
- */
-function spbellen_import_contact($campaign_id, $import_id, array $contact_data) {
-  $contact_id = FALSE;
-  $fields = array_keys(spbellen_contact_fields());
-  foreach ($fields as $field) {
-    if (!empty($contact_data[$field])) {
-      $values[$field] = $contact_data[$field];
-    }
-  }
-
-  $values['phone'] = spbellen_cleanup_phone($values['phone']);
-
-  if (spbellen_valid_phone($values['phone'])) {
-    // Get contact id.
-    if (!empty($values['contact_id'])) {
-      $contact_id = $values['contact_id'];
-    }
-    elseif (!empty($values['crm_contact_id'])) {
-      // Get contact_id from crm_contact_id.
-      $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE crm_contact_id = :crm_contact_id", array(':crm_contact_id' => $values['crm_contact_id']))->fetchField();
-      if (!empty($result)) {
-        $contact_id = $result;
-      }
-    }
-    elseif (!empty($values['phone']) && empty($values['crm_contact_id'])) {
-      // Get contact_id from phone.
-      $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE :phone", array(':phone' => '%' . db_like(substr($values['phone'], -8))))->fetchField();
-      if (!empty($result)) {
-        $contact_id = $result;
-      }
-    }
-    // Store contact data.
-    if (empty($contact_id)) {
-      $contact_id = db_insert('spbellen_contact_data')
-        ->fields($values)
-        ->execute();
-    }
-    elseif (!empty($values['crm_contact_id'])) {
-      db_update('spbellen_contact_data')
-        ->fields($values)
-        ->condition('contact_id', $contact_id)
-        ->execute();
-    }
-    // Add target.
-    $target_id = db_query("SELECT id FROM {spbellen_targets} WHERE contact_id = :contact_id AND campaign_id = :campaign_id", array(':contact_id' => $contact_id, ':campaign_id' => $campaign_id))->fetchField();
-    if (empty($target_id)) {
-      $target_id = db_insert('spbellen_targets')
-        ->fields(array(
-          'campaign_id' => $campaign_id,
-          'state' => 1,
-          'occupied' => 0,
-          'contact_id' => $contact_id,
-        ))
-        ->execute();
-    }
-    // Add target import relation.
-    if (!empty($target_id)) {
-      db_merge('spbellen_target_import_relation')
-        ->key(array(
-          'target_id' => $target_id,
-          'import_id' => $import_id,
-        ))
-        ->execute();
-    }
-    return $contact_id;
-  }
-  return FALSE;
-}
-
-/**
- * Store import history.
- */
-function spbellen_create_import_history($campaign_id, $title, $importer = '', $external_group_id = '') {
-  if (!empty($campaign_id) && !empty($title)) {
-    $fields = array(
-      'campaign_id' => $campaign_id,
-      'date' => time(),
-      'quantity' => 0,
-      'title' => $title,
-      'state' => 1,
-    );
-    $import_history = entity_create('import_history', $fields);
-    entity_save('import_history', $import_history);
-    return $import_history->id;
-  }
-}
-
-function spbellen_get_import_history($campaign_id) {
-  $rows = &drupal_static(__FUNCTION__);
-  if (!isset($rows)) {
-    $rows = array();
-    if (!empty($campaign_id)) {
-      $query = "SELECT * FROM {spbellen_import_history} WHERE campaign_id = :campaign_id ORDER BY date";
-      $result = db_query($query, array(':campaign_id' => $campaign_id));
-      $rows = $result->FetchAllAssoc('id');
-    }
-  }
-  else {
-  }
-  return $rows;
-}
-
-/**
  * Get callers.
  */
 function spbellen_get_callers() {
@@ -1527,7 +1416,7 @@ function spbellen_get_campaign_stats($campaign_id, $afdeling_id = NULL) {
     $webform = entity_load_single('node', $campaign->webform_id);
     foreach (array(
       'all' => '',
-      'only_active' => ' AND ta.id IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.state = 1) AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :campaign_id AND im.block = 1)',
+      'only_active' => ' AND ta.id IN (SELECT ta.id FROM spbellen_targets ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id INNER JOIN spbellen_target_import_relation_new tir ON ta.id = tir.target_id INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id WHERE gcr.campaign_id = :campaign_id AND gcr.state = 1) AND ta.id NOT IN (SELECT ta.id FROM spbellen_targets ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id INNER JOIN spbellen_target_import_relation_new tir ON ta.id = tir.target_id INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id WHERE gcr.campaign_id = :campaign_id AND gcr.block = 1)',
     ) as $type => $query_part) {
       $query = "SELECT COUNT(*) total, SUM(bl.contact_id IS NOT NULL) blacklisted, SUM(bl.contact_id IS NULL AND (result = 'answered_call_back' OR result = 'not_answered')) call_back, SUM(bl.contact_id IS NULL AND result = 'answered_completed') completed, SUM(bl.contact_id IS NULL AND result = 'wrong_number') wrong_number, SUM(bl.contact_id IS NULL AND attempts = 0) not_contacted FROM {spbellen_targets} ta INNER JOIN spbellen_contact_data da ON ta.contact_id = da.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.campaign_id = :campaign_id AND ta.state = 1" . $query_part;
       $vars = array(
@@ -1920,6 +1809,24 @@ function spbellen_find_best_contact($contact_ids) {
  * Return from where query part to select contact.
  */
 function spbellen_get_from_where() {
-  $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation tir ON ta.id = tir.target_id INNER JOIN spbellen_import_history im ON tir.import_id = im.id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND im.campaign_id = :cid AND ta.state = 1 AND im.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation tir INNER JOIN spbellen_import_history im ON tir.import_id = im.id WHERE im.campaign_id = :cid AND im.block = 1) AND ";
+  $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation_new tir ON ta.id = tir.target_id INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND gcr.campaign_id = :cid AND ta.state = 1 AND gcr.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation_new tir INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id WHERE gcr.campaign_id = :cid AND gcr.block = 1) AND ";
   return $from_where;
+}
+
+/**
+ * Get information for groups in campagn.
+ */
+function spbellen_get_campaign_groups_info($campaign_id) {
+  $rows = &drupal_static(__FUNCTION__);
+  if (!isset($rows)) {
+    $rows = array();
+    if (!empty($campaign_id)) {
+      $query = "SELECT gro.id id, title, date, state, call_order, block, SUM(imp.quantity) quantity FROM {spbellen_groups} gro INNER JOIN {spbellen_group_campaign_relation} gcr ON gro.id = gcr.group_id INNER JOIN {spbellen_imports} imp ON imp.group_id = gro.id WHERE gcr.campaign_id = :campaign_id GROUP BY gro.id ORDER BY date DESC";
+      $result = db_query($query, array(':campaign_id' => $campaign_id));
+      $rows = $result->FetchAllAssoc('id', PDO::FETCH_ASSOC);
+    }
+  }
+  else {
+  }
+  return $rows;
 }

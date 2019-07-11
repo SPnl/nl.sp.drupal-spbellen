@@ -121,33 +121,33 @@ function spbellen_campaign_form($form, &$form_state) {
       }
 
       if ($storage['campaign'] !== 'new' && !empty($storage['campaign'])) {
-        $import_history = spbellen_get_import_history($storage['campaign']);
-        if (!empty($import_history)) {
+        $group_info = spbellen_get_campaign_groups_info($storage['campaign']);
+        if (!empty($group_info)) {
           $form['import_settings']['#tree'] = TRUE;
-          foreach ($import_history as $import_id => $import_data) {
-            if ($import_data->quantity > 0) {
-              $form['import_settings'][$import_id] = array(
+          foreach ($group_info as $group_id => $group_data) {
+            if ($group_data['quantity'] > 0) {
+              $form['import_settings'][$group_id] = array(
                 'name' => array(
-                  '#markup' => check_plain($import_data->title),
+                  '#markup' => check_plain($group_data['title']),
                 ),
                 'date' => array(
-                  '#markup' => check_plain(date('j-n-Y G:i:s', $import_data->date)),
+                  '#markup' => check_plain(date('j-n-Y G:i:s', $group_data['date'])),
                 ),
                 'quantity' => array(
-                  '#markup' => check_plain($import_data->quantity),
+                  '#markup' => check_plain($group_data['quantity']),
                 ),
                 'active_import' => array(
                   '#type' => 'checkbox',
-                  '#default_value' => $import_data->state,
+                  '#default_value' => $group_data['state'],
                 ),
                 'block_import' => array(
                   '#type' => 'checkbox',
-                  '#default_value' => $import_data->block,
+                  '#default_value' => $group_data['block'],
                 ),
                 'weight' => array(
                   '#type' => 'weight',
                   '#title' => t('Weight'),
-                  '#default_value' => $import_data->call_order,
+                  '#default_value' => $group_data['call_order'],
                   '#delta' => 10,
                   '#title_display' => 'invisible',
                 ),
@@ -323,18 +323,9 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         // Set import order.
         if (!empty($values['import_settings'])) {
           // Disable active when blocked.
-          foreach ($values['import_settings'] as $import_id => $import_setting) {
+          foreach ($values['import_settings'] as $group_id => $import_setting) {
             if ($import_setting['block_import'] == 1 && $import_setting['active_import'] == 1) {
-              $values['import_settings'][$import_id]['active_import'] = 0;
-            }
-          }
-          // Get max weight.
-          foreach ($values['import_settings'] as $import_setting) {
-            if (!isset($max_weight)) {
-              $max_weight = $import_setting['weight'];
-            }
-            if ($import_setting['weight'] > $max_weight) {
-              $max_weight = $import_setting['weight'];
+              $values['import_settings'][$group_id]['active_import'] = 0;
             }
           }
         }
@@ -379,13 +370,13 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         // Store imort state.
         if (!empty($values['import_settings'])) {
           foreach ($values['import_settings'] as $import_settings_key => $import_settings_values) {
-            db_update('spbellen_import_history')
+            db_update('spbellen_group_campaign_relation')
               ->fields(array(
                 'state' => empty($import_settings_values['active_import']) ? 0 : 1,
                 'call_order' => $import_settings_values['weight'],
                 'block' => empty($import_settings_values['block_import']) ? 0 : 1,
               ))
-              ->condition('id', $import_settings_key)
+              ->condition('group_id', $import_settings_key)
               ->execute();
           }
         }

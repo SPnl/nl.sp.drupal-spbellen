@@ -4,6 +4,7 @@
  * Main module file for SP Beltool csv importer.
  */
 
+module_load_include('inc', 'spbellen', 'includes/spbellen_import');
 module_load_include("inc", "spbellen_csv_import", "spbellen_csv_import");
 
 /**
@@ -174,10 +175,17 @@ function spbellen_csv_import_import_form_submit($form, &$form_state) {
       case 'import_submit':
         if (!empty($storage['upload']) && !empty($storage['csv_beltool_mapping'])) {
           // Create import.
-          $import_title = 'CSV import: ' . $storage['upload']->filename;
-          $storage['import_title'] = $import_title;
-          $import_id = spbellen_create_import_history($storage['campaign'], $import_title);
+          $filename = $storage['upload']->filename;
+          $group_title = 'CSV import: ' . $filename;
+
+          $group_id = spbellen_import_merge_group($group_title, 'spbellen_csv_import', $filename);
+          $import_id = spbellen_import_insert_import($group_id);
+          spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
+
+          $storage['group_title'] = $group_title;
+          $storage['group_id'] = $group_id;
           $storage['import_id'] = $import_id;
+
           // Import csv.
           $batch = array(
             'operations' => array(

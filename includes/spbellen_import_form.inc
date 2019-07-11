@@ -103,16 +103,13 @@ function spbellen_import_form_validate($form, &$form_state) {
           $storage['selected_importer'] = $values['select_importer'];
         }
         break;
-
     }
   }
 
   // Add plugin validation.
-  $importer_info = spbellen_importer_info();
-  if (!empty($importer_info)) {
-    foreach ($importer_info as $info) {
-      $info['form_validation_function']($form, $form_state);
-    }
+  if (!empty($storage['selected_importer'])) {
+    $function_name = $storage['selected_importer'] . '_import_form_validate';
+    $function_name($form, $form_state);
   }
 }
 
@@ -123,11 +120,9 @@ function spbellen_import_form_submit($form, &$form_state) {
   $storage = &$form_state['storage'];
   if (!empty($storage['campaign'])) {
     // Execute importer submit functions.
-    $importer_info = spbellen_importer_info();
-    if (!empty($importer_info)) {
-      foreach ($importer_info as $info) {
-        $info['form_submit_function']($form, $form_state);
-      }
+    if (!empty($storage['selected_importer'])) {
+      $function_name = $storage['selected_importer'] . '_import_form_submit';
+      $function_name($form, $form_state);
     }
   }
 }

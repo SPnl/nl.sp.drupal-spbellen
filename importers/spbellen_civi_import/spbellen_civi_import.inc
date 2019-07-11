@@ -83,7 +83,8 @@ function spbellen_civi_import_group_autocomplete($filter, $string) {
 /**
  * Get batch.
  */
-function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$context) {
+function spbellen_civi_import_get_targets_batch($data, &$context) {
+  $context['finished'] = 0;
   // Process by chunks.
   $chunk_size = 20;
   if (empty($context['results']['count'])) {
@@ -93,14 +94,12 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();
 
-  $context['results']['import_id'] = $import_info['id'];
-  $context['results']['external_group_id'] = $group_info['id'];
-
   if (empty($context['sandbox'])) {
+
     // Get total number of contacts.
     $number_of_contacts = 0;
     $params = array(
-      'group' => $group_info['id'],
+      'group' => $data['civi_group_id'],
       'is_deleted' => 0,
       'status' => 'Added',
     );
@@ -110,15 +109,19 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
     }
 
     $context['sandbox'] = array();
-    $context['results']['progress'] = $group_info['last_imported_id'];
     $context['sandbox']['current_contact'] = 0;
     $context['sandbox']['max'] = $number_of_contacts;
     $context['sandbox']['current_chunk'] = 0;
+    $context['sandbox']['progress'] = $data['last_imported_id'];
+
+    $context['results']['import_id'] = $data['import_id'];
+    $context['results']['external_group_id'] = $data['civi_group_id'];
+
   }
 
   $params = array(
-    'options' => array('limit' => $chunk_size, 'offset' => $context['results']['progress']),
-    'group' => $group_info['id'],
+    'options' => array('limit' => $chunk_size, 'offset' => $context['sandbox']['progress']),
+    'group' => $data['civi_group_id'],
     'include_non_menmbers' => 1,
     'order_by_group_contact_id' => 1,
   );
@@ -130,30 +133,44 @@ function spbellen_civi_import_get_targets_batch($import_info, $group_info, &$con
         if ((isset($result['phone']) || isset($result['mobile'])) && empty($result['do_not_phone'])) {
           // Process contact.
           $contact_data = spbellen_civi_import_map_civi_data($result);
-          $contact_id = spbellen_import_contact($import_info['campaign_id'], $import_info['id'], $contact_data);
+          $contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data);
 
-          if (empty($context['results']['count'][$group_info['id']])) {
-            $context['results']['count'][$group_info['id']] = 0;
+          if (empty($context['results']['count'][$data['civi_group_id']])) {
+            $context['results']['count'][$data['civi_group_id']] = 0;
           }
-          $context['results']['count'][$group_info['id']]++;
+          $context['results']['count'][$data['civi_group_id']]++;
         }
 
         // Update our progress information.
-        $context['results']['progress']++;
+        $context['sandbox']['progress']++;
         $context['sandbox']['current_contact'] = $crm_contact_id;
       }
 
     }
     else {
       $context['finished'] = 1;
-      return;
     }
   }
 
   // Stats.
   $context['sandbox']['current_chunk']++;
   $context['message'] = ($context['sandbox']['current_chunk'] * $chunk_size) . '/' . $context['sandbox']['max'];
-  $context['finished'] = ($context['sandbox']['progress'] / $context['sandbox']['max']);
+  if ($context['finished'] !== 1) {
+    $context['finished'] = ($context['sandbox']['progress'] / $context['sandbox']['max']);
+  }
+
+  // Finish batch.
+  if ($context['finished'] === 1) {
+    // Store import total.
+    db_merge('spbellen_groups')
+      ->key(array(
+        'id' => $data['group_id'],
+      ))
+      ->fields(array(
+        'external_last_imported_id' => $context['sandbox']['progress'],
+      ))
+      ->execute();
+  }
 }
 
 /**
@@ -164,14 +181,13 @@ function spbellen_civi_import_get_targets_batch_finished($success, $results, $op
     $total = array_sum($results['count']);
     drupal_set_message('Aantal opgehaalde contacten: ' . $total);
     // Store import total.
-    db_update('spbellen_import_history')
+    db_merge('spbellen_imports')
+      ->key(array(
+        'id' => $results['import_id'],
+      ))
       ->fields(array(
         'quantity' => $total,
-        'importer' => 'spbellen_civi_import',
-        'external_group_id' => $results['external_group_id'],
-        'external_last_imported_id' => $results['progress'],
       ))
-      ->condition('id', $results['import_id'])
       ->execute();
   }
   else {
@@ -314,14 +330,4 @@ function spbellen_civi_import_map_civi_data($civi_data) {
     $contact_data['notes'] = $notes_serialized;
   }
   return $contact_data;
-}
-
-/**
- * Gets last imported id within external group for campaign or returns 0.
- */
-function spbellen__civi_import_get_last_imported($campaign_id, $external_group_id) {
-  $query = "SELECT external_last_imported_id FROM {spbellen_import_history} WHERE campaign_id = :campaign_id AND external_group_id = :external_group_id ORDER BY id DESC";
-  $result = db_query($query, array(':campaign_id' => $campaign_id, ':external_group_id' => $external_group_id));
-  $record = $result->fetchField();
-  return empty($record) ? 0 : $record;
 }

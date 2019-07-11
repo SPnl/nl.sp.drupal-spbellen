@@ -57,6 +57,7 @@ function spbellen_csv_import_parse_csv_field_mapping_data($file, $delimiter) {
 function spbellen_csv_import_batch($storage, &$context) {
   // Process by chunks.
   $chunk_size = 50;
+  $context['finished'] = 0;
 
   $file = $storage['upload'];
   $realpath = drupal_realpath($file->uri);
@@ -141,7 +142,7 @@ function spbellen_csv_import_batch_process_row($row_number, $row, $storage) {
   }
 
   // Store contact.
-  $contact_id = spbellen_import_contact($storage['campaign'], $storage['import_id'], $contact_data);
+  $contact_id = spbellen_import_contact($storage['import_id'], $storage['group_id'], $contact_data);
 
   return TRUE;
 }
@@ -153,12 +154,13 @@ function spbellen_csv_import_batch_finished($success, $results, $operations) {
   if ($success) {
     $total = $results['count'];
     drupal_set_message('Aantal opgehaalde contacten: ' . $results['count']);
-    db_update('spbellen_import_history')
+    db_merge('spbellen_imports')
+      ->key(array(
+        'id' => $results['import_id'],
+      ))
       ->fields(array(
         'quantity' => $total,
-        'importer' => 'spbellen_csv_import',
       ))
-      ->condition('id', $results['import_id'])
       ->execute();
   }
 }
