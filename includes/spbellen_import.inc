@@ -73,7 +73,6 @@ function spbellen_import_contact($import_id, $group_id, array $contact_data) {
             ->execute();
         }
         // Add target import relation.
-        watchdog('test', 'Adding tir, target_id: '.$target_id.' import_id: '. $import_id);
         db_merge('spbellen_target_import_relation_new')
           ->key(array(
             'target_id' => $target_id,
