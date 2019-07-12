@@ -1821,7 +1821,7 @@ function spbellen_get_campaign_groups_info($campaign_id) {
   if (!isset($rows)) {
     $rows = array();
     if (!empty($campaign_id)) {
-      $query = "SELECT gro.id id, title, date, state, call_order, block, SUM(imp.quantity) quantity FROM {spbellen_groups} gro INNER JOIN {spbellen_group_campaign_relation} gcr ON gro.id = gcr.group_id INNER JOIN {spbellen_imports} imp ON imp.group_id = gro.id WHERE gcr.campaign_id = :campaign_id GROUP BY gro.id ORDER BY date DESC";
+      $query = "SELECT gro.id id, title, date, state, call_order, block, COUNT(DISTINCT(target_id)) quantity FROM {spbellen_groups} gro INNER JOIN {spbellen_group_campaign_relation} gcr ON gro.id = gcr.group_id INNER JOIN {spbellen_imports} imp ON imp.group_id = gro.id INNER JOIN {spbellen_target_import_relation_new} tir ON tir.import_id = imp.id WHERE gcr.campaign_id = :campaign_id GROUP BY gro.id ORDER BY date DESC";
       $result = db_query($query, array(':campaign_id' => $campaign_id));
       $rows = $result->FetchAllAssoc('id', PDO::FETCH_ASSOC);
     }
