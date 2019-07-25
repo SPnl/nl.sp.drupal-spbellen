@@ -206,7 +206,7 @@ function spbellen_campaign_form($form, &$form_state) {
         '#markup' => 'Beschikbare tokens: [naam] en [telefoonnummer].',
       );
 
-      $default = $storage['fail_mail_content'];
+      $default = empty($storage['fail_mail_content']) ? array() : $storage['fail_mail_content'];
       $form['fail_mail']['fail_mail_content'] = array(
         '#type' => 'text_format',
         '#title' => 'Inhoud',
