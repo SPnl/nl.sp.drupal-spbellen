@@ -1322,3 +1322,16 @@ function spbellen_send_phone_number($phone_number, $display_name) {
 
   Nodejs::enqueueMessage($message);
 }
+
+/**
+ * Implements hook_js_alter
+ * @param array $javascript
+ */
+function spbellen_js_alter(&$javascript) {
+  // Replaces core autocomplete with hacked version to prevent caching.
+  $path = request_path();
+  $path_parts = explode('/', $path);
+  if ($path_parts[0] == 'bellen' AND $path_parts[1] == 'campagne') {
+    $javascript['misc/autocomplete.js']['data'] = drupal_get_path('module', 'spbellen') . '/js/autocomplete.js';
+  }
+}

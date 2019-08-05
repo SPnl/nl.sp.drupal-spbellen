@@ -111,7 +111,7 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
       if (!empty($campaign_id)) {
         $max_attempts = variable_get('spbellen_max_attempts', '5');
         $from_where = spbellen_get_from_where();
-        $query = "SELECT ta.id, cd.phone, cd.display_name" . $from_where . "(cd.phone LIKE :phonenumber OR cd.display_name LIKE :display_name) AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND (ta.date < :occupied_time OR ta.caller_id = :caller_id))) ORDER BY call_order ASC, attempts ASC, ta.date ASC, RAND() LIMIT 10";
+        $query = "SELECT ta.id, cd.phone, cd.display_name" . $from_where . "(cd.phone LIKE :phonenumber OR cd.display_name LIKE :display_name) AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND (occupied = 0 OR (occupied = 1 AND (ta.date < :occupied_time OR ta.caller_id = :caller_id))) ORDER BY call_order ASC, attempts ASC, ta.date ASC, RAND() LIMIT 10";
         $substitutions = array(
           ':cid' => $campaign_id,
           ':phonenumber' => '%' . db_like($string) . '%',
