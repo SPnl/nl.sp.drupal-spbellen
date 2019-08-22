@@ -245,14 +245,14 @@ function _webform_table_sp_active($component, $value) {
  */
 function _webform_csv_headers_sp_active($component, $export_options) {
   $header = array();
-  $header[0] = array('');
-  $header[1] = array($component['name']);
-  $header[2] = array();
-
+  $header[0][] = '';
+  $header[1][] = $component['name'];
   $header[2][] = 'Actief';
 
   $activity_options = sp_active_get_activity_options();
   foreach ($activity_options as $key => $option) {
+    $header[0][] = '';
+    $header[1][] = '';
     $header[2][] = $option;
   }
 
