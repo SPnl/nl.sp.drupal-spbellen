@@ -83,7 +83,7 @@ function _webform_render_sp_work_and_int($component) {
   foreach ($option_groups as $option_group) {
     if ($option_group['type'] == 'radios') {
       $elements[$option_group['key']] = array(
-        '#type' => 'radios',
+        '#type' => 'select',
         '#title' => $option_group['title'],
         '#options' => $option_group['options'],
         '#required' => $component['required'],
