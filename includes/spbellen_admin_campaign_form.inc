@@ -211,7 +211,7 @@ function spbellen_campaign_form($form, &$form_state) {
         '#type' => 'text_format',
         '#title' => 'Inhoud',
         '#format' => isset($default['format']) ? $default['format'] : 'filtered_html',
-        '#default_value' => isset($default['value']) ? $default['value'] : 'Beste <naam>,',
+        '#default_value' => isset($default['value']) ? $default['value'] : 'Beste [naam],',
       );
 
       $form['fail_mail']['fail_mail_from'] = array(
