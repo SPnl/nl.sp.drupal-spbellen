@@ -377,6 +377,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
                 'block' => empty($import_settings_values['block_import']) ? 0 : 1,
               ))
               ->condition('group_id', $import_settings_key)
+              ->condition('campaign_id', $campaign->id)
               ->execute();
           }
         }
