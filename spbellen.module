@@ -141,6 +141,20 @@ function spbellen_menu() {
     'weight' => '3',
   );
 
+  if (module_exists('spwebformsync')) {
+    $path = drupal_get_path('module', 'spwebformsync');
+    $items['admin/beltool/config/sync'] = array(
+      'title' => 'SPNET sync',
+      'type' => MENU_LOCAL_TASK,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('spwebformsync_admin_form', arg(4)),
+      'file path' => drupal_get_path('module', 'spwebformsync'),
+      'file' => 'spwebformsync.admin.inc',
+      'access arguments' => array('spbellen administer campaigns'),
+      'weight' => '4',
+    );
+  }
+
   $items['spbellen/contact_search/autocomplete/%/%'] = array(
     'title' => 'SP bellen autocomplete',
     'page callback' => 'spbellen_contact_search_autocomplete',
