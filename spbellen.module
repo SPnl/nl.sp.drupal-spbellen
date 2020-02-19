@@ -111,6 +111,15 @@ function spbellen_menu() {
     'access arguments' => array('spbellen administer campaigns'),
   );
 
+  $items['admin/beltool/config/add_script'] = array(
+    'title' => 'Belscript toevoegen',
+    'access callback' => TRUE,
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('node/add/callscript'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => '0',
+  );
+
   $items['admin/beltool/config/campaign'] = array(
     'title' => 'Beheer belcampagnes',
     'type' => MENU_LOCAL_TASK,
@@ -312,6 +321,27 @@ function campaign_entity_property_info_alter(&$info) {
     }
   }
 }
+
+/**
+ * Implements hook_node_presave().
+ */
+/*
+function spbellen_node_presave($node) {
+  switch ($node->type) {
+    case 'callscript':
+      if (strpos($node->title, 'Script:') === FALSE) {
+        $node->title = 'Script: ' . $node->title;
+      }
+      break;
+
+    case 'callcampaign':
+      if (strpos($node->title, 'Campagne:') === FALSE) {
+        $node->title = 'Campagne: ' . $node->title;
+      }
+      break;
+  }
+}
+*/
 
 /**
  * Implements hook node update.

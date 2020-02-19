@@ -31,12 +31,19 @@ function spbellen_get_webforms() {
 /**
  * Return list of webforms usable for form.
  */
-function spbellen_get_webforms_list() {
+function spbellen_get_webforms_list($type = NULL) {
   $webforms_list = array();
   $webforms = spbellen_get_webforms();
   if (!empty($webforms)) {
     foreach ($webforms as $webform) {
-      $webforms_list[$webform->nid] = $webform->title;
+      if (empty($type)) {
+        $webforms_list[$webform->nid] = $webform->title;
+      }
+      else {
+        if ($webform->type == $type) {
+          $webforms_list[$webform->nid] = $webform->title;
+        }
+      }
     }
   }
   return $webforms_list;
@@ -777,7 +784,7 @@ function spbellen_create_campaign_form($campaign) {
 
     // Create new webform.
     $joined_form = new stdClass();
-    $joined_form->type = 'webform';
+    $joined_form->type = 'callcampaign';
     node_object_prepare($joined_form);
     if (!empty($campaign->title)) {
       $joined_form->title = $campaign->title;

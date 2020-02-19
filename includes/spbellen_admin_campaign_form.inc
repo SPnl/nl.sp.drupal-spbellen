@@ -10,7 +10,7 @@
  */
 function spbellen_campaign_form($form, &$form_state) {
   $campaigns_list = spbellen_get_campaigns_list();
-  $webforms_list = spbellen_get_webforms_list();
+  $webforms_list = spbellen_get_webforms_list('callscript');
   $storage = !empty($form_state['storage']) ? $form_state['storage'] : array();
   $form = array();
 
@@ -48,14 +48,10 @@ function spbellen_campaign_form($form, &$form_state) {
     if (!empty($webforms_list)) {
       // Create webform select element.
       if ($storage['campaign'] === 'new') {
-        // Filter already set forms.
-        $campaigns = entity_load('campaign');
-        foreach ($campaigns as $campaign) {
-          unset($webforms_list[$campaign->webform_id]);
-        }
         $form['webform'] = array(
           '#type' => 'select',
-          '#title' => 'Kies het belscript webformulier',
+          '#title' => 'Kies het belscript dat als basis gebruikt wordt voor deze belcampagne',
+          '#description' => 'Ruim zo nu en dan belscripts op die niet meer gebruikt worden.',
           '#name' => 'webform',
           '#options' => $webforms_list,
           '#empty_option' => 'Kies:',
@@ -72,7 +68,7 @@ function spbellen_campaign_form($form, &$form_state) {
           $webform = node_load($storage['webform']);
           if (!empty($webform->title)) {
             $form['webform_info'] = array(
-              '#markup' => '<p><strong>Formulier<br/></strong> <a href="/node/' . $webform->nid . '/webform" target="_blank">' . check_plain($webform->title) . '</a></p>',
+              '#markup' => '<p><strong>Campagneformulier<br/></strong> <a href="/node/' . $webform->nid . '/webform" target="_blank">' . check_plain($webform->title) . '</a></p>',
             );
           }
         }

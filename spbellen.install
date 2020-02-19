@@ -1831,3 +1831,79 @@ function spbellen_update_7037() {
     db_drop_table('spbellen_target_import_relation');
   }
 };
+
+/**
+ * Adds Belscript content type.
+ */
+function spbellen_update_7038() {
+  if (!node_type_load('callscript')) {
+    $content_type = array(
+      'type'          => 'callscript',
+      'name'          => 'Belscript',
+      'description'   => 'Een belscript kan worden gebruikt in meerdere belcampagnes. Zo hoef je niet voor iedere campagne vanaf de grond af een nieuw script te maken. Bij het aanmaken van een campagne wordt er een nieuw formulier aangemaakt met daarin een kopie van het belscript.',
+      'base'          => 'node_content',
+      'custom'        => TRUE,
+    );
+    $node_type = node_type_set_defaults($content_type);
+    node_type_save($node_type);
+  }
+  variable_set('webform_node_callscript', 1);
+}
+
+/**
+ * Adds Belcampagne content type.
+ */
+function spbellen_update_7039() {
+  if (!node_type_load('callcampaign')) {
+    $content_type = array(
+      'type'          => 'callcampaign',
+      'name'          => 'Campagneformulier',
+      'description'   => 'Bij het aanmaken van een belcampagne kies je het belscript waarmee gebeld gaat worden, je kiest een titel voor je campagne, en stelt in of deze gepubliceerd is of niet. Na het aanmaken van een belcampagne kan je contacten importeren die voor die campagne gebeld moeten worden. Er wordt automatisch een campagneformulier aangemaakt met daarin de vragen van het belscript. Je kan het campagneformulier altijd nog aanpassen.',
+      'base'          => 'node_content',
+      'custom'        => TRUE,
+    );
+    $node_type = node_type_set_defaults($content_type);
+    node_type_save($node_type);
+  }
+  variable_set('webform_node_callcampaign', 1);
+}
+
+/**
+ * Changes content type for existing call campaigns from webform to callcampaign.
+ */
+function spbellen_update_7040() {
+  $campaigns = spbellen_get_campaigns();
+  foreach ($campaigns as $campaign) {
+    $node = entity_load_single('node', $campaign->webform_id);
+    if ($node->type != 'callscript' && $node->type != 'callcampaign') {
+      db_update(node)
+        ->fields(array(
+          'type' => 'callcampaign',
+        ))
+        ->condition('nid', $campaign->webform_id)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Changes content type for existing call scripts from webform to callscript.
+ */
+function spbellen_update_7041() {
+  $webforms_list = spbellen_get_webforms_list();
+  $campaigns = spbellen_get_campaigns();
+  foreach ($campaigns as $campaign) {
+    unset($webforms_list[$campaign->webform_id]);
+  }
+  foreach ($webforms_list as $webform_id => $name) {
+    $node = entity_load_single('node', $webform_id);
+    if ($node->type != 'callscript' && $node->type != 'callcampaign') {
+      db_update(node)
+        ->fields(array(
+          'type' => 'callscript',
+        ))
+        ->condition('nid', $webform_id)
+        ->execute();
+    }
+  }
+}
