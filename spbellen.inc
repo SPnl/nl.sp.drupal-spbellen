@@ -126,7 +126,7 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
           ':caller_id' => $user_id,
           ':occupied_time' => time() - 1800,
           ':current_time' => time(),
-          ':max_attempts' => $max_attempts + 1,
+          ':max_attempts' => $max_attempts,
         );
         $result = db_query($query, $substitutions);
         if ($result) {
@@ -1818,7 +1818,7 @@ function spbellen_find_best_contact($contact_ids) {
  * Return from where query part to select contact.
  */
 function spbellen_get_from_where() {
-  $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation_new tir ON ta.id = tir.target_id INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND gcr.campaign_id = :cid AND ta.state = 1 AND gcr.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation_new tir INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id WHERE gcr.campaign_id = :cid AND gcr.block = 1) AND ta.campaign_id = :cid AND ";
+  $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation_new tir ON ta.id = tir.target_id INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND gcr.campaign_id = :cid AND ta.state = 1 AND gcr.state = 1 AND bl.contact_id IS NULL AND attempts <= :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation_new tir INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id WHERE gcr.campaign_id = :cid AND gcr.block = 1) AND ta.campaign_id = :cid AND ";
   return $from_where;
 }
 
