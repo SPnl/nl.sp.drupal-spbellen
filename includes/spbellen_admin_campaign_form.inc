@@ -158,7 +158,7 @@ function spbellen_campaign_form($form, &$form_state) {
       );
 
       $options = array(
-        '0' => 'Toon eerst de contacten uit de afdeling of regio beller<ul><li>behalve als andere contacten minder vaak gebeld zijn</li><li>contacten in een import met een hoger gewicht gaan altijd voor</li></ul>',
+        '0' => 'Toon eerst de contacten uit de afdeling of regio beller<ul><li>behalve als andere contacten minder vaak gebeld zijn</li><li>contacten in een import met een lager gewicht gaan altijd voor</li></ul>',
         '1' => 'Toon alle contacten.',
         '2' => 'Toon alleen contacten uit afdeling beller.',
       );
