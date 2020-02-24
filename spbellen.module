@@ -347,13 +347,15 @@ function spbellen_node_presave($node) {
  * Implements hook node update.
  */
 function spbellen_node_update($node) {
-  if (spbellen_is_spbellen_form_check($node->nid)) {
-    $alias = pathauto_cleanstring($node->title);
-    $alias_array = array(
-      'source' => 'node/' . $node->nid,
-      'alias' => 'bellen/campagne/' . $alias,
-    );
-    path_save($alias_array);
+  if ($node->type == 'callcampaign') {
+    if (spbellen_is_spbellen_form_check($node->nid)) {
+      $alias = pathauto_cleanstring($node->title);
+      $alias_array = array(
+        'source' => 'node/' . $node->nid,
+        'alias' => 'bellen/campagne/' . $alias,
+      );
+      path_save($alias_array);
+    }
   }
 }
 
@@ -361,7 +363,7 @@ function spbellen_node_update($node) {
  * Implements hook node delete.
  */
 function spbellen_node_delete($node) {
-  if ($node->type == 'webform') {
+  if ($node->type == 'callcampaign') {
     if (spbellen_is_spbellen_form_check($node->nid)) {
       $campaign_id = spbellen_get_campaign_id($node->nid);
       if (!empty($campaign_id)) {
