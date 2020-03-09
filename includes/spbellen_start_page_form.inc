@@ -17,9 +17,10 @@ function spbellen_start_page_form($form, &$form_state) {
     else {
       $form['call_script'] = array(
         '#type' => 'submit',
-        '#value' => 'Belscript (computer)',
+        '#value' => 'Belscript',
         '#name' => 'call_script',
       );
+      /*
       $form['call_button'] = array(
         '#type' => 'submit',
         '#value' => 'Belknop (mobiel)',
@@ -29,6 +30,7 @@ function spbellen_start_page_form($form, &$form_state) {
       $form['belknop-intro'] = array(
         '#markup' => check_markup($call_button_text['value'], $call_button_text['format']),
       );
+      */
     }
   }
   else {
