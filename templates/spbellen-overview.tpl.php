@@ -28,6 +28,9 @@
       <td>Niet gebeld</td><td><?php print $general_stats['not_contacted']; ?></td><td><?php print $general_stats['not_contacted_percentage']; ?>%</td>
     </tr>
     <tr>
+      <td>Onbereikbaar</td><td><?php print $general_stats['unreachable']; ?></td><td><?php print $general_stats['unreachable_percentage']; ?>%</td>
+    </tr>
+    <tr>
       <td>Verkeerd nummer</td><td><?php print $general_stats['wrong_number']; ?></td><td><?php print $general_stats['wrong_number_percentage']; ?>%</td>
     </tr>
     <tr>
@@ -69,6 +72,13 @@
         <td><?php print $data['all']['not_contacted_percentage']; ?>%</td>
         <td><?php print $data['only_active']['not_contacted']; ?></td>
         <td><?php print $data['only_active']['not_contacted_percentage']; ?>%</td>
+      </tr>
+      <tr>
+        <td>Onbereikbaar</td>
+        <td><?php print $data['all']['unreachable']; ?></td>
+        <td><?php print $data['all']['unreachable_percentage']; ?>%</td>
+        <td><?php print $data['only_active']['unreachable']; ?></td>
+        <td><?php print $data['only_active']['unreachable_percentage']; ?>%</td>
       </tr>
       <tr>
         <td>Verkeerd nummer</td>

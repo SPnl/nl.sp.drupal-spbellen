@@ -12,6 +12,7 @@
     <div id="spbellen_completed_percentage" style="width:<?php print 0.98 * $stats['only_active']['completed_percentage']; ?>%"></div>
     <div id="spbellen_call_back_percentage" style="width:<?php print 0.98 * $stats['only_active']['call_back_percentage']; ?>%"></div>
     <div id="spbellen_not_contacted_percentage" style="width:<?php print 0.98 * $stats['only_active']['not_contacted_percentage']; ?>%"></div>
+    <div id="spbellen_unreachable_percentage" style="width:<?php print 0.98 * $stats['only_active']['unreachable_percentage']; ?>%"></div>
     <div id="spbellen_wrong_number_percentage" style="width:<?php print 0.98 * $stats['only_active']['wrong_number_percentage']; ?>%"></div>
     <div id="spbellen_blacklisted_percentage" style="width:<?php print 0.98 * $stats['only_active']['blacklisted_percentage']; ?>%"></div>
   </div>
