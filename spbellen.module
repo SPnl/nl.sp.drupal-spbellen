@@ -569,7 +569,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       }
 
       // Check if contact is not reachable, and send e-mail if set in campaign.
-      if (($result === 'not_answered' && $target_info['attempts'] + 1 == $max_attempts) || $result == 'wrong_number') {
+      if (($result === 'not_answered' && $target_info['attempts'] == $max_attempts) || $result == 'wrong_number') {
         $campaign = spbellen_get_campaign($node->nid);
         if (
           !empty($campaign->send_fail_mail) &&
