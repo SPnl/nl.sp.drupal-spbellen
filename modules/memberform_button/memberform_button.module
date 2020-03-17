@@ -84,7 +84,8 @@ function _webform_edit_mf_button($component) {
  * Implements _webform_render_component().
  */
 function _webform_render_mf_button($component) {
-  $markup = '<a href="https://spnet.nl/aanmelden/lid" target="_blank" class="button">Lidworden formulier</a>';
+  $button_text = 'Klik hier om iemand lid te maken';
+  $markup = '<a href="https://spnet.nl/aanmelden/lid" target="_blank" class="button">' . $button_text . '</a>';
   if (arg(0) == 'node' && is_numeric(arg(1))) {
     $nid = arg(1);
     if (spbellen_is_spbellen_form($nid)) {
@@ -127,7 +128,7 @@ function _webform_render_mf_button($component) {
       }
       if (!empty($params)) {
         $params['prefill_form'] = 1;
-        $markup = l('Lidworden formulier', $component['extra']['memberform_url'], array('query' => $params, 'attributes' => array('target' => '_blank')));
+        $markup = l($button_text, $component['extra']['memberform_url'], array('query' => $params, 'attributes' => array('target' => '_blank')));
       }
     }
   }
