@@ -506,7 +506,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       $target_info = spbellen_get_target_info($campaign_id, $contact_id);
       $tid = $target_info['id'];
 
-      $max_attempts = variable_get('spbellen_max_attempts');
+      $max_attempts = variable_get('spbellen_max_attempts', 5);
 
       // Create action.
       if (!empty($submission->data[$map['call_answered']][0])) {
@@ -569,7 +569,7 @@ function spbellen_webform_submission_insert($node, $submission) {
       }
 
       // Check if contact is not reachable, and send e-mail if set in campaign.
-      if (($result === 'not_answered' && $target_info['attempts'] == $max_attempts) || $result == 'wrong_number') {
+      if (($result === 'not_answered' && $target_info['attempts'] + 1 == $max_attempts) || $result == 'wrong_number') {
         $campaign = spbellen_get_campaign($node->nid);
         if (
           !empty($campaign->send_fail_mail) &&
@@ -588,7 +588,7 @@ function spbellen_webform_submission_insert($node, $submission) {
                 'value' => $fail_mail_content_value,
                 'format' => $fail_mail_content_format,
               ),
-              'fail_mail_subject' => $ccampaign->fail_mail_subject,
+              'fail_mail_subject' => $campaign->fail_mail_subject,
             );
             drupal_mail('spbellen', 'fail_mail', $to, language_default(), $params, $campaign->fail_mail_from);
           }
