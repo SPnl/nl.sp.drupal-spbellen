@@ -169,6 +169,13 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['afdeling_filter']) ? '0' : $storage['afdeling_filter'],
       );
 
+      $form['check_contact_info'] = array(
+        '#type' => 'checkboxes',
+        '#name' => 'check_contact_info',
+        '#options' => array('check_contact_info' => 'Verplichte controle contactgegevens'),
+        '#default_value' => empty($storage['check_contact_info']) ? array() : array('check_contact_info'),
+      );
+
       $form['disabled'] = array(
         '#type' => 'checkboxes',
         '#name' => 'disabled',
@@ -291,6 +298,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
             $storage['campaign_code'] = $campaign->campaign_code;
             $storage['campaign_start_page_text'] = $campaign->start_page_text;
             $storage['click2dial_call_number'] = $campaign->click2dial_call_number;
+            $storage['check_contact_info'] = $campaign->check_contact_info;
             $storage['fail_mail_subject'] = $campaign->fail_mail_subject;
             $storage['fail_mail_content'] = json_decode($campaign->fail_mail_content, TRUE);
             $storage['fail_mail_from'] = $campaign->fail_mail_from;
@@ -458,6 +466,7 @@ function spbellen_store_campaign($storage, $values) {
       'title' => $values['title'],
       'start_page_text' => !empty($values['campaign_intro_text']) ? $values['campaign_intro_text'] : '',
       'click2dial_call_number' => !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '',
+      'check_contact_info' => empty($values['check_contact_info']['check_contact_info']) ? 0 : 1,
       'fail_mail_subject' => !empty($values['fail_mail_subject']) ? $values['fail_mail_subject'] : '',
       'fail_mail_content' => !empty($values['fail_mail_content']) ? json_encode($values['fail_mail_content']) : '',
       'fail_mail_from' => !empty($values['fail_mail_from']) ? $values['fail_mail_from'] : '',
@@ -480,6 +489,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];
+    $campaign->check_contact_info = empty($values['check_contact_info']['check_contact_info']) ? 0 : 1;
     $campaign->click2dial_call_number = !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '';
     $campaign->fail_mail_subject = empty($values['fail_mail_subject']) ? '' : $values['fail_mail_subject'];
     $campaign->fail_mail_content = empty($values['fail_mail_content']) ? '' : json_encode($values['fail_mail_content']);

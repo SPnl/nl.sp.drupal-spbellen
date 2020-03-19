@@ -95,6 +95,13 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
       ),
+      'check_contact_info' => array(
+        'description' => 'Wether to have a mandatory check of contact data or not.',
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
       'fail_mail_subject' => array(
         'description' => 'Failed to reach email subject.',
         'type' => 'varchar',
@@ -1905,5 +1912,16 @@ function spbellen_update_7041() {
         ->condition('nid', $webform_id)
         ->execute();
     }
+  }
+}
+
+/**
+ * Add check_contact_info column to spbellen_campaign table.
+ */
+function spbellen_update_7042() {
+  if (!db_field_exists('spbellen_campaign', 'check_contact_info')) {
+    $schema = spbellen_schema();
+    $spec = $schema['spbellen_campaign']['fields']['check_contact_info'];
+    db_add_field('spbellen_campaign', 'check_contact_info', $spec);
   }
 }

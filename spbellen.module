@@ -453,6 +453,17 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
           $form['submitted']['contact_data']['spbellen_' . $key]['#default_value'] = $contact_data[$key];
         }
       }
+      // Add check address mandatory radio.
+      if ($campaign->check_contact_info) {
+        $form['submitted']['contact_data']['#collapsed'] = 0;
+        $form['submitted']['contact_data']['check_contact_info'] = array(
+          '#type' => 'checkboxes',
+          '#options' => array('contact_info_checked' => 'Ik heb de contactinformatie gecontroleerd'),
+          '#weight' => 20,
+        );
+        // Add custom submit functionality to prevent field being saved on node, which generaties notice.
+        array_unshift($form['#submit'], 'spbellen_custom_webform_submit');
+      }
       // Add custom submit and validation function.
       array_unshift($form['#validate'], 'spbellen_custom_webform_validate');
       // Add next button.
@@ -1091,11 +1102,25 @@ function spbellen_custom_webform_validate($form, &$form_state) {
   }
   else {
     // Submit button.
+    # mandatory contact info check.
+    if (!empty($values['contact_data']['check_contact_info'])) {
+      if (empty($values['contact_data']['check_contact_info']['contact_info_checked'])) {
+        form_set_error('contact_data', 'Vergeet niet een vinkje te zetten als je de contactinformatie hebt gecontroleerd!');
+      }
+    }
     // Check if value is selected for 'call_answered'.
     if (empty($form_state['values']['submitted']['call_answered'])) {
       form_set_error('call_answered', 'Vul een antwoord in!');
     }
   }
+}
+
+/**
+ * Belform custom submit.
+ */
+function spbellen_custom_webform_submit(&$form, &$form_state) {
+  unset($form['submitted']['contact_data']['check_contact_info']);
+  unset($form_state['values']['submitted']['contact_data']['check_contact_info']);
 }
 
 /**
