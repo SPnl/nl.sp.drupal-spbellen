@@ -761,6 +761,12 @@ function spbellen_block_view($delta = '') {
                         'type' => 'setting',
                       ),
                     ),
+                    'css' => array(
+                      array(
+                        'type' => 'file',
+                        'data' => $module_path . '/css/spbellen_contact_block.css',
+                      ),
+                    ),
                   ),
                 ),
               );

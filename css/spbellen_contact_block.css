@@ -1,0 +1,44 @@
+#spbellen-stats {
+  position: relative;
+}
+
+#spbellen-stats .tooltip {
+  color: white;
+  font-weight: bold;
+  visibility: hidden;
+  position: absolute;
+}
+
+#spbellen-stats:hover .tooltip {
+  visibility: visible;
+}
+
+#spbellen_completed,
+.spbellen_completed {
+  background-color: green;
+}
+#spbellen_call_back,
+.spbellen_call_back {
+  background-color: yellow;
+  color: grey;
+}
+
+#spbellen_not_contacted,
+.spbellen_not_contacted {
+  background-color: lightgrey;
+}
+
+#spbellen_unreachable,
+.spbellen_unreachable {
+  background-color: orange;
+}
+
+#spbellen_wrong_number,
+.spbellen_wrong_number {
+  background-color: red;
+}
+
+#spbellen_blacklisted,
+.spbellen_blacklisted {
+  background-color: black;
+}
