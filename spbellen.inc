@@ -1167,15 +1167,17 @@ function spbellen_create_action($tid, $caller_id, $result, $submission_id, $call
   return $action_id;
 }
 
-function spbellen_blacklist($contact_id) {
+function spbellen_blacklist($contact_id, $blacklist_in_crm_too = TRUE) {
   db_insert('spbellen_blacklist')
     ->fields(array(
       'contact_id' => $contact_id,
     ))
     ->execute();
-  $crm_contact_id = spbellen_get_crm_contact_id($contact_id);
-  if (!empty($crm_contact_id)) {
-    module_invoke_all('spbellen_crm_block_phone', $crm_contact_id);
+  if (!empty($blacklist_in_crm_too)) {
+    $crm_contact_id = spbellen_get_crm_contact_id($contact_id);
+    if (!empty($crm_contact_id)) {
+      module_invoke_all('spbellen_crm_block_phone', $crm_contact_id);
+    }
   }
 }
 

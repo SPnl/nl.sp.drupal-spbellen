@@ -100,19 +100,20 @@ function spbellen_civi_import_get_targets_batch($data, &$context) {
     $number_of_contacts = 0;
     $params = array(
       'group' => $data['civi_group_id'],
-      'is_deleted' => 0,
-      'status' => 'Added',
+      'get_count' => 1,
+      'group_contact_id_offset' => $data['last_imported_id'],
     );
-    $results = $spcivi->api('Contact', 'getcount', $params);
+    $results = $spcivi->api('Contact', 'getbeltooldata', $params);
     if (spbellen_check_result($results, 'contacten', 'get', $params)) {
-      $number_of_contacts = $results['result'];
+      $number_of_contacts = $results['values'][0]['count'];
     }
 
     $context['sandbox'] = array();
     $context['sandbox']['current_contact'] = 0;
     $context['sandbox']['max'] = $number_of_contacts;
     $context['sandbox']['current_chunk'] = 0;
-    $context['sandbox']['progress'] = $data['last_imported_id'];
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['last_imported_id'] = $data['last_imported_id'];
 
     $context['results']['import_id'] = $data['import_id'];
     $context['results']['external_group_id'] = $data['civi_group_id'];
@@ -122,18 +123,23 @@ function spbellen_civi_import_get_targets_batch($data, &$context) {
   $params = array(
     'options' => array('limit' => $chunk_size, 'offset' => $context['sandbox']['progress']),
     'group' => $data['civi_group_id'],
-    'include_non_menmbers' => 1,
-    'order_by_group_contact_id' => 1,
+    'group_contact_id_offset' => $data['last_imported_id'],
   );
-  $results = $spcivi->api('Contact', 'getspdata', $params);
+  $results = $spcivi->api('Contact', 'getbeltooldata', $params);
   if (spbellen_check_result($results, 'contacten', 'get', $params)) {
     if (!empty($results['values'])) {
       foreach ($results['values'] as $key => $result) {
         $crm_contact_id = $result['contact_id'];
-        if ((isset($result['phone']) || isset($result['mobile'])) && empty($result['do_not_phone'])) {
-          // Process contact.
+        if (isset($result['phone']) || isset($result['mobile'])) {
+          // Import contact.
           $contact_data = spbellen_civi_import_map_civi_data($result);
           $contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data);
+          // Store last imported group contact id.
+          $context['sandbox']['last_imported_id'] = $contact_data['group_contact_id'];
+          if  (!empty($result['do_not_phone'])) {
+            // Blacklist contact.
+            spbellen_blacklist($contact_id, FALSE);
+          }
 
           if (empty($context['results']['count'][$data['civi_group_id']])) {
             $context['results']['count'][$data['civi_group_id']] = 0;
@@ -167,7 +173,7 @@ function spbellen_civi_import_get_targets_batch($data, &$context) {
         'id' => $data['group_id'],
       ))
       ->fields(array(
-        'external_last_imported_id' => $context['sandbox']['progress'],
+        'external_last_imported_id' => $context['sandbox']['last_imported_id'],
       ))
       ->execute();
   }
@@ -305,11 +311,11 @@ function spbellen_civi_import_map_civi_data($civi_data) {
     'postal_code' => 'postal_code',
     'city' => 'city',
     'gender' => 'gender',
-    'is_lid' => 'is_member',
     'afdeling_id' => 'afdeling_code',
     'afdeling' => 'afdeling',
     'regio_id' => 'regio_code',
     'regio' => 'regio',
+    'group_contact_id' => 'group_contact_id',
   );
   foreach ($map as $data_map => $civi_map) {
     if (isset($civi_data[$civi_map])) {
