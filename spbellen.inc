@@ -1168,15 +1168,19 @@ function spbellen_create_action($tid, $caller_id, $result, $submission_id, $call
 }
 
 function spbellen_blacklist($contact_id, $blacklist_in_crm_too = TRUE) {
-  db_insert('spbellen_blacklist')
-    ->fields(array(
-      'contact_id' => $contact_id,
-    ))
-    ->execute();
-  if (!empty($blacklist_in_crm_too)) {
-    $crm_contact_id = spbellen_get_crm_contact_id($contact_id);
-    if (!empty($crm_contact_id)) {
-      module_invoke_all('spbellen_crm_block_phone', $crm_contact_id);
+  $query = "SELECT contact_id FROM {spbellen_blacklist} WHERE contact_id = :contact_id";
+  $result = db_query($query, array(':contact_id' => $contact_id))->fetchAssoc();
+  if (empty($result['contact_id'])) {
+    db_insert('spbellen_blacklist')
+      ->fields(array(
+        'contact_id' => $contact_id,
+      ))
+      ->execute();
+    if (!empty($blacklist_in_crm_too)) {
+      $crm_contact_id = spbellen_get_crm_contact_id($contact_id);
+      if (!empty($crm_contact_id)) {
+        module_invoke_all('spbellen_crm_block_phone', $crm_contact_id);
+      }
     }
   }
 }
