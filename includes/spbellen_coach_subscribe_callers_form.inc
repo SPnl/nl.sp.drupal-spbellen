@@ -29,7 +29,7 @@ function spbellen_coach_subscribe_callers_form($form, &$form_state) {
 
   // Define form array.
   $form = array();
-  $form['#prefix'] = '<div id="spbellen_ajax_form">';
+  $form['#prefix'] = '<div id="spbellen_ajax_form"><p>Als het e-mailadres reeds bekend is, dan wordt er geen nieuwe beller aangemaakt, maar kunt u de gegevens van een bestaande beller aanpassen.</p>';
   $form['#suffix'] = '</div>';
 
   $form['email'] = array(
@@ -77,7 +77,7 @@ function spbellen_coach_subscribe_callers_form($form, &$form_state) {
     '#default_value' => empty($values['postal_code']) ? $default['postal_code'] : $values['postal_code'],
   );
 
-  $afdeling = empty($caller->afdeling) ? '-' : $caller->afdeling;
+  $afdeling = empty($caller->afdeling) ? 'De afdeling wordt automatisch bepaald aan de hand van de hierboven opgegeven postcode.' : $caller->afdeling;
   $form['afdeling'] = array(
     '#markup' => '<p><strong>Afdeling</strong><br/>' . $afdeling . '</p>',
   );
