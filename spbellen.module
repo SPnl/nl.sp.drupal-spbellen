@@ -470,14 +470,14 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       // Add custom submit and validation function.
       array_unshift($form['#validate'], 'spbellen_custom_webform_validate');
       // Add next button.
-      /*$form['actions']['spbellen_next']  = array(
+      $form['actions']['spbellen_next']  = array(
         '#type' => 'button',
         '#value' => 'Overslaan',
         '#attributes' => array(
           'style' => array('float: right'),
           'onclick' => 'return confirm("Weet je zeker dat je ' . $contact_data['display_name'] . ' wilt overslaan?");',
         ),
-      );*/
+      );
     }
   }
 }
