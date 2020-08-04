@@ -31,6 +31,7 @@ function spbellen_civi_import_spbellen_importer_info() {
     'form_definition_function' => 'spbellen_civi_import_import_form',
     'form_validation_function' => 'spbellen_civi_import_import_form_validate',
     'form_submit_function' => 'spbellen_civi_import_import_form_submit',
+    'auto_import' => TRUE,
   );
   return $importer_info;
 }
@@ -130,6 +131,7 @@ function spbellen_civi_import_import_form_validate($form, &$form_state) {
  * Implements hook_spbellen_importer_info() form_submit_function.
  */
 function spbellen_civi_import_import_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
   $storage = $form_state['storage'];
 
   if (!empty($storage['groups'])) {
@@ -142,7 +144,9 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
       // Get last imported id from group.
       $last_imported_id = spbellen_import_get_last_imported($civi_group_id);
 
-      $group_id = spbellen_import_merge_group($group_title, 'spbellen_civi_import', $civi_group_id);
+      // Store auto_import status.
+      $auto_import = $values['auto_import']['auto_import'] === 'auto_import' ? 1 : 0;
+      $group_id = spbellen_import_merge_group($group_title, 'spbellen_civi_import', $civi_group_id, $auto_import);
       $import_id = spbellen_import_insert_import($group_id);
       spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
 

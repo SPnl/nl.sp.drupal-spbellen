@@ -114,7 +114,7 @@ function spbellen_import_insert_group_campaign_relation($group_id, $campaign_id)
 /**
  * Merge group.
  */
-function spbellen_import_merge_group($title, $importer, $external_group_id) {
+function spbellen_import_merge_group($title, $importer, $external_group_id, $auto_import = NULL) {
   if (!empty($title) && !empty($importer) && !empty($external_group_id)) {
     db_merge('spbellen_groups')
       ->key(array(
@@ -123,6 +123,7 @@ function spbellen_import_merge_group($title, $importer, $external_group_id) {
       ->fields(array(
         'title' => $title,
         'importer' => $importer,
+        'auto_import' => $auto_import,
       ))
       ->execute();
     $query = "SELECT id FROM {spbellen_groups} WHERE external_group_id = :external_group_id";
@@ -148,4 +149,18 @@ function spbellen_import_insert_import($group_id) {
     return $import_id;
   }
   return FALSE;
+}
+
+/**
+ * Set auto import flag (0 or 1).
+ */
+function spbellen_set_auto_import($group_id, $status) {
+  if (!empty($group_id) && in_array($status, array(0, 1))) {
+    db_update('spbellen_groups')
+      ->condition('id', $group_id)
+      ->fields(array(
+        'auto_import' => empty($status) ? 0 : 1,
+      ))
+      ->execute();
+  }
 }

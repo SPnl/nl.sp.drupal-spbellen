@@ -29,7 +29,6 @@ function spbellen_import_form($form, &$form_state) {
     else {
       if (empty($storage['campaign'])) {
         // Select campaign.
-        // ----------------------------------------------------------
         $form['select_campaign'] = array(
           '#type' => 'select',
           '#title' => 'Kies een belcampagne.',
@@ -66,6 +65,17 @@ function spbellen_import_form($form, &$form_state) {
             $storage['selected_importer'] = key($importer_info);
           }
           $importer_info[$storage['selected_importer']]['form_definition_function']($form, $form_state);
+
+          if (!empty($importer_info[$storage['selected_importer']]['auto_import'])) {
+            // Automatic import option.
+            $form['auto_import'] = array(
+              '#type' => 'checkboxes',
+              '#name' => 'auto_import',
+              '#options' => array('auto_import' => 'Auto import'),
+              '#default_value' => empty($storage['check_contact_info']) ? array() : array('check_contact_info'),
+            );
+          }
+
           $form['import_submit'] = array(
             '#type' => 'submit',
             '#name' => 'import_submit',
@@ -108,7 +118,8 @@ function spbellen_import_form_validate($form, &$form_state) {
 
   // Add plugin validation.
   if (!empty($storage['selected_importer'])) {
-    $function_name = $storage['selected_importer'] . '_import_form_validate';
+    $importer_info = spbellen_importer_info();
+    $function_name = $importer_info[$storage['selected_importer']]['form_validation_function'];
     $function_name($form, $form_state);
   }
 }
@@ -121,7 +132,8 @@ function spbellen_import_form_submit($form, &$form_state) {
   if (!empty($storage['campaign'])) {
     // Execute importer submit functions.
     if (!empty($storage['selected_importer'])) {
-      $function_name = $storage['selected_importer'] . '_import_form_submit';
+      $importer_info = spbellen_importer_info();
+      $function_name = $importer_info[$storage['selected_importer']]['form_submit_function'];
       $function_name($form, $form_state);
     }
   }

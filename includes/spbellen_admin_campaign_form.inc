@@ -148,6 +148,18 @@ function spbellen_campaign_form($form, &$form_state) {
                   '#title_display' => 'invisible',
                 ),
               );
+              $importer_info = spbellen_importer_info();
+              if ($importer_info[$group_data['importer']]['auto_import']) {
+                $form['import_settings'][$group_id]['auto_import'] = array(
+                  '#type' => 'checkbox',
+                  '#default_value' => $group_data['auto_import'],
+                );
+              }
+              else {
+                $form['import_settings'][$group_id]['auto_import'] = array(
+                  '#markup' => 'n.v.t.',
+                );
+              }
             }
           }
         }
@@ -374,6 +386,9 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         // Store imort state.
         if (!empty($values['import_settings'])) {
           foreach ($values['import_settings'] as $import_settings_key => $import_settings_values) {
+            if (isset($import_settings_values['auto_import'])) {
+              spbellen_set_auto_import($import_settings_key, $import_settings_values['auto_import']);
+            }
             db_update('spbellen_group_campaign_relation')
               ->fields(array(
                 'state' => empty($import_settings_values['active_import']) ? 0 : 1,
@@ -416,6 +431,7 @@ function theme_spbellen_campaign_form($variables) {
           drupal_render($form['import_settings'][$id]['active_import']),
           drupal_render($form['import_settings'][$id]['block_import']),
           drupal_render($form['import_settings'][$id]['weight']),
+          drupal_render($form['import_settings'][$id]['auto_import']),
         ),
         'class' => array('draggable'),
       );
@@ -427,6 +443,7 @@ function theme_spbellen_campaign_form($variables) {
       'Actief',
       'Blokkeren',
       'Gewicht',
+      'Auto import',
     );
     $table_id = 'spbellen-import-settings-tabledrag';
     $import_settings_table = theme('table', array(
