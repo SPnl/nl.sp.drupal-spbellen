@@ -28,6 +28,15 @@ function spbellen_drush_command() {
       'Remove fake phone numbers' => 'drush spbrf',
     ),
   );
+  $items['spbellen_auto_import'] = array(
+    'callback' => 'spbellen_auto_import',
+    'description' => 'Drush command to automaticly import a batch of contacts.',
+    'aliases' => array('spbai'),
+    'examples' => array(
+      'Import a batch of contacts' => 'drush spbellen_auto_import',
+      'Import a batch of contacts' => 'drush spbim',
+    ),
+  );
   return $items;
 }
 
@@ -38,7 +47,7 @@ function spbellen_remove_fake_phone_numbers() {
   // Remove untargeted contact data.
   drush_print('Removing untargeted contact data.');
   $query = "DELETE cd FROM spbellen_contact_data cd LEFT JOIN spbellen_targets ta ON ta.contact_id = cd.contact_id WHERE ta.contact_id IS NULL";
-  $result = db_query($query);
+  db_query($query);
   // Cleanup false phone numbers.
   drush_print('Removing fake phone numbers with repetetive digits.');
   $regexp = '0{6}|1{6}2{6}|3{6}|4{6}|5{6}|6{6}|7{6}|8{6}|9{6}';
@@ -54,9 +63,9 @@ function spbellen_remove_fake_phone_numbers() {
         $pattern2 .= $j . $i;
       }
       $query = "DELETE cd, ta, ac FROM {spbellen_contact_data} cd LEFT JOIN {spbellen_targets} ta ON cd.contact_id = ta.contact_id LEFT JOIN {spbellen_action} ac ON ac.target_id = ta.id WHERE phone LIKE :pattern";
-      $result = db_query($query, array('pattern' => '%' . db_like($pattern1) . '%'));
+      db_query($query, array('pattern' => '%' . db_like($pattern1) . '%'));
       $query = "DELETE cd, ta, ac FROM {spbellen_contact_data} cd LEFT JOIN {spbellen_targets} ta ON cd.contact_id = ta.contact_id LEFT JOIN {spbellen_action} ac ON ac.target_id = ta.id WHERE phone LIKE :pattern";
-      $result = db_query($query, array('pattern' => '%' . db_like($pattern2) . '%'));
+      db_query($query, array('pattern' => '%' . db_like($pattern2) . '%'));
     }
   }
 }
@@ -111,7 +120,7 @@ function spbellen_contact_merge($phone) {
         }
       }
       if (!empty($same_contacts['name'])) {
-        foreach ($same_contacts['name'] as $name => $contact_ids) {
+        foreach ($same_contacts['name'] as $contact_ids) {
           if (count($contact_ids) > 1) {
             foreach ($contact_ids as $contact_id) {
               $same_contacts_final[$contact_id] = $contact_id;
@@ -176,23 +185,18 @@ function spbellen_split_name($name) {
 
   // Split name on middle_name.
   $regex = "@^(?'title'(\b(" . $titles_regex . ")\b\.?\s)?)(?'first_name'(([A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-\.]+)\s*)+?)(?'middle_name'(\b(" . $middle_names_regex . ")\b\s*))(?'last_name'(\b[A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'][a-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-]+\s?)+)$@";
-  $result = preg_match($regex, $name, $matches);
   if (!preg_match($regex, $name, $matches)) {
     // Split name on middle name, last name first.
     $regex = "@^(?'title'(\b(" . $titles_regex . ")\b\.?\s)?)(?'last_name'(\b[A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'][A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-]+\s?)+),?\s(?'first_name'(([A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-\.]+)\s*)+?)(?'middle_name'(\b(" . $middle_names_regex . ")\b\s*))$@";
-    $result = preg_match($regex, $name, $matches);
     if (!preg_match($regex, $name, $matches)) {
       // Split name without middle_name in first name and last name(s).
       $regex = "@^(?'title'(\b(" . $titles_regex . ")\b\.?\s)?)(?'first_name'(([A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-\.]+)\s*)+?)(?'last_name'(\b[A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'][A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-]+\s?)+)$@";
-      $result = preg_match($regex, $name, $matches);
       if (!preg_match($regex, $name, $matches)) {
         // Split name in first name and last name, last name first.
         $regex = "@^(?'title'(\b(" . $titles_regex . ")\b\.?\s)?)(?'last_name'(\b[A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'][A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-]+\s?)+),?\s+(?'first_name'((([A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ']\.)+)\s*)+?)$@";
-        $result = preg_match($regex, $name, $matches);
         if (!preg_match($regex, $name, $matches)) {
           // Check if only first name.
           $regex = "@^(?'first_name'([A-ZÀÈÌÒÙÁÉÍÓÚÝÂÊÎÔÛÃÑÕÄËÏÖÜŸÇÅa-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'][a-zàèìòùáéíóúýâêîôûãñõäëïöü¡¿çãñõ'\-]+))$@";
-          $result = preg_match($regex, $name, $matches);
           if (!preg_match($regex, $name, $matches)) {
             // No match found.
             return FALSE;
@@ -215,4 +219,16 @@ function spbellen_split_name($name) {
     }
   }
   return $matches;
+}
+
+/**
+ * Import a batch of contacts.
+ */
+function spbellen_auto_import() {
+  $importer_info = spbellen_importer_info();
+  foreach ($importer_info as $importer_data) {
+    if (!empty($importer_data['import_function'])) {
+      $importer_data['import_function']();
+    }
+  }
 }

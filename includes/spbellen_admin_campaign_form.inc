@@ -118,13 +118,20 @@ function spbellen_campaign_form($form, &$form_state) {
 
       if ($storage['campaign'] !== 'new' && !empty($storage['campaign'])) {
         $group_info = spbellen_get_campaign_groups_info($storage['campaign']);
+        $importer_info = spbellen_importer_info();
         if (!empty($group_info)) {
           $form['import_settings']['#tree'] = TRUE;
           foreach ($group_info as $group_id => $group_data) {
             if ($group_data['quantity'] > 0) {
+              if (strpos($group_data['title'], 'import') !== FALSE || strpos($group_data['title'], 'Active contacts') !== FALSE || strpos($group_data['title'], 'Inactive contacts') !== FALSE) {
+                $title = $group_data['title'];
+              }
+              else {
+                $title = $importer_info[$group_data['importer']]['importer_source_title'] . ': ' . $group_data['title'] . ' (' . $group_data['external_group_id'] . ')';
+              }
               $form['import_settings'][$group_id] = array(
                 'name' => array(
-                  '#markup' => check_plain($group_data['title']),
+                  '#markup' => check_plain($title),
                 ),
                 'date' => array(
                   '#markup' => check_plain(date('j-n-Y G:i:s', $group_data['date'])),
@@ -148,7 +155,6 @@ function spbellen_campaign_form($form, &$form_state) {
                   '#title_display' => 'invisible',
                 ),
               );
-              $importer_info = spbellen_importer_info();
               if ($importer_info[$group_data['importer']]['auto_import']) {
                 $form['import_settings'][$group_id]['auto_import'] = array(
                   '#type' => 'checkbox',
@@ -387,7 +393,7 @@ function spbellen_campaign_form_submit($form, &$form_state) {
         if (!empty($values['import_settings'])) {
           foreach ($values['import_settings'] as $import_settings_key => $import_settings_values) {
             if (isset($import_settings_values['auto_import'])) {
-              spbellen_set_auto_import($import_settings_key, $import_settings_values['auto_import']);
+              spbellen_import_set_auto_import($import_settings_key, $import_settings_values['auto_import']);
             }
             db_update('spbellen_group_campaign_relation')
               ->fields(array(

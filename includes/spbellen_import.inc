@@ -114,17 +114,22 @@ function spbellen_import_insert_group_campaign_relation($group_id, $campaign_id)
 /**
  * Merge group.
  */
-function spbellen_import_merge_group($title, $importer, $external_group_id, $auto_import = NULL) {
-  if (!empty($title) && !empty($importer) && !empty($external_group_id)) {
+function spbellen_import_merge_group($importer, $external_group_id, $title = NULL, $auto_import = NULL) {
+  if (!empty($importer) && !empty($external_group_id)) {
+    $fields = array(
+      'importer' => $importer,
+    );
+    if (isset($auto_import)) {
+      $fields['auto_import'] = $auto_import;
+    }
+    if (!empty($title)) {
+      $fields['title'] = $title;
+    }
     db_merge('spbellen_groups')
       ->key(array(
         'external_group_id' => $external_group_id,
       ))
-      ->fields(array(
-        'title' => $title,
-        'importer' => $importer,
-        'auto_import' => $auto_import,
-      ))
+      ->fields($fields)
       ->execute();
     $query = "SELECT id FROM {spbellen_groups} WHERE external_group_id = :external_group_id";
     $group_id = db_query($query, array(':external_group_id' => $external_group_id))->fetchField();
@@ -154,7 +159,7 @@ function spbellen_import_insert_import($group_id) {
 /**
  * Set auto import flag (0 or 1).
  */
-function spbellen_set_auto_import($group_id, $status) {
+function spbellen_import_set_auto_import($group_id, $status) {
   if (!empty($group_id) && in_array($status, array(0, 1))) {
     db_update('spbellen_groups')
       ->condition('id', $group_id)

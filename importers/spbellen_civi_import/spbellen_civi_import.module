@@ -32,6 +32,8 @@ function spbellen_civi_import_spbellen_importer_info() {
     'form_validation_function' => 'spbellen_civi_import_import_form_validate',
     'form_submit_function' => 'spbellen_civi_import_import_form_submit',
     'auto_import' => TRUE,
+    'importer_source_title' => 'CiviCRM',
+    'import_function' => 'spbellen_civi_import_drush_import',
   );
   return $importer_info;
 }
@@ -134,49 +136,14 @@ function spbellen_civi_import_import_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $storage = $form_state['storage'];
 
-  if (!empty($storage['groups'])) {
+  if (!empty($storage['groups']) && !empty($storage['campaign'])) {
     // Import contacts.
     $operations = array();
     $civi_groups = $storage['groups'];
-    // Creae batch operations.
-    foreach ($civi_groups as $civi_group_id => $civi_group_title) {
-      $group_title = 'Civi-import: ' . $civi_group_title . ' (' . $civi_group_id . ')';
-      // Get last imported id from group.
-      $last_imported_id = spbellen_import_get_last_imported($civi_group_id);
-
-      // Store auto_import status.
-      $auto_import = $values['auto_import']['auto_import'] === 'auto_import' ? 1 : 0;
-      $group_id = spbellen_import_merge_group($group_title, 'spbellen_civi_import', $civi_group_id, $auto_import);
-      $import_id = spbellen_import_insert_import($group_id);
-      spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
-
-      $civi_group_name = spbellen_civi_import_get_group_machine_name($civi_group_id);
-      if (!empty($civi_group_name)) {
-        $import_data = array(
-          'group_id' => $group_id,
-          'import_id' => $import_id,
-          'civi_group_id' => $civi_group_id,
-          'civi_group_name' => $civi_group_name,
-          'last_imported_id' => $last_imported_id,
-        );
-        // Add operation for each campaign group.
-        $operations[] = array(
-          'spbellen_civi_import_get_targets_batch',
-          array(
-            $import_data,
-          ),
-        );
-      }
+    $batch = spbellen_civi_import_import_groups($civi_groups, $storage['campaign']);
+    if (!empty($batch)) {
+      batch_set($batch);
     }
-    $batch = array(
-      'operations' => $operations,
-      'finished' => 'spbellen_civi_import_get_targets_batch_finished',
-      'title' => 'Ophalen contacten',
-      'init_message' => '0',
-      'progress_message' => 'Groep @current van @total',
-      'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
-    );
-    batch_set($batch);
     return;
   }
   drupal_set_message('Er is iets misgegaan bij het importeren, probeer het opnieuw.', 'error');
@@ -237,5 +204,102 @@ function spbellen_civi_import_spbellen_crm_block_phone($crm_contact_id) {
   $result = $spcivi->api('Contact', 'create', $params);
   if (spbellen_check_result($result, 'een contact', 'create', $params)) {
     watchdog('spbellen', 'CiviCRM contact nr. ' . $crm_contact_id . ' privacy instelling "Niet bellen" ingeschakeld.');
+  }
+}
+
+/**
+ * Drush import groups.
+ */
+function spbellen_civi_import_drush_import() {
+  // Get CiviCRM groups to import.
+  $civi_groups = array();
+  $query = "SELECT title, external_group_id FROM {spbellen_groups} WHERE auto_import = 1 AND importer = 'spbellen_civi_import'";
+  $result = db_query($query);
+  if ($result) {
+    while ($row = $result->fetchAssoc()) {
+      $civi_group_id = $row['external_group_id'];
+      if (!empty($civi_group_id)) {
+        $civi_groups[$civi_group_id] = '';
+      }
+    }
+  }
+  if (!empty($civi_groups)) {
+    // Import groups.
+    $batch = spbellen_civi_import_import_groups($civi_groups);
+    if (!empty($batch)) {
+      $batch['progressive'] = FALSE;
+      batch_set($batch);
+      $batch =& batch_get();
+      // Process the batch.
+      drush_backend_batch_process();
+    }
+  }
+}
+
+/**
+ * Import contacts from Civi groups.
+ * @param  array $civi_groups key is CiviCRM group id, value is group name.
+ */
+function spbellen_civi_import_import_groups($civi_groups, $campaign_id = NULL) {
+  if (!empty($civi_groups)) {
+    // Initialize CiviCRM api.
+    set_time_limit(0);
+    $spcivi = \SPCivi::getInstance();
+    // Creae batch operations.
+    foreach ($civi_groups as $civi_group_id => $civi_group_title) {
+      // Get last imported id from group.
+      $last_imported_id = spbellen_import_get_last_imported($civi_group_id);
+      // Check if there are new contacts to be imported in the group.
+      $params = array(
+        'group' => $civi_group_id,
+        'get_count' => 1,
+        'group_contact_id_offset' => $last_imported_id,
+      );
+      $results = $spcivi->api('Contact', 'getbeltooldata', $params);
+      if (spbellen_check_result($results, 'contacten', 'get', $params)) {
+        $number_of_contacts = $results['values'][0]['count'];
+      }
+
+      if (!empty($number_of_contacts)) {
+        $civi_group_name = spbellen_civi_import_get_group_machine_name($civi_group_id);
+        $group_id = spbellen_import_merge_group('spbellen_civi_import', $civi_group_id, $civi_group_title);
+        $import_id = spbellen_import_insert_import($group_id);
+        if (!empty($campaign_id)) {
+          spbellen_import_insert_group_campaign_relation($group_id, $campaign_id);
+        }
+
+        if (!empty($civi_group_name)) {
+          $import_data = array(
+            'group_id' => $group_id,
+            'import_id' => $import_id,
+            'civi_group_id' => $civi_group_id,
+            'civi_group_name' => $civi_group_name,
+            'last_imported_id' => $last_imported_id,
+            'number_of_contacts' => $number_of_contacts,
+          );
+          // Add operation for each campaign group.
+          $operations[] = array(
+            'spbellen_civi_import_get_targets_batch',
+            array(
+              $import_data,
+            ),
+          );
+        }
+      }
+    }
+    if (!empty($operations)) {
+      $batch = array(
+        'operations' => $operations,
+        'finished' => 'spbellen_civi_import_get_targets_batch_finished',
+        'title' => 'Ophalen contacten',
+        'init_message' => '0',
+        'progress_message' => 'Groep @current van @total',
+        'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
+      );
+      return $batch;
+    }
+    else {
+      drupal_set_message('Er zijn geen nieuwe contacten gevonden om te importeren.');
+    }
   }
 }

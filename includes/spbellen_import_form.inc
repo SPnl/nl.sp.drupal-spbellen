@@ -66,16 +66,6 @@ function spbellen_import_form($form, &$form_state) {
           }
           $importer_info[$storage['selected_importer']]['form_definition_function']($form, $form_state);
 
-          if (!empty($importer_info[$storage['selected_importer']]['auto_import'])) {
-            // Automatic import option.
-            $form['auto_import'] = array(
-              '#type' => 'checkboxes',
-              '#name' => 'auto_import',
-              '#options' => array('auto_import' => 'Auto import'),
-              '#default_value' => empty($storage['check_contact_info']) ? array() : array('check_contact_info'),
-            );
-          }
-
           $form['import_submit'] = array(
             '#type' => 'submit',
             '#name' => 'import_submit',

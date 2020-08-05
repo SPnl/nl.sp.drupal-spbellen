@@ -95,22 +95,9 @@ function spbellen_civi_import_get_targets_batch($data, &$context) {
   $spcivi = \SPCivi::getInstance();
 
   if (empty($context['sandbox'])) {
-
-    // Get total number of contacts.
-    $number_of_contacts = 0;
-    $params = array(
-      'group' => $data['civi_group_id'],
-      'get_count' => 1,
-      'group_contact_id_offset' => $data['last_imported_id'],
-    );
-    $results = $spcivi->api('Contact', 'getbeltooldata', $params);
-    if (spbellen_check_result($results, 'contacten', 'get', $params)) {
-      $number_of_contacts = $results['values'][0]['count'];
-    }
-
     $context['sandbox'] = array();
     $context['sandbox']['current_contact'] = 0;
-    $context['sandbox']['max'] = $number_of_contacts;
+    $context['sandbox']['max'] = $data['number_of_contacts'];
     $context['sandbox']['current_chunk'] = 0;
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['last_imported_id'] = $data['last_imported_id'];

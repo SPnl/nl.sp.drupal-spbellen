@@ -15,6 +15,8 @@ function spbellen_csv_import_spbellen_importer_info() {
     'form_definition_function' => 'spbellen_csv_import_import_form',
     'form_validation_function' => 'spbellen_csv_import_import_form_validate',
     'form_submit_function' => 'spbellen_csv_import_import_form_submit',
+    'importer_source_title' => 'CSV',
+
   );
   return $importer_info;
 }
@@ -176,9 +178,9 @@ function spbellen_csv_import_import_form_submit($form, &$form_state) {
         if (!empty($storage['upload']) && !empty($storage['csv_beltool_mapping'])) {
           // Create import.
           $filename = $storage['upload']->filename;
-          $group_title = 'CSV import: ' . $filename;
+          $group_title = $filename;
 
-          $group_id = spbellen_import_merge_group($group_title, 'spbellen_csv_import', $filename);
+          $group_id = spbellen_import_merge_group('spbellen_csv_import', $filename, $group_title);
           $import_id = spbellen_import_insert_import($group_id);
           spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
 
@@ -198,6 +200,7 @@ function spbellen_csv_import_import_form_submit($form, &$form_state) {
             'error_message' => 'Er is een fout opgetreden bij het ophalen van data',
           );
           batch_set($batch);
+          return;
         }
         break;
     }

@@ -881,6 +881,9 @@ function spbellen_parse_webform_component_option_items($items) {
   return $options;
 }
 
+/**
+ * Return contact fields.
+ */
 function spbellen_contact_fields() {
   $contact_fields = array(
     'contact_id' => 'Beltool contact id',
@@ -900,6 +903,9 @@ function spbellen_contact_fields() {
   return $contact_fields;
 }
 
+/**
+ * Return correct contact fields.
+ */
 function spbellen_correct_contact_fields() {
   $contact_fields = array(
     'display_name' => 'Weergave naam',
@@ -910,6 +916,9 @@ function spbellen_correct_contact_fields() {
   return $contact_fields;
 }
 
+/**
+ * Check if form is beltool form.
+ */
 function spbellen_is_spbellen_form($nid) {
   // Check if spbellen form.
   $data = &drupal_static(__FUNCTION__);
@@ -1840,7 +1849,7 @@ function spbellen_get_campaign_groups_info($campaign_id) {
   if (!isset($rows)) {
     $rows = array();
     if (!empty($campaign_id)) {
-      $query = "SELECT gro.id id, title, importer, auto_import, date, state, call_order, block, COUNT(DISTINCT(target_id)) quantity FROM {spbellen_groups} gro INNER JOIN {spbellen_group_campaign_relation} gcr ON gro.id = gcr.group_id INNER JOIN {spbellen_imports} imp ON imp.group_id = gro.id INNER JOIN {spbellen_target_import_relation_new} tir ON tir.import_id = imp.id WHERE gcr.campaign_id = :campaign_id GROUP BY gro.id ORDER BY date DESC";
+      $query = "SELECT gro.id id, title, importer, external_group_id, auto_import, MAX(date) date, state, call_order, block, COUNT(DISTINCT(target_id)) quantity FROM {spbellen_groups} gro INNER JOIN {spbellen_group_campaign_relation} gcr ON gro.id = gcr.group_id INNER JOIN {spbellen_imports} imp ON imp.group_id = gro.id INNER JOIN {spbellen_target_import_relation_new} tir ON tir.import_id = imp.id WHERE gcr.campaign_id = :campaign_id GROUP BY gro.id ORDER BY title ASC";
       $result = db_query($query, array(':campaign_id' => $campaign_id));
       $rows = $result->FetchAllAssoc('id', PDO::FETCH_ASSOC);
     }
