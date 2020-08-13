@@ -1,0 +1,387 @@
+<?php
+
+/**
+ * Main module file for SP Beltool Civi importer.
+ */
+
+module_load_include('inc', 'spbellen', 'includes/spbellen_import');
+module_load_include('inc', 'spbellen_webform_import', 'spbellen_webform_import');
+
+ /**
+  * Implements hook_menu().
+  */
+function spbellen_webform_import_menu() {
+  $items = array();
+  $items['spbellen/dev'] = array(
+    'title' => 'SP webform dev',
+    'page callback' => 'spbellen_webform_import_dev',
+    'access arguments' => array('spbellen administer campaigns'),
+    'type' => MENU_CALLBACK,
+    'file' => 'spbellen_webform_import.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_spbellen_importer_info().
+ */
+function spbellen_webform_import_spbellen_importer_info() {
+  $importer_info = array(
+    'form_definition_function' => 'spbellen_webform_import_import_form',
+    'form_validation_function' => 'spbellen_webform_import_import_form_validate',
+    'form_submit_function' => 'spbellen_webform_import_import_form_submit',
+    'auto_import' => TRUE,
+    'importer_source_title' => 'Webform',
+    'import_function' => 'spbellen_webform_import_drush_import',
+  );
+  return $importer_info;
+}
+
+/**
+ * Implements hook_spbellen_importer_info() form_definition_function.
+ */
+function spbellen_webform_import_import_form(&$form, &$form_state) {
+  $form_state['civi_groups'] = spbellen_webform_import_get_groups();
+  $storage = &$form_state['storage'];
+
+  if (empty($storage['endpoint'])) {
+    // check settings.
+    $endpoints = variable_get('spbellen_webform_import_rest_endpoints');
+    $webform_node_types = variable_get('spbellen_webform_import_node_types');
+    $creds = variable_get('spbellen_webform_import_creds');
+
+    // Validate webform node types.
+    foreach ($webform_node_types as $webform_node_type) {
+      if (!preg_match('/[0-9a-z_]+/', $webform_node_type)) {
+        drupal_set_message('De ingestelde node type namen moeten bestaan uit kleine letters, nummers en underscores', 'error');
+        $webform_node_types = array();
+        break;
+      }
+    }
+    if (empty($endpoints) || empty($webform_node_types) || empty($creds)) {
+      $form['error'] = array(
+        '#markup' => "<p>Stel de Drupal variabele spbellen_webform_import_rest_endpoints, spbellen_webform_import_node_types in en spbellen_webform_import_creds. Een REST endpoint is de url waarop de requests gedaan worden. Een endpoint bestaat uit https://domein.sp.nl plus het pad dat in de services module is ingesteld. Meestal is dit https://domein.sp.nl/rest.</p><p>Dit kan in settings.php:<pre>\$conf['spbellen_webform_import_rest_endpoints'] = array (<br/>&nbsp;&nbsp;'https://doemee.sp.nl/rest',<br/>&nbsp;&nbsp;'https://nationaalzorgfonds.nl/rest',<br/>);</pre></p><p>Stel ook de node types in:<pre>\$conf['spbellen_webform_import_node_types'] = array (<br/>&nbsp;&nbsp;'webform',<br/>&nbsp;&nbsp;'doe_mee',<br/>);</pre></p><p>Stel ook de node types in:<pre>\$conf['spbellen_webform_import_node_types'] = array (<br/>&nbsp;&nbsp;'webform',<br/>&nbsp;&nbsp;'doe_mee',<br/>);</pre></p><p>Stel ook de credentials in:<pre>\$conf['spbellen_webform_import_creds'] = array (<br/>&nbsp;&nbsp;'name' => 'beltool',<br/>&nbsp;&nbsp;'pass' => 'very_secret_code',<br/>);</pre></p>");
+      return $form;
+    }
+  }
+
+  $form['spbellen_webform_import'] = array(
+    '#type' => 'fieldset',
+    '#prefix' => '<div id="spbellen_webform_import_ajax_form">',
+    '#suffix' => '</div>',
+  );
+
+  if (empty($storage['endpoint'])) {
+    $form['spbellen_webform_import']['endpoint'] = array(
+      '#type' => 'select',
+      '#title' => 'Selecteer een REST endpoint',
+      '#options' => $endpoints,
+      '#empty_option' => ' - kies - ',
+      '#ajax' => array(
+        'wrapper' => 'spbellen_webform_import_ajax_form',
+        'callback' => 'spbellen_webform_import_form_ajax_callback',
+        '#default_value' => empty($storage['endpoint']) ? '' : $storage['endpoint'],
+      ),
+    );
+    return;
+  }
+
+  $form['spbellen_webform_import']['selected_source'] = array(
+    '#markup' => '<p>Bron: ' . $storage['endpoint'] . '</p>',
+  );
+
+  if (!empty($storage['webforms']) && empty($storage['webform'])) {
+    $form['spbellen_webform_import']['webform'] = array(
+      '#type' => 'select',
+      '#title' => 'Selecteer een formulier',
+      '#options' => $storage['webforms_list'],
+      '#empty_option' => ' - kies - ',
+      '#ajax' => array(
+        'wrapper' => 'spbellen_webform_import_ajax_form',
+        'callback' => 'spbellen_webform_import_form_ajax_callback',
+      ),
+    );
+    return;
+  }
+
+  $form['spbellen_webform_import']['selected_form'] = array(
+    '#markup' => '<p>Formulier: ' . $storage['webform']['title'] . '</p>',
+  );
+
+  if (!empty($storage['webform']['components_parsed'])) {
+    $form['spbellen_webform_import']['#title'] = 'Selecteer optioneel contacten op basis van gegeven antwoorden';
+    $form['spbellen_webform_import']['#description'] = 'Indien er geen selectie wordt gemaakt worden alle contacten die het formulier hebben ingevuld geïmporteerd';
+    foreach ($storage['webform']['components_parsed'] as $cid => $parsed_data) {
+      $form['spbellen_webform_import'][$cid . '_options'] = array(
+        '#type' => 'checkboxes',
+        '#title' => $parsed_data['title'],
+        '#options' => $parsed_data['options'],
+      );
+    }
+
+    $form['spbellen_webform_import']['import_title'] = array(
+      '#title' => 'Naam import',
+      '#type' => 'textfield',
+      '#required' => TRUE,
+    );
+  }
+}
+
+/**
+ * Implements hook_spbellen_importer_info() form_validation_function.
+ */
+function spbellen_webform_import_import_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  $storage = &$form_state['storage'];
+
+  if (!empty($form_state['triggering_element']['#name'])) {
+    // Check fixed name buttons.
+    $trigger = $form_state['triggering_element']['#name'];
+    switch ($trigger) {
+      case 'endpoint':
+        if (isset($values['endpoint']) && !isset($storage['endpoint'])) {
+          $endpoints = variable_get('spbellen_webform_import_rest_endpoints');
+          if (!empty($endpoints[$values['endpoint']])) {
+            $storage['endpoint'] = $endpoints[$values['endpoint']];
+            $webform_node_types = variable_get('spbellen_webform_import_node_types');
+            // Get available forms.
+            $webforms = spbellen_webform_import_rest_get_phone_forms($storage['endpoint']);
+            if (!empty($webforms)) {
+              $storage['webforms'] = $webforms;
+              foreach ($webforms as $webform) {
+                if (!empty($webform['uuid']) && !empty($webform['title'])) {
+                  $storage['webforms_list'][$webform['uuid']] = check_plain($webform['title']);
+                }
+              }
+            }
+            else {
+              form_set_error('endpoint', 'Er konden geen geschikte formulieren worden gevonden');
+            }
+          }
+        }
+        break;
+
+      case 'webform':
+        if (isset($values['webform']) && !isset($storage['webform']['components_parsed'])) {
+          $webform = $storage['webforms'][$values['webform']];
+          $storage['webform'] = $webform;
+          // Get form select components.
+          foreach ($webform['webform']['components'] as $cid => $component) {
+            if (in_array($component['type'], array('select', 'spcontact'))) {
+              $options = spbellen_webform_import_parse_webform_select_options($component);
+              if (!empty($options)) {
+                $storage['webform']['components_parsed'][$cid]['options'] = $options;
+                $storage['webform']['components_parsed'][$cid]['title'] = $component['name'];
+              }
+            }
+          }
+        }
+        break;
+    }
+  }
+}
+
+/**
+ * Implements hook_spbellen_importer_info() form_submit_function.
+ */
+function spbellen_webform_import_import_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $storage = $form_state['storage'];
+
+  $trigger = $form_state['triggering_element']['#name'];
+  // Store component selected option values.
+  foreach ($values as $key => $value) {
+    preg_match('/^([0-9]+)(_options)$/', $key, $matches);
+    if (!empty($matches[1])) {
+      $cid = $matches[1];
+      $storage['webform']['component_selections'][$cid] = $value;
+    }
+  }
+
+  // Prepare variables for database storage.
+  if (isset($storage['webform']['component_selections'])) {
+    $select_options = json_encode($storage['webform']['component_selections']);
+    $external_group_id = $storage['webform']['uuid'] . '_' . md5(json_encode($storage['webform']['component_selections']));
+  }
+  else {
+    $select_options = NULL;
+    $external_group_id = $storage['webform']['uuid'];
+  }
+
+  // Create import.
+  $group_id = spbellen_import_merge_group($storage['selected_importer'], $external_group_id, $values['import_title'], NULL);
+
+  // Store webform import data.
+  $fields = array(
+    'group_id' => $group_id,
+    'rest_endpoint' => $storage['endpoint'],
+    'webform_uuid' => $storage['webform']['uuid'],
+    'select_options' => $select_options,
+  );
+  $data_id = db_merge('spbellen_webform_import_data')
+    ->key($fields)
+    ->execute();
+
+  // Store group campaign relation.
+  spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
+
+  // Import webform contact.
+  $batch = spbellen_webform_import_import_group($group_id);
+  if (!empty($batch)) {
+    batch_set($batch);
+  }
+}
+
+/**
+ * Import contacts from group.
+ */
+function spbellen_webform_import_import_group($group_id) {
+  $batch = FALSE;
+  $chunk_size = 20;
+
+  // Create import.
+  $import_id = spbellen_import_insert_import($group_id);
+
+  // Get group data.
+  $query = "SELECT * FROM {spbellen_groups} WHERE id = :group_id";
+  $group_data = db_query($query, array(':group_id' => $group_id))->fetchAssoc();
+
+
+  $last_imported_id = $group_data['external_last_imported_id'];
+
+  // Get webform import data.
+  $query = "SELECT * FROM {spbellen_webform_import_data} WHERE group_id = :group_id";
+  $webform_import_data = db_query($query, array(':group_id' => $group_id))->fetchAssoc();
+
+  $rest_endpoint = $webform_import_data['rest_endpoint'];
+  $webform_uuid = $webform_import_data['webform_uuid'];
+  $select_options = json_decode($webform_import_data['select_options'], TRUE);
+
+  // Get total number of submissions.
+  $total_number_of_submissions = spbellen_webform_import_rest_get_submissions_count($rest_endpoint, $webform_uuid, $last_imported_id);
+  $chunks = ceil($total_number_of_submissions / $chunk_size);
+
+  if ($total_number_of_submissions === FALSE) {
+    drupal_set_message('Er is iets misgegaan bij het importeren, probeer het opnieuw.', 'error');
+    return FALSE;
+  }
+
+  if ($total_number_of_submissions > 0) {
+    $import_data = array(
+      'rest_endpoint' => $rest_endpoint,
+      'webform_uuid' => $webform_uuid,
+      'select_options' => $select_options,
+      'last_imported_id' => $last_imported_id,
+      '$total_number_of_submissions' => $total_number_of_submissions,
+      'chunk_size' => $chunk_size,
+      'chunks' => $chunks,
+      'import_id' => $import_id,
+      'group_id' => $group_id,
+    );
+    $batch = array(
+      'title' => 'Importing ' . $group_data['title'],
+      'operations' => array(
+        array(
+          'spbellen_webform_import_batch',
+          array(
+            $import_data,
+          ),
+        ),
+      ),
+      'finished' => 'spbellen_webform_import_batch_finished',
+      'file' => drupal_get_path('module', 'spbellen_webform_import') . '/spbellen_webform_import.inc',
+    );
+    return $batch;
+  }
+  drupal_set_message('Er zijn geen inzendingen gevonden om te importeren.');
+}
+
+/**
+ * Implements hook_spbellen_get_chapter_and_region().
+ */
+function spbellen_webform_import_spbellen_get_chapter_and_region($postal_code) {
+  /*
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'name' => $postal_code,
+    'api.Relationship.getsingle' => array('contact_id_a' => '$value.id', 'relationship_type_id' => 93),
+    'api.Contact.getsingle' => array('id' => '$value.api.Relationship.getsingle.contact_id_b'),
+  );
+  $result = $spcivi->api('Geostelsel', 'getafdeling', $params);
+  if (spbellen_check_result($result, 'afdelingsinformatie', 'getsingle', $params)) {
+    if (!empty($result['values'])) {
+      $data_raw = array_shift($result['values']);
+      if (!empty($data_raw['id'])) {
+        $data['afdeling_id'] = $data_raw['id'];
+        $data['afdeling'] = $data_raw['display_name'];
+        if (!empty($data_raw['api.Contact.getsingle'])) {
+          $data['regio_id'] = $data_raw['api.Contact.getsingle']['contact_id'];
+          $data['regio'] = $data_raw['api.Contact.getsingle']['display_name'];
+        }
+      }
+      return $data;
+    }
+  }
+  */
+}
+
+/**
+ * Implements hook_spbellen_process_phone_invalid_message.
+ */
+function spbellen_webform_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
+  //spbellen_webform_import_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
+}
+
+/**
+ * Implements hook_spbellen_crm_block_phone().
+ */
+function spbellen_webform_import_spbellen_crm_block_phone($crm_contact_id) {
+  /*
+  set_time_limit(0);
+  $spcivi = \SPCivi::getInstance();
+  $params = array(
+    'id' => $crm_contact_id,
+    'do_not_phone' => 1,
+  );
+  $result = $spcivi->api('Contact', 'create', $params);
+  if (spbellen_check_result($result, 'een contact', 'create', $params)) {
+    watchdog('spbellen', 'CiviCRM contact nr. ' . $crm_contact_id . ' privacy instelling "Niet bellen" ingeschakeld.');
+  }
+  */
+}
+
+/**
+ * Drush import groups.
+ */
+function spbellen_webform_import_drush_import() {
+  /*
+  // Get CiviCRM groups to import.
+  $civi_groups = array();
+  $query = "SELECT title, external_group_id FROM {spbellen_groups} WHERE auto_import = 1 AND importer = 'spbellen_webform_import'";
+  $result = db_query($query);
+  if ($result) {
+    while ($row = $result->fetchAssoc()) {
+      $civi_group_id = $row['external_group_id'];
+      if (!empty($civi_group_id)) {
+        $civi_groups[$civi_group_id] = '';
+      }
+    }
+  }
+  if (!empty($civi_groups)) {
+    // Import groups.
+    $batch = spbellen_webform_import_import_groups($civi_groups);
+    if (!empty($batch)) {
+      $batch['progressive'] = FALSE;
+      batch_set($batch);
+      $batch =& batch_get();
+      // Process the batch.
+      drush_backend_batch_process();
+    }
+  }
+  */
+}
+
+function spbellen_webform_import_form_ajax_callback($form, &$form_state) {
+  return $form['spbellen_webform_import'];
+}

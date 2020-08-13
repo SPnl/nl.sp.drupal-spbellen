@@ -42,11 +42,14 @@ function spbellen_import_form($form, &$form_state) {
         );
       }
       else {
+        $form['selected_campaign'] = array(
+          '#markup' => '<p>' . $campaigns_list[$storage['campaign']],
+        );
+        $system_list = system_list('module_enabled');
+        foreach ($importer_info as $module => $info) {
+          $importer_list[$module] = $system_list[$module]->info['name'];
+        }
         if (empty($storage['selected_importer']) && count($importer_info) > 1) {
-          $system_list = system_list('module_enabled');
-          foreach ($importer_info as $module => $info) {
-            $importer_list[$module] = $system_list[$module]->info['name'];
-          }
           $form['select_importer'] = array(
             '#type' => 'select',
             '#title' => 'Kies een importer',
@@ -64,6 +67,9 @@ function spbellen_import_form($form, &$form_state) {
             reset($importer_info);
             $storage['selected_importer'] = key($importer_info);
           }
+          $form['selected_importer'] = array(
+            '#markup' => '<p>' . $importer_list[$storage['selected_importer']],
+          );
           $importer_info[$storage['selected_importer']]['form_definition_function']($form, $form_state);
 
           $form['import_submit'] = array(
@@ -72,7 +78,6 @@ function spbellen_import_form($form, &$form_state) {
             '#value' => 'Importeer',
           );
         }
-
       }
     }
   }

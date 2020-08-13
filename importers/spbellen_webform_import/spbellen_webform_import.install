@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function spbellen_webform_import_schema() {
+  $schema['spbellen_webform_import_data'] = array(
+    'description' => 'Import data',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key.',
+        'type' => 'serial',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'group_id' => array(
+        'description' => 'Beltool group id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'rest_endpoint' => array(
+        'description' => 'REST endpoint.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'webform_uuid' => array(
+        'description' => 'REST endpoint.',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'select_options' => array(
+        'description' => 'Selected options (json).',
+        'type' => 'text',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+    'indexes' => array(
+      'merge' => array(
+        'group_id',
+        'rest_endpoint',
+        'webform_uuid',
+        'select_options',
+      ),
+      'group_id' => array(
+        'group_id',
+      ),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Create webform import data table.
+ */
+function spbellen_webform_import_update_7001() {
+  if (!db_table_exists('spbellen_webform_import_data')) {
+    $schema = spbellen_webform_import_schema();
+    // Create tables.
+    $table = $schema['spbellen_webform_import_data'];
+    db_create_table('spbellen_webform_import_data', $table);
+  }
+}
