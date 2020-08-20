@@ -11,8 +11,10 @@ function spbellen_webform_import_dev() {
   //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'submission?uuid=eacd6149-93ff-4ab4-a14b-45587c87ba82&page=0&pagesize=10&offset=211121');
   //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'webform/eacd6149-93ff-4ab4-a14b-45587c87ba82');
   //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'webform');
-  //$data = spbellen_webform_import_rest_get_submissions('https://doemee.lndo.site/rest', 'eacd6149-93ff-4ab4-a14b-45587c87ba82', '211121', 2);
-  $data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'submission?uuid=eacd6149-93ff-4ab4-a14b-45587c87ba82&page=1&offset=211121');
+  //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'submission?uuid=eacd6149-93ff-4ab4-a14b-45587c87ba82&page=1&offset=211121');
+  //$data = spbellen_webform_import_rest_get_phone_forms('https://doemee.lndo.site/rest');
+  //dpm($data);
+  $data = spbellen_webform_import_rest_get_submissions('https://doemee.lndo.site/rest', '78f3ddf2-2f0a-4dde-8fe2-8dcd94b9b2ff', 0, 2, 20);
   return 'Testerdetest';
 }
 
@@ -280,21 +282,20 @@ function spbellen_webform_import_batch($data, &$context) {
   }
 
   // Get batch.
-  $submissions = spbellen_webform_import_rest_get_submissions($data['rest_endpoint'], $data['webform_uuid'], $data['last_imported_id'], $context['sandbox']['current_chunk'], $data['chunk_size']);
+  $submissions = spbellen_webform_import_rest_get_submissions($data['rest_endpoint'], $data['webform']['uuid'], $data['last_imported_id'], $context['sandbox']['current_chunk'], $data['chunk_size']);
   if (!empty($submissions)) {
     foreach ($submissions as $submission) {
-      // Check if submission has selected options.
-      if (!spbellen_webform_import_select_option_filter_pass($submission, $data['select_options'])) {
+      // Check if submission has required options.
+      // Import contact.
+      $contact_data = spbellen_webform_import_parse_contact_data($submission, $data['required_options']);
+
+      if (empty($contact_data)) {
         continue;
       }
-      // Import contact.
-      $contact_data = spbellen_webform_import_parse_contact_data($submission);
 
-      if (!empty($contact_data)) {
-        $contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data);
-        if ($contact_id === FALSE) {
-          continue;
-        }
+      $contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data);
+      if ($contact_id === FALSE) {
+        continue;
       }
 
       $context['results']['count']++;
@@ -303,7 +304,7 @@ function spbellen_webform_import_batch($data, &$context) {
     // Update our progress information.
     $context['sandbox']['current_chunk']++;
     $context['finished'] = ($context['sandbox']['current_chunk'] / $data['chunks']);
-    $context['message'] = ($context['sandbox']['current_chunk'] * $chunk_size) . '/' . $data['$total_number_of_submissions'];
+    $context['message'] = ($context['sandbox']['current_chunk'] * $chunk_size) . '/' . $data['total_number_of_submissions'];
 
     // Update import quantity.
     db_update('spbellen_imports')
@@ -520,6 +521,28 @@ function spbellen_webform_import_spcontact_default_select_options() {
   );
 }
 
+function spbellen_webform_import_spcontact_component_option_id_mapping() {
+  return array(
+    'keep_informed' => 7,
+    'spnews' => 8,
+    'send_something' => 9,
+    'action' => 10,
+    'membership' => 11,
+  );
+}
+
+function spbellen_webform_import_spcontact_component_contact_data_mapping() {
+  return array(
+    'display_name' => 0,
+    'email' => 1,
+    'phone' => 2,
+    'postal_code' => 3,
+    'house_number' => 4,
+    'street_address' => 5,
+    'city' => 6,
+  );
+}
+
 /**
  * Customized select options texts for spcontact.
  */
@@ -533,4 +556,123 @@ function spbellen_webform_import_spcontact_select_options($component, $original_
     }
   }
   return $options;
+}
+
+/**
+ * Check if required options for this import are met by the selected values in the submission.
+ */
+function spbellen_webform_import_parse_contact_data($submission, $required_options) {
+  $contact_data = array();
+
+  $phone_found = FALSE;
+  $name_found = FALSE;
+
+  foreach ($submission['data'] as $respons) {
+    switch ($respons['type']) {
+      case 'select':
+        // Check if required options are set.
+        if (!empty($required_options[$respons['cid']])) {
+          foreach ($required_options[$respons['cid']] as $required_option) {
+            if (!array_search($required_option, $respons['values'])) {
+              return FALSE;
+            }
+          }
+        }
+        break;
+
+      case 'spcontact':
+        $option_mapping = spbellen_webform_import_spcontact_component_option_id_mapping();
+        $data_mapping = spbellen_webform_import_spcontact_component_contact_data_mapping();
+        // Check if required options are selected.
+        if (!empty($required_options[$respons['cid']])) {
+          foreach ($required_options[$respons['cid']] as $required_option) {
+            if (empty($respons['values'][$option_mapping[$required_option]])) {
+              return FALSE;
+            }
+          }
+        }
+        // Set contact data.
+        if (!empty($respons['values'][$data_mapping['display_name']])) {
+          $contact_data['display_name'] = $respons['values'][$data_mapping['display_name']];
+        }
+        if (!empty($respons['values'][$data_mapping['email']])) {
+          $contact_data['email'] = $respons['values'][$data_mapping['email']];
+        }
+        if (!empty($respons['values'][$data_mapping['phone']])) {
+          $contact_data['phone'] = $respons['values'][$data_mapping['phone']];
+        }
+        if (!empty($respons['values'][$data_mapping['postal_code']])) {
+          $contact_data['postal_code'] = $respons['values'][$data_mapping['postal_code']];
+        }
+        if (!empty($respons['values'][$data_mapping['street_address']])) {
+          $contact_data['street_address'] = $respons['values'][$data_mapping['street_address']];
+          if (!empty($respons['values'][$data_mapping['house_number']])) {
+            $contact_data['street_address'] .= ' ' . $respons['values'][$data_mapping['house_number']];
+          }
+        }
+        if (!empty($respons['values'][$data_mapping['city']])) {
+          $contact_data['city'] = $respons['values'][$data_mapping['city']];
+        }
+        break;
+
+      case 'textfield':
+        if (in_array($respons['form_key'], array(
+          'naam',
+          'name',
+          'voornaam',
+          'first_name',
+          'achternaam',
+          'last_name',
+        ))) {
+          if (!empty($respons['values'][0])) {
+            $contact_data['display_name'] = $respons['values'][0];
+          }
+        }
+        if (in_array($respons['form_key'], array(
+          'telefoon',
+          'telefoonnummer',
+          'phone',
+          'phone_number',
+        ))) {
+          if (!empty($respons['values'][0])) {
+            $contact_data['phone'] = $respons['values'][0];
+          }
+        }
+        if (in_array($respons['form_key'], array(
+          'postcode',
+          'postal_code',
+        ))) {
+          if (!empty($respons['values'][0])) {
+            $contact_data['postal_code'] = $respons['values'][0];
+          }
+        }
+        break;
+
+      case 'phone':
+        if (!empty($respons['values'][0])) {
+          $contact_data['phone'] = $respons['values'][0];
+        }
+        break;
+
+      case 'sp_address_auto':
+        if (!empty($respons['values']['postal_code'])) {
+          $contact_data['postal_code'] = $respons['values']['postal_code'];
+        }
+        if (!empty($respons['values']['city'])) {
+          $contact_data['city'] = $respons['values']['city'];
+        }
+        if (!empty($respons['values']['street_name'])) {
+          $contact_data['street_address'] = $respons['values']['street_name'];
+          if (!empty($respons['values']['house_number'])) {
+            $contact_data['street_address'] .= ' ' . $respons['values']['house_number'];
+          }
+        }
+        break;
+    }
+  }
+  // Check if name and phone are set.
+  if (empty($contact_data['display_name']) || empty($contact_data['phone'])) {
+    return FALSE;
+  }
+  return $contact_data;
 }

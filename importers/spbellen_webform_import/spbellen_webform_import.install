@@ -25,14 +25,13 @@ function spbellen_webform_import_schema() {
         'length' => '255',
         'not null' => TRUE,
       ),
-      'webform_uuid' => array(
-        'description' => 'REST endpoint.',
-        'type' => 'varchar',
-        'length' => '255',
+      'webform' => array(
+        'description' => 'Webform.',
+        'type' => 'text',
         'not null' => TRUE,
       ),
-      'select_options' => array(
-        'description' => 'Selected options (json).',
+      'required_options' => array(
+        'description' => 'Options choices that are required for import (json).',
         'type' => 'text',
       ),
     ),
@@ -43,8 +42,8 @@ function spbellen_webform_import_schema() {
       'merge' => array(
         'group_id',
         'rest_endpoint',
-        'webform_uuid',
-        'select_options',
+        'webform',
+        'required_options',
       ),
       'group_id' => array(
         'group_id',

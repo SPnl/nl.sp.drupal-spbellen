@@ -8,7 +8,10 @@
  * Import form definition.
  */
 function spbellen_import_form($form, &$form_state) {
-  $storage = !empty($form_state['storage']) ? $form_state['storage'] : array();
+  if (empty($form_state['storage'])) {
+    $form_state['storage'] = array();
+  }
+  $storage = &$form_state['storage'];
   $campaigns_list = spbellen_get_campaigns_list();
 
   $form['#prefix'] = '<div id="spbellen_import_ajax_form">';
