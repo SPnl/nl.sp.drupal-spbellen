@@ -34,7 +34,7 @@ function spbellen_drush_command() {
     'aliases' => array('spbai'),
     'examples' => array(
       'Import a batch of contacts' => 'drush spbellen_auto_import',
-      'Import a batch of contacts' => 'drush spbim',
+      'Import a batch of contacts' => 'drush spbai',
     ),
   );
   return $items;

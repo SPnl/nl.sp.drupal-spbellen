@@ -238,7 +238,7 @@ function spbellen_webform_import_import_form_submit($form, &$form_state) {
   $storage = $form_state['storage'];
 
   // Create import.
-  $group_id = spbellen_import_merge_group($storage['selected_importer'], $storage['external_group_id'], $values['import_title'], NULL);
+  $group_id = spbellen_import_merge_group($storage['selected_importer'], $storage['external_group_id'], $values['group_title'], NULL);
 
   // Store webform import data.
   $fields = array(
@@ -255,7 +255,7 @@ function spbellen_webform_import_import_form_submit($form, &$form_state) {
   spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
 
   // Import webform contact.
-  $batch = spbellen_webform_import_import_group($group_id);
+  $batch = spbellen_webform_import_import_groups(array($group_id));
   if (!empty($batch)) {
     batch_set($batch);
   }
@@ -264,64 +264,71 @@ function spbellen_webform_import_import_form_submit($form, &$form_state) {
 /**
  * Import contacts from group.
  */
-function spbellen_webform_import_import_group($group_id) {
+function spbellen_webform_import_import_groups($group_ids) {
   $batch = FALSE;
   $chunk_size = 20;
+  $operations = array();
 
-  // Create import.
-  $import_id = spbellen_import_insert_import($group_id);
+  foreach ($group_ids as $group_id) {
+    // Create import.
+    $import_id = spbellen_import_insert_import($group_id);
 
-  // Get group data.
-  $query = "SELECT * FROM {spbellen_groups} WHERE id = :group_id";
-  $group_data = db_query($query, array(':group_id' => $group_id))->fetchAssoc();
+    // Get group data.
+    $query = "SELECT * FROM {spbellen_groups} WHERE id = :group_id";
+    $group_data = db_query($query, array(':group_id' => $group_id))->fetchAssoc();
+    $group_titles[] = $group_data['title'];
 
 
-  $last_imported_id = $group_data['external_last_imported_id'];
+    $last_imported_id = $group_data['external_last_imported_id'];
 
-  // Get webform import data.
-  $query = "SELECT * FROM {spbellen_webform_import_data} WHERE group_id = :group_id";
-  $webform_import_data = db_query($query, array(':group_id' => $group_id))->fetchAssoc();
+    // Get webform import data.
+    $query = "SELECT * FROM {spbellen_webform_import_data} WHERE group_id = :group_id";
+    $webform_import_data = db_query($query, array(':group_id' => $group_id))->fetchAssoc();
 
-  $rest_endpoint = $webform_import_data['rest_endpoint'];
-  $webform = json_decode($webform_import_data['webform'], TRUE);
-  $required_options = json_decode($webform_import_data['required_options'], TRUE);
+    $rest_endpoint = $webform_import_data['rest_endpoint'];
+    $webform = json_decode($webform_import_data['webform'], TRUE);
+    $required_options = json_decode($webform_import_data['required_options'], TRUE);
 
-  // Get total number of submissions.
-  $total_number_of_submissions = spbellen_webform_import_rest_get_submissions_count($rest_endpoint, $webform['uuid'], $last_imported_id);
-  $chunks = ceil($total_number_of_submissions / $chunk_size);
+    // Get total number of submissions.
+    $total_number_of_submissions = spbellen_webform_import_rest_get_submissions_count($rest_endpoint, $webform['uuid'], $last_imported_id);
+    $chunks = ceil($total_number_of_submissions / $chunk_size);
 
-  if ($total_number_of_submissions === FALSE) {
-    drupal_set_message('Er is iets misgegaan bij het importeren, probeer het opnieuw.', 'error');
-    return FALSE;
+    if ($total_number_of_submissions === FALSE) {
+      drupal_set_message('Er is iets misgegaan bij het importeren, probeer het opnieuw.', 'error');
+      return FALSE;
+    }
+
+    if ($total_number_of_submissions > 0) {
+      $import_data = array(
+        'rest_endpoint' => $rest_endpoint,
+        'webform' => $webform,
+        'required_options' => $required_options,
+        'last_imported_id' => $last_imported_id,
+        'total_number_of_submissions' => $total_number_of_submissions,
+        'chunk_size' => $chunk_size,
+        'chunks' => $chunks,
+        'import_id' => $import_id,
+        'group_id' => $group_id,
+      );
+      $operations[] = array(
+        'spbellen_webform_import_batch',
+        array(
+          $import_data,
+        ),
+      );
+    }
   }
 
-  if ($total_number_of_submissions > 0) {
-    $import_data = array(
-      'rest_endpoint' => $rest_endpoint,
-      'webform' => $webform,
-      'required_options' => $required_options,
-      'last_imported_id' => $last_imported_id,
-      'total_number_of_submissions' => $total_number_of_submissions,
-      'chunk_size' => $chunk_size,
-      'chunks' => $chunks,
-      'import_id' => $import_id,
-      'group_id' => $group_id,
-    );
+  if (!empty($operations)) {
     $batch = array(
       'title' => 'Importing ' . $group_data['title'],
-      'operations' => array(
-        array(
-          'spbellen_webform_import_batch',
-          array(
-            $import_data,
-          ),
-        ),
-      ),
+      'operations' => $operations,
       'finished' => 'spbellen_webform_import_batch_finished',
       'file' => drupal_get_path('module', 'spbellen_webform_import') . '/spbellen_webform_import.inc',
     );
     return $batch;
   }
+
   drupal_set_message('Er zijn geen inzendingen gevonden om te importeren.');
 }
 
@@ -384,22 +391,20 @@ function spbellen_webform_import_spbellen_crm_block_phone($crm_contact_id) {
  * Drush import groups.
  */
 function spbellen_webform_import_drush_import() {
-  /*
-  // Get CiviCRM groups to import.
-  $civi_groups = array();
-  $query = "SELECT title, external_group_id FROM {spbellen_groups} WHERE auto_import = 1 AND importer = 'spbellen_webform_import'";
+  // Get webforms to import.
+  $groups = array();
+  $query = "SELECT id FROM {spbellen_groups} WHERE auto_import = 1 AND importer = 'spbellen_webform_import'";
   $result = db_query($query);
   if ($result) {
     while ($row = $result->fetchAssoc()) {
-      $civi_group_id = $row['external_group_id'];
-      if (!empty($civi_group_id)) {
-        $civi_groups[$civi_group_id] = '';
+      if (!empty($row['id'])) {
+        $groups[] = $row['id'];
       }
     }
   }
-  if (!empty($civi_groups)) {
+  if (!empty($groups)) {
     // Import groups.
-    $batch = spbellen_webform_import_import_groups($civi_groups);
+    $batch = spbellen_webform_import_import_groups($groups);
     if (!empty($batch)) {
       $batch['progressive'] = FALSE;
       batch_set($batch);
@@ -408,7 +413,9 @@ function spbellen_webform_import_drush_import() {
       drush_backend_batch_process();
     }
   }
-  */
+  else {
+    drupal_set_message('Er zijn geen webform auto imports gevonden.');
+  }
 }
 
 function spbellen_webform_import_form_ajax_callback($form, &$form_state) {

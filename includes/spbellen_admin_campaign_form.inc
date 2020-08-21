@@ -121,50 +121,60 @@ function spbellen_campaign_form($form, &$form_state) {
         $importer_info = spbellen_importer_info();
         if (!empty($group_info)) {
           $form['import_settings']['#tree'] = TRUE;
+          // Create titles and sort according.
           foreach ($group_info as $group_id => $group_data) {
             if ($group_data['quantity'] > 0) {
               if (strpos($group_data['title'], 'import') !== FALSE || strpos($group_data['title'], 'Active contacts') !== FALSE || strpos($group_data['title'], 'Inactive contacts') !== FALSE) {
                 $title = $group_data['title'];
               }
               else {
-                $title = $importer_info[$group_data['importer']]['importer_source_title'] . ': ' . $group_data['title'] . ' (' . $group_data['external_group_id'] . ')';
+                $title = $importer_info[$group_data['importer']]['importer_source_title'] . ': ' . $group_data['title'];
               }
-              $form['import_settings'][$group_id] = array(
-                'name' => array(
-                  '#markup' => check_plain($title),
-                ),
-                'date' => array(
-                  '#markup' => check_plain(date('j-n-Y G:i:s', $group_data['date'])),
-                ),
-                'quantity' => array(
-                  '#markup' => check_plain($group_data['quantity']),
-                ),
-                'active_import' => array(
-                  '#type' => 'checkbox',
-                  '#default_value' => $group_data['state'],
-                ),
-                'block_import' => array(
-                  '#type' => 'checkbox',
-                  '#default_value' => $group_data['block'],
-                ),
-                'weight' => array(
-                  '#type' => 'weight',
-                  '#title' => t('Weight'),
-                  '#default_value' => $group_data['call_order'],
-                  '#delta' => 10,
-                  '#title_display' => 'invisible',
-                ),
-              );
-              if ($importer_info[$group_data['importer']]['auto_import']) {
-                $form['import_settings'][$group_id]['auto_import'] = array(
-                  '#type' => 'checkbox',
-                  '#default_value' => $group_data['auto_import'],
+              $group_info_titles[$title][$group_id] = $group_id;
+            }
+          }
+          ksort($group_info_titles);
+          foreach ($group_info_titles as $title => $groups) {
+            foreach ($groups as $group_id) {
+              $group_data = $group_info[$group_id];
+              if ($group_data['quantity'] > 0) {
+                $form['import_settings'][$group_id] = array(
+                  'name' => array(
+                    '#markup' => check_plain($title),
+                  ),
+                  'date' => array(
+                    '#markup' => check_plain(date('j-n-Y G:i:s', $group_data['date'])),
+                  ),
+                  'quantity' => array(
+                    '#markup' => check_plain($group_data['quantity']),
+                  ),
+                  'active_import' => array(
+                    '#type' => 'checkbox',
+                    '#default_value' => $group_data['state'],
+                  ),
+                  'block_import' => array(
+                    '#type' => 'checkbox',
+                    '#default_value' => $group_data['block'],
+                  ),
+                  'weight' => array(
+                    '#type' => 'weight',
+                    '#title' => t('Weight'),
+                    '#default_value' => $group_data['call_order'],
+                    '#delta' => 10,
+                    '#title_display' => 'invisible',
+                  ),
                 );
-              }
-              else {
-                $form['import_settings'][$group_id]['auto_import'] = array(
-                  '#markup' => 'n.v.t.',
-                );
+                if ($importer_info[$group_data['importer']]['auto_import']) {
+                  $form['import_settings'][$group_id]['auto_import'] = array(
+                    '#type' => 'checkbox',
+                    '#default_value' => $group_data['auto_import'],
+                  );
+                }
+                else {
+                  $form['import_settings'][$group_id]['auto_import'] = array(
+                    '#markup' => 'n.v.t.',
+                  );
+                }
               }
             }
           }

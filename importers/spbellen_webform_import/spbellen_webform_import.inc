@@ -348,134 +348,6 @@ function spbellen_webform_import_batch_finished($success, $results, $operations)
   }
 }
 
-/**
- * Get notes.
- */
-function spbellen_webform_import_get_notes($crm_contact_id) {
-  $notes = array();
-  $civi_note_content_field_id = variable_get('spcivipush_note_content_field');
-  $civi_note_use_field_id = variable_get('spcivipush_note_use_field');
-
-  if (
-    !empty($civi_note_content_field_id) &&
-    !empty($civi_note_use_field_id)
-  ) {
-    set_time_limit(0);
-    $spcivi = \SPCivi::getInstance();
-
-    $params = array(
-      'sequential' => 1,
-      'entity_id' => $crm_contact_id,
-    );
-    $results = $spcivi->api('CustomValue', 'get', $params);
-    if (spbellen_check_result($results, 'customvalues', 'get', $params)) {
-      if (!empty($results['values'])) {
-        foreach ($results['values'] as $value) {
-          if ($value['id'] == $civi_note_content_field_id) {
-            $note_content_values = $value;
-          }
-          if ($value['id'] == $civi_note_use_field_id) {
-            foreach ($value as $value_key => $value_value) {
-              if (filter_var($value_key, FILTER_VALIDATE_INT)) {
-                if (in_array('telefoongesprek', $value_value)) {
-                  $phone_note_keys[$value_key] = $value_key;
-                }
-              }
-            }
-          }
-        }
-        if (!empty($note_content_values)) {
-          foreach ($note_content_values as $value_key => $value_value) {
-            if (filter_var($value_key, FILTER_VALIDATE_INT)) {
-              if (in_array($value_key, $phone_note_keys)) {
-                $notes[] = $value_value;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  return $notes;
-}
-
-/**
- * Get group machine name.
- */
-function spbellen_webform_import_get_group_machine_name($group_id) {
-  set_time_limit(0);
-  $spcivi = \SPCivi::getInstance();
-  $params = array(
-    'id' => $group_id,
-    'return' => 'name',
-  );
-  $result = $spcivi->api('Group', 'get', $params);
-  if (spbellen_check_result($result, 'een groep', 'get', $params)) {
-    if (!empty($result['values'])) {
-      $value = array_shift($result['values']);
-      $group_name = $value['name'];
-      return $group_name;
-    }
-  }
-}
-
-/**
- * Create CiviCRM activity.
- */
-function spbellen_webform_import_create_activity($crm_contact_id, $activity_type, $status, $subject, $text, $debug_info) {
-  $spcivi = \SPCivi::getInstance();
-  set_time_limit(60);
-  $params = array(
-    'activity_type_id' => $activity_type,
-    'subject' => $subject,
-    'target_id' => $crm_contact_id,
-    'details' => $text,
-    'status_id' => $status,
-    'priority_id' => 2,
-  );
-  $activity_results = $spcivi->api('Activity', 'create', $params);
-}
-
-/**
- * Map civi data to storage contact data.
- */
-function spbellen_webform_import_map_civi_data($civi_data) {
-  $map = array(
-    'crm_contact_id' => 'contact_id',
-    'phone' => 'phone',
-    'display_name' => 'display_name',
-    'email' => 'email',
-    'street_address' => 'street_address',
-    'postal_code' => 'postal_code',
-    'city' => 'city',
-    'gender' => 'gender',
-    'afdeling_id' => 'afdeling_code',
-    'afdeling' => 'afdeling',
-    'regio_id' => 'regio_code',
-    'regio' => 'regio',
-    'group_contact_id' => 'group_contact_id',
-  );
-  foreach ($map as $data_map => $civi_map) {
-    if (isset($civi_data[$civi_map])) {
-      $contact_data[$data_map] = $civi_data[$civi_map];
-    }
-  }
-  // Check if has mobile phonenumer.
-  if (!empty($civi_data['mobile'])) {
-    $contact_data['phone'] = $civi_data['mobile'];
-  }
-  if (!empty($contact_data['phone'])) {
-    $contact_data['phone'] = preg_replace('/\D/', '', $contact_data['phone']);
-  }
-  // Get notes.
-  $notes = spbellen_webform_import_get_notes($civi_data['contact_id']);
-  if (!empty($notes)) {
-    $notes_serialized = serialize($notes);
-    $contact_data['notes'] = $notes_serialized;
-  }
-  return $contact_data;
-}
-
 function spbellen_webform_import_parse_webform_select_options($component) {
   $options = array();
   switch ($component['type']) {
@@ -573,8 +445,10 @@ function spbellen_webform_import_parse_contact_data($submission, $required_optio
         // Check if required options are set.
         if (!empty($required_options[$respons['cid']])) {
           foreach ($required_options[$respons['cid']] as $required_option) {
-            if (!array_search($required_option, $respons['values'])) {
-              return FALSE;
+            if (!empty($required_option)) {
+              if (!array_search($required_option, $respons['values'])) {
+                return FALSE;
+              }
             }
           }
         }
@@ -586,8 +460,10 @@ function spbellen_webform_import_parse_contact_data($submission, $required_optio
         // Check if required options are selected.
         if (!empty($required_options[$respons['cid']])) {
           foreach ($required_options[$respons['cid']] as $required_option) {
-            if (empty($respons['values'][$option_mapping[$required_option]])) {
-              return FALSE;
+            if (!empty($required_option)) {
+              if (empty($respons['values'][$option_mapping[$required_option]])) {
+                return FALSE;
+              }
             }
           }
         }

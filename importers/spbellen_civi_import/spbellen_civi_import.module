@@ -299,7 +299,7 @@ function spbellen_civi_import_import_groups($civi_groups, $campaign_id = NULL) {
       return $batch;
     }
     else {
-      drupal_set_message('Er zijn geen nieuwe contacten gevonden om te importeren.');
+      drupal_set_message('Er zijn geen nieuwe civicrm contacten gevonden om te importeren.');
     }
   }
 }
