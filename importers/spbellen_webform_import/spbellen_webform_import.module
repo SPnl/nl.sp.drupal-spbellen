@@ -108,7 +108,7 @@ function spbellen_webform_import_import_form(&$form, &$form_state) {
   );
 
   if (!empty($storage['webform']['components_parsed']) && empty($storage['accept_options'])) {
-    $form['spbellen_webform_import']['#title'] = 'Selecteer optioneel contacten op basis van gegeven antwoorden';
+    $form['spbellen_webform_import']['#title'] = 'Selecteer optioneel contacten op basis van gegeven antwoorden, en bevestig de keuze';
     $form['spbellen_webform_import']['#description'] = 'Indien er geen selectie wordt gemaakt worden alle contacten die het formulier hebben ingevuld geïmporteerd';
     foreach ($storage['webform']['components_parsed'] as $cid => $parsed_data) {
       $form['spbellen_webform_import'][$cid . '_options'] = array(

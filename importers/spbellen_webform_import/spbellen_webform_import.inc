@@ -304,7 +304,7 @@ function spbellen_webform_import_batch($data, &$context) {
     // Update our progress information.
     $context['sandbox']['current_chunk']++;
     $context['finished'] = ($context['sandbox']['current_chunk'] / $data['chunks']);
-    $context['message'] = ($context['sandbox']['current_chunk'] * $chunk_size) . '/' . $data['total_number_of_submissions'];
+    $context['message'] = ($context['sandbox']['current_chunk'] * $data['chunk_size']) . '/' . $data['total_number_of_submissions'];
 
     // Update import quantity.
     db_update('spbellen_imports')
