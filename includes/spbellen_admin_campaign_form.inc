@@ -164,7 +164,7 @@ function spbellen_campaign_form($form, &$form_state) {
                     '#title_display' => 'invisible',
                   ),
                 );
-                if ($importer_info[$group_data['importer']]['auto_import']) {
+                if (!empty($importer_info[$group_data['importer']]['auto_import'])) {
                   $form['import_settings'][$group_id]['auto_import'] = array(
                     '#type' => 'checkbox',
                     '#default_value' => $group_data['auto_import'],

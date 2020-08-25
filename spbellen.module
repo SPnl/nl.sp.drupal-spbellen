@@ -397,10 +397,10 @@ function spbellen_entity_delete($entity, $type) {
       // Delete obsolete contact data.
       $sql = "DELETE da FROM spbellen_contact_data da LEFT JOIN spbellen_targets ta ON ta.contact_id = da.contact_id WHERE ta.campaign_id IS NULL";
       $result = db_query($sql);
-      
+
       // Delete group campaign relation.
       $sql = "DELETE FROM spbellen_group_campaign_relation WHERE campaign_id = :campaign_id";
-      $result = db_query($sql, array(':campaign_id', $campaign_id));
+      $result = db_query($sql, array(':campaign_id' => $campaign_id));
 
       // Delete webform.
       node_delete($entity->webform_id);
