@@ -143,14 +143,12 @@ function spbellen_webform_import_import_form(&$form, &$form_state) {
     }
     else {
       $default_title = '';
-      $description = '';
     }
     $form['spbellen_webform_import']['group_title'] = array(
       '#title' => 'Naam import',
       '#type' => 'textfield',
       '#required' => TRUE,
       '#default_value' => $default_title,
-      '#description' => $description,
     );
     $form['spbellen_webform_import']['import_start'] = array(
       '#markup' => '<p>Klik na het invullen van een titel op importeer hieronder om de import te starten.</p>',
@@ -224,6 +222,12 @@ function spbellen_webform_import_import_form_validate($form, &$form_state) {
         if (isset($storage['required_options'])) {
           $storage['required_options_json'] = json_encode($storage['required_options']);
           $storage['external_group_id'] = $storage['webform']['uuid'] . '_' . md5($storage['required_options_json']);
+        }
+        break;
+
+      case 'import_submit':
+        if (empty($values['group_title'])) {
+          form_set_error('import_submit', 'Rond eerst de vragen van het formulier af. (Vergeet niet eventuele opties te bevestigen.)');
         }
         break;
     }

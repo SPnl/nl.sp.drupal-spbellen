@@ -446,7 +446,7 @@ function spbellen_webform_import_parse_contact_data($submission, $required_optio
         if (!empty($required_options[$respons['cid']])) {
           foreach ($required_options[$respons['cid']] as $required_option) {
             if (!empty($required_option)) {
-              if (!array_search($required_option, $respons['values'])) {
+              if (array_search($required_option, $respons['values']) === FALSE) {
                 return FALSE;
               }
             }
