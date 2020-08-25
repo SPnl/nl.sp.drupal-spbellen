@@ -380,9 +380,10 @@ function spbellen_node_delete($node) {
 function spbellen_entity_delete($entity, $type) {
   if ($type == 'campaign') {
     if (node_load($entity->webform_id)) {
+      $campaign_id = $entity->id;
       // Cleanup campaign actions and targets.
       $sql = "SELECT ac.id FROM {spbellen_action} ac INNER JOIN {spbellen_targets} ta ON ac.target_id = ta.id WHERE campaign_id = :campaign_id";
-      $result = db_query($sql, array(':campaign_id' => $entity->id));
+      $result = db_query($sql, array(':campaign_id' => $campaign_id));
       if ($result) {
         while ($row = $result->fetchAssoc()) {
           $num_result = db_delete('spbellen_action')
@@ -391,11 +392,16 @@ function spbellen_entity_delete($entity, $type) {
         }
       }
       $num_result = db_delete('spbellen_targets')
-        ->condition('campaign_id', $entity->id)
+        ->condition('campaign_id', $campaign_id)
         ->execute();
       // Delete obsolete contact data.
       $sql = "DELETE da FROM spbellen_contact_data da LEFT JOIN spbellen_targets ta ON ta.contact_id = da.contact_id WHERE ta.campaign_id IS NULL";
       $result = db_query($sql);
+      
+      // Delete group campaign relation.
+      $sql = "DELETE FROM spbellen_group_campaign_relation WHERE campaign_id = :campaign_id";
+      $result = db_query($sql, array(':campaign_id', $campaign_id));
+
       // Delete webform.
       node_delete($entity->webform_id);
       // Clear spbellen forms cache.
