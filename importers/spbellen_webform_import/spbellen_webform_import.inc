@@ -298,6 +298,20 @@ function spbellen_webform_import_batch($data, &$context) {
         continue;
       }
 
+      // Store submission.
+      $submission_json = json_encode($submission);
+      if ($submission_json !== FALSE) {
+        db_merge('spbellen_webform_import_submission_data')
+          ->key(array(
+            'group_id' => $data['group_id'],
+            'contact_id' => $contact_id,
+          ))
+          ->fields(array(
+            'submission' => $submission_json,
+          ))
+          ->execute();
+      }
+
       $context['results']['count']++;
     }
 

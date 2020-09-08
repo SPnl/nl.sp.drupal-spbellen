@@ -51,6 +51,34 @@ function spbellen_webform_import_schema() {
     ),
   );
 
+  $schema['spbellen_webform_import_submission_data'] = array(
+    'description' => 'Webform submissions.',
+    'fields' => array(
+      'contact_id' => array(
+        'description' => 'Beltool contact id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'group_id' => array(
+        'description' => 'Beltool group id.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'submission' => array(
+        'description' => 'Webform submission.',
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+    ),
+    'unique keys' => array(
+      'group_contact' => array(
+        'group_id',
+        'contact_id',
+      ),
+    ),
+  );
   return $schema;
 }
 
@@ -63,5 +91,17 @@ function spbellen_webform_import_update_7001() {
     // Create tables.
     $table = $schema['spbellen_webform_import_data'];
     db_create_table('spbellen_webform_import_data', $table);
+  }
+}
+
+/**
+ * Create webform submission data table.
+ */
+function spbellen_webform_import_update_7002() {
+  if (!db_table_exists('spbellen_webform_import_submission_data')) {
+    $schema = spbellen_webform_import_schema();
+    // Create tables.
+    $table = $schema['spbellen_webform_import_submission_data'];
+    db_create_table('spbellen_webform_import_submission_data', $table);
   }
 }
