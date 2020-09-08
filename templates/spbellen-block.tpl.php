@@ -33,14 +33,18 @@
       <h2><?php print $display_name; ?><?php print !empty($gender) ? ' ('.$gender_trans[$gender].')' : ''; ?></h2>
     </div>
     <div class="wrapper bottom">
-      <div class="content left">
-        <ul>
-          <li><?php print !empty($email) ? $email : ''; ?></li>
-        </ul>
-      </div>
-      <div class="content right">
-        <ul><li><?php print !empty($street_address) ? $street_address : 'straat onbekend'; ?></li><li><?php print !empty($city) ? $city : 'stad onbekend'; ?></li></ul>
-      </div>
+      <?php if (!empty($email)) : ?>
+        <div class="content left">
+          <ul>
+            <li><?php print !empty($email) ? $email : ''; ?></li>
+          </ul>
+        </div>
+      <?php endif; ?>
+      <?php if (!empty($street_address) || !empty($city)) : ?>
+        <div class="content right">
+          <ul><li><?php print !empty($street_address) ? $street_address : 'straat onbekend'; ?></li><li><?php print !empty($city) ? $city : 'stad onbekend'; ?></li></ul>
+        </div>
+      <?php endif; ?>
     </div>
   </div>
   <div class="content right">
