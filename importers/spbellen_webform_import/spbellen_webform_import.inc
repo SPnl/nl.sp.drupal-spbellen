@@ -558,6 +558,12 @@ function spbellen_webform_import_parse_contact_data($submission, $required_optio
           }
         }
         break;
+
+      case 'email':
+        if (!empty($respons['values'][0])) {
+          $contact_data['email'] = $respons['values'][0];
+        }
+        break;
     }
   }
   // Check if name and phone are set.
