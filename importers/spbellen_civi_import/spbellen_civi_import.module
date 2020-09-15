@@ -185,10 +185,49 @@ function spbellen_civi_import_spbellen_get_chapter_and_region($postal_code) {
 }
 
 /**
- * Implements hook_spbellen_process_phone_invalid_message.
+ * Implements hook_spbellen_process_phone_invalid.
  */
-function spbellen_civi_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
-  spbellen_civi_import_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
+function spbellen_civi_import_spbellen_process_phone_invalid($contact_data) {
+
+  // If crm contact id is set, remove phone number from civi.
+  if (!empty($contact_data['phone']) && !empty($contact_data['crm_contact_id'])) {
+    try {
+      set_time_limit(20);
+      $spcivi = \SPCivi::getInstance();
+      // Get contact phone numbers.
+      $params = array(
+        'return' => "id",
+        'id' => $contact_data['crm_contact_id'],
+        'api.Phone.get' => array(),
+      );
+      $result = $spcivi->api('Contact', 'get', $params);
+      if (spbellen_check_result($result, 'een contact', 'getsingle', $params)) {
+        $phone_result = array_pop($result['values']);
+        if (!empty($phone_result['api.Phone.get']) && !empty($phone_result['api.Phone.get']['values'])) {
+          // Remove phone if found.
+          foreach ($phone_result['api.Phone.get']['values'] as $phone_data) {
+            if ($phone_data['phone_numeric'] == $contact_data['phone']) {
+              // Remove phone number from contact.
+              $params = array(
+                'id' => $phone_data['id'],
+              );
+              $phone_del_result = $spcivi->api('Phone', 'delete', $params);
+              if (spbellen_check_result($phone_del_result, 'een telefoonnummer', 'delete', $params)) {
+                if (!empty($phone_del_result['values'])) {
+                  watchdog('spbellen', 'Telefoonnummer ' . $contact_data['phone'] . ' verwijderd van contact ' . $contact_data['crm_contact_id'] . '.');
+                  //spbellen_civi_import_create_activity($contact_data['crm_contact_id'], 'Controle wijziging contact via website', 'Dev', 'Telefoonnummer verwijderd van contact nr. ', $contact_data['crm_contact_id'], 'geen debug info');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    catch(Exception $e){
+      // Do nothing.
+      watchdog('spbellen_civi_import', 'Er is een fout opgetreden bij het verwijderen van een telefoonnummer in CiviCRM. Foutmelding: '. $e);
+    }
+  }
 }
 
 /**
