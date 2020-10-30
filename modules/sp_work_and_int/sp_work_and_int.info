@@ -1,5 +1,0 @@
-name = SP werk en interesses component
-description = Voegt een webform component toe waarmee het werk in de interesses van een contact kunnen worden vastgelegd.
-core = 7.x
-dependencies[] = webform
-package = Webform
