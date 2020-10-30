@@ -59,7 +59,7 @@ function spbellen_webform_import_import_form(&$form, &$form_state) {
     }
     if (empty($endpoints) || empty($webform_node_types) || empty($creds)) {
       $form['error'] = array(
-        '#markup' => "<p>Stel de Drupal variabele spbellen_webform_import_rest_endpoints, spbellen_webform_import_node_types in en spbellen_webform_import_creds. Een REST endpoint is de url waarop de requests gedaan worden. Een endpoint bestaat uit https://domein.sp.nl plus het pad dat in de services module is ingesteld. Meestal is dit https://domein.sp.nl/rest.</p><p>Dit kan in settings.php:<pre>\$conf['spbellen_webform_import_rest_endpoints'] = array (<br/>&nbsp;&nbsp;'https://doemee.sp.nl/rest',<br/>&nbsp;&nbsp;'https://nationaalzorgfonds.nl/rest',<br/>);</pre></p><p>Stel ook de node types in:<pre>\$conf['spbellen_webform_import_node_types'] = array (<br/>&nbsp;&nbsp;'webform',<br/>&nbsp;&nbsp;'doe_mee',<br/>);</pre></p><p>Stel ook de node types in:<pre>\$conf['spbellen_webform_import_node_types'] = array (<br/>&nbsp;&nbsp;'webform',<br/>&nbsp;&nbsp;'doe_mee',<br/>);</pre></p><p>Stel ook de credentials in:<pre>\$conf['spbellen_webform_import_creds'] = array (<br/>&nbsp;&nbsp;'name' => 'beltool',<br/>&nbsp;&nbsp;'pass' => 'very_secret_code',<br/>);</pre></p>");
+        '#markup' => "<p>Stel de Drupal variabele spbellen_webform_import_rest_endpoints, spbellen_webform_import_node_types in en spbellen_webform_import_creds. Een REST endpoint is de url waarop de requests gedaan worden. Een endpoint bestaat uit https://domein.sp.nl plus het pad dat in de services module is ingesteld. Meestal is dit https://domein.sp.nl/rest.</p><p>Dit kan in settings.php:<pre>\$conf['spbellen_webform_import_rest_endpoints'] = array (<br/>&nbsp;&nbsp;'https://doemee.sp.nl/rest',<br/>&nbsp;&nbsp;'https://nationaalzorgfonds.nl/rest',<br/>);</pre></p><p>Stel ook de node types in:<pre>\$conf['spbellen_webform_import_node_types'] = array (<br/>&nbsp;&nbsp;'webform',<br/>&nbsp;&nbsp;'doe_mee',<br/>);</pre></p><p>Stel ook de credentials in:<pre>\$conf['spbellen_webform_import_creds'] = array (<br/>&nbsp;&nbsp;'name' => 'beltool',<br/>&nbsp;&nbsp;'pass' => 'very_secret_code',<br/>);</pre></p>");
       return $form;
     }
   }
@@ -249,8 +249,10 @@ function spbellen_webform_import_import_form_submit($form, &$form_state) {
     'group_id' => $group_id,
     'rest_endpoint' => $storage['endpoint'],
     'webform' => json_encode($storage['webform']),
-    'required_options' => $storage['required_options_json'],
   );
+  if (!empty($storage['required_options_json'])) {
+    $fields['required_options'] = $storage['required_options_json'];
+  }
   $data_id = db_merge('spbellen_webform_import_data')
     ->key($fields)
     ->execute();
@@ -367,31 +369,6 @@ function spbellen_webform_import_spbellen_get_chapter_and_region($postal_code) {
 }
 
 /**
- * Implements hook_spbellen_process_phone_invalid_message.
- */
-function spbellen_webform_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
-  //spbellen_webform_import_create_activity($crm_contact_id, 'Controle wijziging contact via website', 'Scheduled', 'Foutief telefoonnummer doorgegeven', $text, 'geen debug info');
-}
-
-/**
- * Implements hook_spbellen_crm_block_phone().
- */
-function spbellen_webform_import_spbellen_crm_block_phone($crm_contact_id) {
-  /*
-  set_time_limit(0);
-  $spcivi = \SPCivi::getInstance();
-  $params = array(
-    'id' => $crm_contact_id,
-    'do_not_phone' => 1,
-  );
-  $result = $spcivi->api('Contact', 'create', $params);
-  if (spbellen_check_result($result, 'een contact', 'create', $params)) {
-    watchdog('spbellen', 'CiviCRM contact nr. ' . $crm_contact_id . ' privacy instelling "Niet bellen" ingeschakeld.');
-  }
-  */
-}
-
-/**
  * Drush import groups.
  */
 function spbellen_webform_import_drush_import() {
@@ -424,4 +401,86 @@ function spbellen_webform_import_drush_import() {
 
 function spbellen_webform_import_form_ajax_callback($form, &$form_state) {
   return $form['spbellen_webform_import'];
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function spbellen_webform_import_block_info() {
+  $blocks['spbellen_submission_block'] = array(
+    'info' => 'SP Bellen webform import form submission',
+    'pages' => "bellen/campagne/*",
+    'visibility' => BLOCK_VISIBILITY_LISTED,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function spbellen_webform_import_block_view($delta = '') {
+  $block = array();
+
+  if ($delta === 'spbellen_submission_block') {
+    if (arg(0) == 'node' && is_numeric(arg(1)) && is_null(arg(2))) {
+      $nid = arg(1);
+      if (spbellen_is_spbellen_form($nid)) {
+        if (spbellen_campaign_form_access($nid)) {
+          // Need contact_id and $group_id.
+          $campaign = spbellen_get_campaign($nid);
+          $contact_data = spbellen_assign_target($campaign);
+          if (!empty($contact_data) && !empty($campaign)) {
+            $contact_id = $contact_data['contact_id'];
+            $group_id = $contact_data['group_id'];
+            $data = spbellen_webform_import_submission_block_data($contact_id, $group_id);
+
+            $markup = theme('spbellen_webform_import_submission_block_theme', $data);
+            $module_path = drupal_get_path('module', 'spbellen_webform_import');
+            $block = array(
+              'subject' => '',
+              'content' => array(
+                '#markup' => $markup,
+                '#attached' => array(
+                  'css' => array(
+                    array(
+                      'type' => 'file',
+                      'data' => $module_path . '/css/spbellen_webform_import_submission_block.css',
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        }
+      }
+    }
+  }
+  return $block;
+}
+
+function spbellen_webform_import_submission_block_data($contact_id, $group_id) {
+  $data = array();
+  $query = "SELECT submission FROM spbellen_webform_import_submission_data WHERE group_id = :group_id AND contact_id = :contact_id";
+  $params = [
+    'group_id' => $group_id,
+    'contact_id' => $contact_id,
+  ];
+  $submission_json = db_query($query, $params)->fetchField();
+  if (!empty($submission_json)) {
+    $submission = json_decode($submission_json, TRUE);
+    $data['submission'] = $submission;
+  }
+  return $data;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function spbellen_webform_import_theme($existing, $type, $theme, $path) {
+  $variables = array('test' => NULL);
+  $registry['spbellen_webform_import_submission_block_theme'] = array(
+    'template' => 'templates/submission',
+    'variables' => $variables,
+  );
+  return $registry;
 }

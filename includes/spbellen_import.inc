@@ -29,14 +29,21 @@ function spbellen_import_contact($import_id, $group_id, array $contact_data) {
     if (!empty($values['contact_id'])) {
       $contact_id = $values['contact_id'];
     }
-    elseif (!empty($values['crm_contact_id'])) {
+    if (empty($contact_id) && !empty($values['crm_contact_id'])) {
       // Get contact_id from crm_contact_id.
       $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE crm_contact_id = :crm_contact_id", array(':crm_contact_id' => $values['crm_contact_id']))->fetchField();
       if (!empty($result)) {
         $contact_id = $result;
       }
     }
-    elseif (!empty($values['phone']) && empty($values['crm_contact_id'])) {
+    if (empty($contact_id) && !empty($values['email'])) {
+      // Get contact_id from phone.
+      $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE email LIKE :email", array(':email' => $values['email']))->fetchField();
+      if (!empty($result)) {
+        $contact_id = $result;
+      }
+    }
+    if (empty($contact_id) && !empty($values['phone'])) {
       // Get contact_id from phone.
       $result = db_query("SELECT contact_id FROM {spbellen_contact_data} WHERE phone LIKE :phone", array(':phone' => '%' . db_like(substr($values['phone'], -8))))->fetchField();
       if (!empty($result)) {
@@ -49,7 +56,7 @@ function spbellen_import_contact($import_id, $group_id, array $contact_data) {
         ->fields($values)
         ->execute();
     }
-    elseif (!empty($values['crm_contact_id'])) {
+    else {
       db_update('spbellen_contact_data')
         ->fields($values)
         ->condition('contact_id', $contact_id)

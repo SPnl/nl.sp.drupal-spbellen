@@ -1011,11 +1011,11 @@ function spbellen_assign_target($campaign) {
       $order_defaults = 'call_order ASC, attempts ASC, ' . $order_by_geo . ' afdeling_id IS NULL DESC, ta.date ASC, RAND()';
 
       // Check if claimed target exists.
-      $query = "SELECT ta.contact_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped')) AND ta.caller_id = :caller_id LIMIT 1";
+      $query = "SELECT ta.contact_id, gr.id group_id" . $from_where . "occupied = 1 AND (attempts = 0 OR (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped')) AND ta.caller_id = :caller_id LIMIT 1";
       $result = db_query($query, $from_vars)->fetchAssoc();
       if (!$result) {
         // Get appointment targets.
-        $query = "SELECT ta.id, ta.contact_id, occupied " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, " . $order_defaults . " LIMIT 1";
+        $query = "SELECT ta.id, ta.contact_id, occupied, gr.id group_id " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, " . $order_defaults . " LIMIT 1";
         $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
           ':current_time' => time(),
           ':occupied_time' => time() - 1800,
@@ -1033,7 +1033,7 @@ function spbellen_assign_target($campaign) {
         }
         else {
           // Get target.
-          $query = "SELECT ta.id, ta.contact_id, occupied" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
+          $query = "SELECT ta.id, ta.contact_id, occupied, gr.id group_id" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
           $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
             ':occupied_time' => time() - 1800,
             ':current_time' => time(),
@@ -1051,15 +1051,14 @@ function spbellen_assign_target($campaign) {
           }
         }
       }
-      else {
-      }
       if (!empty($result)) {
         // A target was found!
         $contact_id = $result['contact_id'];
         // Get contact data.
-        $result = spbellen_get_contact_data($contact_id);
-        if ($result) {
-          $contact_data = $result;
+        $contact_data_raw = spbellen_get_contact_data($contact_id);
+        if ($contact_data_raw) {
+          $contact_data = $contact_data_raw;
+          $contact_data['group_id'] = $result['group_id'];
         }
         else {
           drupal_set_message('Er kon geen contact informatie worden opgehaald.', 'error');
@@ -1237,6 +1236,20 @@ function spbellen_get_active_campaign() {
     }
   }
   return FALSE;
+}
+
+/**
+ * Remove contact.
+ */
+function spbellen_remove_contact_phone($contact_id) {
+  if (!empty($contact_id)) {
+    db_update('spbellen_contact_data')
+      ->fields(array(
+        'phone' => '',
+      ))
+      ->condition('contact_id', $contact_id)
+      ->execute();
+  }
 }
 
 /**
@@ -1697,147 +1710,10 @@ function spbellen_valid_phone($phone) {
 }
 
 /**
- * Merge contacts.
- */
-function spbellen_merge_contacts($contact_ids) {
-  // Find best contact.
-  $best_contact_id = spbellen_find_best_contact($contact_ids);
-  $best_contact_data = spbellen_get_contact_data($best_contact_id);
-  // Merge contact data.
-  foreach ($contact_ids as $contact_id) {
-    if ($contact_id !== $best_contact_id) {
-      $contact_data = spbellen_get_contact_data($contact_id);
-      if (empty($contact_data['crm_contact_id'])) {
-        drush_print("");
-        drush_print('Phone: ' . $best_contact_data['phone']);
-        drush_print('Merging contact ' . $contact_id . ' with ' . $best_contact_id);
-        $output = drush_format($contact_data);
-        drush_print($output);
-        $output = drush_format($best_contact_data);
-        drush_print($output);
-
-        // Check if contacts share campaign.
-        $query = "SELECT t1.campaign_id campaign_id, t1.contact_id contact_id, t1.id contact_target_id, ac1.result contact_result, t2.contact_id best_contact_id, t2.id best_contact_target_id, ac2.result best_contact_result FROM spbellen_targets t1 INNER JOIN spbellen_targets t2 ON t1.contact_id = :contact_id AND t2.contact_id = :best_contact_id AND t1.campaign_id = t2.campaign_id LEFT JOIN spbellen_action ac1 ON t1.last_action_id = ac1.id LEFT JOIN spbellen_action ac2 ON t2.last_action_id = ac2.id";
-        $result = db_query($query, array('contact_id' => $contact_id, 'best_contact_id' => $best_contact_id));
-        if ($result) {
-          if ($result->rowCount()) {
-            // Contacts share campaign, remove one of the targets and actions that belong to it.
-            while ($row = $result->fetchAssoc()) {
-              if (empty($row['campaign_id'])) {
-                drush_print('Empty!');
-              }
-              $output = drush_format($row);
-              drush_print($output);
-              $campaign_id = $row['campaign_id'];
-              $contact_target_id = $row['contact_target_id'];
-              $contact_result = $row['contact_result'];
-              $best_contact_target_id = $row['best_contact_target_id'];
-              $best_contact_result = $row['best_contact_result'];
-              // Find best target.
-              if (empty($contact_result)) {
-                $keep_target_id = $best_contact_target_id;
-                $remove_target_id = $contact_target_id;
-              }
-              elseif (empty($best_contact_result)) {
-                $keep_target_id = $contact_target_id;
-                $remove_target_id = $best_contact_target_id;
-              }
-              elseif ($best_contact_result === 'answered_completed') {
-                $keep_target_id = $best_contact_target_id;
-                $remove_target_id = $contact_target_id;
-              }
-              elseif ($contact_result === 'answered_completed') {
-                $keep_target_id = $contact_target_id;
-                $remove_target_id = $best_contact_target_id;
-              }
-              elseif ($best_contact_result === 'call_appointment') {
-                $keep_target_id = $best_contact_target_id;
-                $remove_target_id = $contact_target_id;
-              }
-              elseif ($contact_result === 'call_appointment') {
-                $keep_target_id = $contact_target_id;
-                $remove_target_id = $best_contact_target_id;
-              }
-              elseif ($best_contact_result === 'answered_call_back') {
-                $keep_target_id = $best_contact_target_id;
-                $remove_target_id = $contact_target_id;
-              }
-              elseif ($contact_result === 'answered_call_back') {
-                $keep_target_id = $contact_target_id;
-                $remove_target_id = $best_contact_target_id;
-              }
-              elseif ($best_contact_result === 'answered_blacklist') {
-                $keep_target_id = $best_contact_target_id;
-                $remove_target_id = $contact_target_id;
-              }
-              elseif ($contact_result === 'answered_blacklist') {
-                $keep_target_id = $contact_target_id;
-                $remove_target_id = $best_contact_target_id;
-              }
-              else {
-                $keep_target_id = $best_contact_target_id;
-                $remove_target_id = $contact_target_id;
-              }
-              // Remove target with less interesting result.
-              $query = "DELETE ta, ac FROM spbellen_targets ta LEFT JOIN spbellen_action ac ON ac.target_id = ta.id WHERE ta.id = $remove_target_id";
-              drush_print($query);
-              $query = "DELETE ta, ac FROM spbellen_targets ta LEFT JOIN spbellen_action ac ON ac.target_id = ta.id WHERE ta.id = :remove_target_id";
-              db_query($query, array('remove_target_id' => $remove_target_id));
-              // Assign best target to best contact.
-              $query = "UPDATE spbellen_targets ta SET ta.contact_id = $best_contact_id WHERE ta.id = $keep_target_id";
-              drush_print($query);
-              $query = "UPDATE spbellen_targets ta SET ta.contact_id = :best_contact_id WHERE ta.id = :keep_target_id";
-              db_query($query, array('best_contact_id' => $best_contact_id, 'keep_target_id' => $keep_target_id));
-              // Delete inferior contact data.
-              $query = "DELETE FROM spbellen_contact_data WHERE contact_id = $contact_id";
-              drush_print($query);
-              $query = "DELETE FROM spbellen_contact_data WHERE contact_id = :contact_id";
-              db_query($query, array('contact_id' => $contact_id));
-            }
-          }
-          else {
-            // Contacts do not share campaign, just change contact_id.
-            $query = "UPDATE spbellen_targets SET contact_id = $best_contact_id WHERE contact_id = $contact_id";
-            drush_print($query);
-            $query = "UPDATE spbellen_targets SET contact_id = :best_contact_id WHERE contact_id = :contact_id";
-            db_query($query, array('best_contact_id' => $best_contact_id, 'contact_id' => $contact_id));
-            $query = "DELETE FROM spbellen_contact_data WHERE contact_id = $contact_id";
-            drush_print($query);
-            $query = "DELETE FROM spbellen_contact_data WHERE contact_id = :contact_id";
-            db_query($query, array('contact_id' => $contact_id));
-          }
-        }
-        drush_print('-------------------------------------');
-      }
-    }
-  }
-}
-
-/**
- * Find best contact.
- */
-function spbellen_find_best_contact($contact_ids) {
-  foreach ($contact_ids as $contact_id) {
-    $contact_data = spbellen_get_contact_data($contact_id);
-    $scores[$contact_id] = 0;
-    if (!empty($contact_data['crm_contact_id'])) {
-      $scores[$contact_id] = 3;
-    }
-    foreach ($contact_data as $value) {
-      if (!empty($value)) {
-        $scores[$contact_id]++;
-      }
-    }
-  }
-  arsort($scores);
-  return key($scores);
-}
-
-/**
  * Return from where query part to select contact.
  */
 function spbellen_get_from_where() {
-  $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation_new tir ON ta.id = tir.target_id INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND gcr.campaign_id = :cid AND ta.state = 1 AND gcr.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation_new tir INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id WHERE gcr.campaign_id = :cid AND gcr.block = 1) AND ta.campaign_id = :cid AND ";
+  $from_where = " FROM {spbellen_targets} ta INNER JOIN spbellen_target_import_relation_new tir ON ta.id = tir.target_id INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id INNER JOIN {spbellen_contact_data} cd ON ta.contact_id = cd.contact_id LEFT JOIN {spbellen_action} ac ON ta.last_action_id = ac.id LEFT JOIN {spbellen_blacklist} bl ON ta.contact_id = bl.contact_id WHERE ta.contact_id NOT IN (SELECT DISTINCT(contact_id) FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ac.caller_id = :caller_id AND result = 'skipped') AND gcr.campaign_id = :cid AND ta.state = 1 AND gcr.state = 1 AND bl.contact_id IS NULL AND attempts < :max_attempts AND ta.id NOT IN (SELECT tir.target_id FROM spbellen_target_import_relation_new tir INNER JOIN spbellen_imports im ON tir.import_id = im.id INNER JOIN spbellen_groups gr ON im.group_id = gr.id INNER JOIN spbellen_group_campaign_relation gcr ON gr.id = gcr.group_id WHERE gcr.campaign_id = :cid AND gcr.block = 1) AND ta.campaign_id = :cid AND cd.phone <> '' AND ";
   return $from_where;
 }
 

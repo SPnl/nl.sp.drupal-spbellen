@@ -278,7 +278,7 @@ function spbellen_webform_import_batch($data, &$context) {
 
   if (empty($context['sandbox'])) {
     $context['sandbox']['current_chunk'] = 0;
-    $context['sandbox']['count'] = 0;
+    $context['results']['count'] = 0;
   }
 
   // Get batch.

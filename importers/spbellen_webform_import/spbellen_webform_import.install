@@ -39,12 +39,6 @@ function spbellen_webform_import_schema() {
       'id',
     ),
     'indexes' => array(
-      'merge' => array(
-        'group_id',
-        'rest_endpoint',
-        'webform',
-        'required_options',
-      ),
       'group_id' => array(
         'group_id',
       ),
