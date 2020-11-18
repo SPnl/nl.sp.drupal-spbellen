@@ -161,7 +161,7 @@ function spbellen_subscription_form($form, &$form_state) {
             $form['phone'] = array(
               '#type' => 'textfield',
               '#title' => '06-nummer',
-              '#required' => TRUE,
+              '#required' => FALSE,
             );
 
             $form['postal_code'] = array(
@@ -399,14 +399,16 @@ function spbellen_subscription_form_validate($form, &$form_state) {
       }
 
       // Validatie 06-nummer.
-      if (!preg_match('/^(((\\+31|0|0031)6){1}[1-9]{1}[0-9]{7})$/i', $values['phone'])) {
-        form_set_error('phone', 'Vul een geldig 06-nummer in!');
-        $error = TRUE;
+      if (!empty($values['phone'])) {
+        if (!preg_match('/^(((\\+31|0|0031)6){1}[1-9]{1}[0-9]{7})$/i', $values['phone'])) {
+          form_set_error('phone', 'Vul een geldig 06-nummer in!');
+          $error = TRUE;
+        }
       }
 
       // Validatie postcode.
       if (!preg_match('/^[1-9][0-9]{3} ?[a-zA-Z]{2}$/', $values['postal_code'])) {
-        form_set_error('phone', 'Vul een geldige postcode in!');
+        form_set_error('postal_code', 'Vul een geldige postcode in!');
         $error = TRUE;
       }
 
@@ -541,7 +543,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           'middle_name' => $values['middle_name'],
           'last_name' => $values['last_name'],
           'display_name' => $display_name,
-          'phone' => $values['phone'],
+          'phone' => empty($values['phone']) ? '' : $values['phone'],
           'postal_code' => $values['postal_code'],
         );
         // Get afdeling.
