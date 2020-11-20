@@ -337,6 +337,21 @@ function spbellen_schema() {
         'type' => 'varchar',
         'length' => 255,
       ),
+      'street' => array(
+        'description' => 'Street',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'street_number' => array(
+        'description' => 'Street number',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'street_number_addon' => array(
+        'description' => 'Street number addon',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
       'postal_code' => array(
         'description' => 'Postal code',
         'type' => 'varchar',
@@ -1939,5 +1954,23 @@ function spbellen_update_7043() {
     $schema = spbellen_schema();
     $spec = $schema['spbellen_groups']['fields']['auto_import'];
     db_add_field('spbellen_groups', 'auto_import', $spec);
+  }
+}
+
+/**
+ * Add separated address fields to contact data table.
+ */
+function spbellen_update_7044() {
+  $fields = array(
+    'street',
+    'street_number',
+    'street_number_addon',
+  );
+  foreach ($fields as $field) {
+    if (!db_field_exists('spbellen_contact_data', $field)) {
+      $schema = spbellen_schema();
+      $spec = $schema['spbellen_contact_data']['fields'][$field];
+      db_add_field('spbellen_contact_data', $field, $spec);
+    }
   }
 }

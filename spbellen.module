@@ -431,37 +431,52 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
 
       // Fill data.
       $form['submitted']['valid_test']['#default_value'] = $contact_data['contact_id'];
+
       $is_old_form = FALSE;
       // Check if an old campaign is used without autocomplete address.
       if (!isset($form['submitted']['contact_data']['spbellen_address'])) {
         $is_old_form = TRUE;
       }
+
       $contact_fields = spbellen_contact_fields();
-      $address_fields = array('postal_code', 'city', 'street_address');
+
+      // Set hidden field values.
       foreach ($contact_fields as $key => $name) {
-        // Set form field values.
-        $form['submitted']['spbellen_hidden_' . $key]['#value'] = $contact_data[$key];
-        if (in_array($key, $address_fields) && $is_old_form === FALSE) {
-          if ($key === 'street_address') {
-            $matches = array();
-            preg_match('/^(\d*[\w\d \'\-]+)[,\s]+(\d+)\s*([\w\d\-\/]*)$/', $contact_data[$key], $matches);
-            $match_count = count($matches);
-            if ($match_count > 3) {
-              $form['submitted']['contact_data']['spbellen_address']['street_name']['#default_value'] = $matches[1];
-              $form['submitted']['contact_data']['spbellen_address']['house_number']['#default_value'] = $matches[2];
-              if ($match_count === 4) {
-                $form['submitted']['contact_data']['spbellen_address']['house_number']['#default_value'] .= $matches[3];
-              }
-            }
-          }
-          else {
-            $form['submitted']['contact_data']['spbellen_address'][$key]['#default_value'] = $contact_data[$key];
-          }
-        }
-        else {
-          $form['submitted']['contact_data']['spbellen_' . $key]['#default_value'] = $contact_data[$key];
+        if (!empty($contact_data[$key])) {
+          $form['submitted']['spbellen_hidden_' . $key]['#value'] = $contact_data[$key];
         }
       }
+
+      // Set correct field values.
+      $form['submitted']['contact_data']['spbellen_display_name']['#default_value'] = empty($contact_data['display_name']) ? '' : $contact_data['display_name'];
+      $form['submitted']['contact_data']['spbellen_phone']['#default_value'] = empty($contact_data['phone']) ? '' : $contact_data['phone'];
+      $form['submitted']['contact_data']['spbellen_email']['#default_value'] = empty($contact_data['email']) ? '' : $contact_data['email'];
+      $form['submitted']['contact_data']['spbellen_address']['postal_code']['#default_value'] = empty($contact_data['postal_code']) ? '' : $contact_data['postal_code'];
+      $form['submitted']['contact_data']['spbellen_address']['city']['#default_value'] = empty($contact_data['city']) ? '' : $contact_data['city'];
+
+      if (empty($contact_data['street'])) {
+        if (!empty($contact_data['street_address'])) {
+          // Use street_address database field.
+          $matches = array();
+          preg_match('/^(\d*[\w\d \'\-]+)[,\s]+(\d+)\s*([\w\d\-\/]*)$/', $contact_data['street_address'], $matches);
+          $match_count = count($matches);
+          if ($match_count > 3) {
+            $form['submitted']['contact_data']['spbellen_address']['street_name']['#default_value'] = $matches[1];
+            $form['submitted']['contact_data']['spbellen_address']['house_number']['#default_value'] = $matches[2];
+            if ($match_count === 4) {
+              $form['submitted']['contact_data']['spbellen_address']['house_number']['#default_value'] .= $matches[3];
+            }
+          }
+        }
+      }
+      else {
+        // Use street, street_number and street_number_addon database fields.
+        $house_number = empty($contact_data['street_number']) ? '' : $contact_data['street_number'];
+        $house_number_addon = empty($contact_data['street_number_addon']) ? '' : $contact_data['street_number_addon'];
+        $form['submitted']['contact_data']['spbellen_address']['street_name']['#default_value'] = empty($contact_data['street']) ? '' : $contact_data['street'];
+        $form['submitted']['contact_data']['spbellen_address']['house_number']['#default_value'] = $house_number . ' ' . $house_number_addon;
+      }
+
       // Add check address mandatory radio.
       if ($campaign->check_contact_info) {
         $form['submitted']['contact_data']['#collapsed'] = 0;
