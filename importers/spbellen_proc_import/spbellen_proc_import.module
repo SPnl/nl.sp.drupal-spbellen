@@ -1,0 +1,177 @@
+<?php
+
+/**
+ * Main module file for SP Beltool Civi importer.
+ */
+
+module_load_include('inc', 'spbellen', 'includes/spbellen_import');
+module_load_include('inc', 'spbellen_proc_import', 'spbellen_proc_import');
+
+ /**
+  * Implements hook_menu().
+  */
+function spbellen_proc_import_menu() {
+  $items = array();
+  $items['spbellen/proc'] = array(
+    'title' => 'SP proc dev',
+    'page callback' => 'spbellen_proc_import_dev',
+    'access arguments' => array('spbellen administer campaigns'),
+    'type' => MENU_CALLBACK,
+    'file' => 'spbellen_proc_import.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_spbellen_importer_info().
+ */
+function spbellen_proc_import_spbellen_importer_info() {
+  $importer_info = array(
+    'form_definition_function' => 'spbellen_proc_import_import_form',
+    'form_validation_function' => 'spbellen_proc_import_import_form_validate',
+    'form_submit_function' => 'spbellen_proc_import_import_form_submit',
+    'auto_import' => TRUE,
+    'importer_source_title' => 'Procurios',
+    'import_function' => 'spbellen_proc_import_drush_import',
+  );
+  return $importer_info;
+}
+
+/**
+ * Implements hook_spbellen_importer_info() form_definition_function.
+ */
+function spbellen_proc_import_import_form(&$form, &$form_state) {
+  $storage = &$form_state['storage'];
+
+  $selection_list = procapi_selection_get_select_list();
+
+  $form['spbellen_proc_import']['selections'] = array(
+    '#type' => 'select',
+    '#title' => 'Kies één of meerdere selecties',
+    '#required' => TRUE,
+    '#options' => $selection_list,
+    '#multiple' => TRUE,
+    '#empty_value' => 'Kies:',
+  );
+}
+
+/**
+ * Implements hook_spbellen_importer_info() form_validation_function.
+ */
+function spbellen_proc_import_import_form_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  $storage = $form_state['storage'];
+}
+
+/**
+ * Implements hook_spbellen_importer_info() form_submit_function.
+ */
+function spbellen_proc_import_import_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $storage = $form_state['storage'];
+
+  if (!empty($values['selections'])) {
+    foreach ($values['selections'] as $selection_id) {
+      // Create import.
+      $selection_title = $form['spbellen_proc_import']['selections']['#options'][$selection_id];
+      $group_id = spbellen_import_merge_group($storage['selected_importer'], $selection_id, $selection_title, NULL);
+      $groups[] = $group_id;
+
+      // Store group campaign relation.
+      spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
+
+    }
+    // Import Procurios selections contacts.
+    $batch = spbellen_proc_import_import_groups($groups);
+    if (!empty($batch)) {
+      batch_set($batch);
+    }
+  }
+}
+
+/**
+ * Import contacts from group.
+ */
+function spbellen_proc_import_import_groups($groups) {
+  $batch = FALSE;
+  $operations = array();
+
+  $selections_count = procapi_selection_get_count();
+  foreach ($groups as $group_id) {
+    if (!empty($group_id)) {
+      // Create import.
+      $import_id = spbellen_import_insert_import($group_id);
+
+      if (!empty($import_id)) {
+        // Get group data.
+        $query = "SELECT * FROM {spbellen_groups} WHERE id = :group_id";
+        $group_data = db_query($query, array(':group_id' => $group_id))->fetchAssoc();
+
+        $selection_id = $group_data['external_group_id'];
+        $group_titles[] = $group_data['title'];
+
+        if (!empty($selection_id)) {
+          $import_data = array(
+            'selection_id' => $selection_id,
+            'selection_count' => $selections_count[$selection_id],
+            'import_id' => $import_id,
+            'group_id' => $group_id,
+            'group_title' => $group_data['title'],
+          );
+          $operations[] = array(
+            'spbellen_proc_import_batch',
+            array(
+              $import_data,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  if (!empty($operations)) {
+    $batch = array(
+      'title' => 'Import: ' . implode(', ', $group_titles),
+      'init_message' => '0',
+      'progress_message' => 'Import @current van @total',
+      'operations' => $operations,
+      'finished' => 'spbellen_proc_import_batch_finished',
+      'error_message' => 'Er is een fout opgetreden bij het ophalen van contacten',
+      'file' => drupal_get_path('module', 'spbellen_proc_import') . '/spbellen_proc_import.inc',
+    );
+    return $batch;
+  }
+
+  drupal_set_message('Er zijn geen inzendingen gevonden om te importeren.');
+}
+
+/**
+ * Drush import groups.
+ */
+function spbellen_proc_import_drush_import() {
+  // Get webforms to import.
+  $groups = array();
+  $query = "SELECT id FROM {spbellen_groups} WHERE auto_import = 1 AND importer = 'spbellen_proc_import'";
+  $result = db_query($query);
+  if ($result) {
+    while ($row = $result->fetchAssoc()) {
+      if (!empty($row['id'])) {
+        $groups[] = $row['id'];
+      }
+    }
+  }
+  if (!empty($groups)) {
+    // Import groups.
+    $batch = spbellen_proc_import_import_groups($groups);
+    if (!empty($batch)) {
+      $batch['progressive'] = FALSE;
+      batch_set($batch);
+      $batch =& batch_get();
+      // Process the batch.
+      drush_backend_batch_process();
+    }
+  }
+  else {
+    drupal_set_message('Er zijn geen Procurios auto imports gevonden.');
+  }
+}
