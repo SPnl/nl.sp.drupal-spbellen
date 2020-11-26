@@ -175,3 +175,10 @@ function spbellen_proc_import_drush_import() {
     drupal_set_message('Er zijn geen Procurios auto imports gevonden.');
   }
 }
+
+/**
+ * Implements hook_spbellen_crm_block_phone().
+ */
+function spbellen_proc_import_spbellen_crm_block_phone($crm_contact_id) {
+  // TODO
+}

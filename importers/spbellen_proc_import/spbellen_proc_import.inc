@@ -39,9 +39,13 @@ function spbellen_proc_import_batch($data, &$context) {
       $context['results']['count_raw'][$data['group_id']]++;
 
       // Import contact.
-      $contact_data = spbellen_proc_import_parse_contact_data($contact_data_raw);
-      if ($contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data)) {
-        $context['results']['count'][$data['group_id']]++;
+      if ($contact_data = spbellen_proc_import_parse_contact_data($contact_data_raw)) {
+        if ($contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data)) {
+          $context['results']['count'][$data['group_id']]++;
+        }
+        else {
+          continue;
+        }
       }
       else {
         continue;
@@ -85,7 +89,7 @@ function spbellen_proc_import_batch_finished($success, $results, $operations) {
     foreach ($results['count_raw'] as $group_id => $count) {
       $total_raw = $total_raw + $count;
     }
-    drupal_set_message('Aantal opgehaalde contacten met geldig telefoonnummer: ' . $total . ' / ' . $total_raw);
+    drupal_set_message('Aantal opgehaalde contacten met geldig telefoonnummer dat gebeld mag worden: ' . $total . ' / ' . $total_raw);
   }
   else {
     $error_operation = reset($operations);
@@ -105,6 +109,15 @@ function spbellen_proc_import_batch_finished($success, $results, $operations) {
  * Map civi data to storage contact data.
  */
 function spbellen_proc_import_parse_contact_data($proc_data) {
+  // Check if privacy options are ok for calling.
+  if (!empty($proc_data['privacy_options'])) {
+    if (isset($proc_data['privacy_options']['do_not_phone'])) {
+      if (!empty($proc_data['privacy_options']['do_not_phone'])) {
+        return FALSE;
+      }
+    }
+  }
+  // Parse contact data.
   $contact_data = array();
   $map = array(
     'crm_contact_id' => 'contact_number',
