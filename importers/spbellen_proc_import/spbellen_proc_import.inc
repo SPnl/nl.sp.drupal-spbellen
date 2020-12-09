@@ -41,6 +41,16 @@ function spbellen_proc_import_batch($data, &$context) {
       // Import contact.
       if ($contact_data = spbellen_proc_import_parse_contact_data($contact_data_raw)) {
         if ($contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data)) {
+
+          // Add procurios id mapping.
+          if (!empty($contact_data_raw['contact_number'])) {
+            db_merge('spbellen_procurios_id_map')
+              ->key(array('crm_contact_id' => $contact_data_raw['contact_number']))
+              ->fields(array('internal_id' => $contact_data_raw['id']))
+              ->execute();
+          }
+
+          // Store count.
           $context['results']['count'][$data['group_id']]++;
         }
         else {
@@ -135,16 +145,16 @@ function spbellen_proc_import_parse_contact_data($proc_data) {
     'regio_id' => 'region_contact_number',
     'regio' => 'region_name',
   );
-  foreach ($map as $data_map => $civi_map) {
-    if ($pos = strpos($civi_map, '|') !== FALSE) {
-      $elements = explode('|', $civi_map);
+  foreach ($map as $data_map => $proc_map) {
+    if ($pos = strpos($proc_map, '|') !== FALSE) {
+      $elements = explode('|', $proc_map);
       if (!empty($proc_data[$elements[0]][$elements[1]])) {
         $contact_data[$data_map] = $proc_data[$elements[0]][$elements[1]];
       }
     }
     else {
-      if (!empty($proc_data[$civi_map])) {
-        $contact_data[$data_map] = $proc_data[$civi_map];
+      if (!empty($proc_data[$proc_map])) {
+        $contact_data[$data_map] = $proc_data[$proc_map];
       }
     }
   }
