@@ -1023,35 +1023,35 @@ function spbellen_assign_target($campaign) {
           ':current_time' => time(),
           ':occupied_time' => time() - 1800,
         )))->fetchAssoc();
+        if (empty($result)) {
+          if ($campaign->afdeling_filter == 0 && !empty($caller->afdeling_id) && !empty($caller->regio_id)) {
+            // Try to get chapter targets that are called up less then three times.
+            $query = "SELECT ta.id, ta.contact_id, occupied, gr.id group_id" . $from_where . "attempts < 3 AND afdeling_id = :afdeling_id AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
+            $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
+              ':occupied_time' => time() - 1800,
+              ':current_time' => time(),
+              ':afdeling_id' => $caller->afdeling_id,
+            )))->fetchAssoc();
+          }
+          if (empty($result)) {
+            // Get target.
+            $query = "SELECT ta.id, ta.contact_id, occupied, gr.id group_id" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
+            $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
+              ':occupied_time' => time() - 1800,
+              ':current_time' => time(),
+            )))->fetchAssoc();
+          }
+        }
         if ($result) {
           // Claim target.
           db_update('spbellen_targets')
-            ->fields(array(
-              'occupied' => 1,
-              'date' => time(),
-              'caller_id' => $user->uid,
-            ))
-            ->condition('id', $result['id'])
-            ->execute();
-        }
-        else {
-          // Get target.
-          $query = "SELECT ta.id, ta.contact_id, occupied, gr.id group_id" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
-          $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
-            ':occupied_time' => time() - 1800,
-            ':current_time' => time(),
-          )))->fetchAssoc();
-          if ($result) {
-            // Claim target.
-            db_update('spbellen_targets')
-              ->fields(array(
-                'occupied' => 1,
-                'date' => time(),
-                'caller_id' => $user->uid,
-              ))
-              ->condition('id', $result['id'])
-              ->execute();
-          }
+          ->fields(array(
+            'occupied' => 1,
+            'date' => time(),
+            'caller_id' => $user->uid,
+          ))
+          ->condition('id', $result['id'])
+          ->execute();
         }
       }
       if (!empty($result)) {
