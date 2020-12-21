@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Main module file for SP Beltool Civi importer.
+ * Main module file for SP Beltool webform importer.
  */
 
 module_load_include('inc', 'spbellen', 'includes/spbellen_import');
@@ -342,6 +342,7 @@ function spbellen_webform_import_import_groups($group_ids) {
  * Implements hook_spbellen_get_chapter_and_region().
  */
 function spbellen_webform_import_spbellen_get_chapter_and_region($postal_code) {
+  // TODO
   /*
   set_time_limit(0);
   $spcivi = \SPCivi::getInstance();

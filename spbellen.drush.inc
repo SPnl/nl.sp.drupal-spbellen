@@ -146,7 +146,7 @@ function spbellen_split_name($name) {
   // Regexes for title and middle names.
   $titles_regex = 'Mr|mr|Mevr|mevr|Dhr|dhr|Ir|ir|Ing|ing|Bc|bc|Ms|ms|Drs|drs|Dr|dr';
 
-  $middle_names_array = spcivipush_middle_names();
+  $middle_names_array = procpush_middle_names();
   $middle_names_regex = implode('|', $middle_names_array);
 
   // Split name on middle_name.

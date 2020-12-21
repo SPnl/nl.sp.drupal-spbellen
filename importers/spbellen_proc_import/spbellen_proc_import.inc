@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Helper functions for spbellen civi importer module.
+ * Helper functions for spbellen procurios importer module.
  */
 
 /**
@@ -116,7 +116,7 @@ function spbellen_proc_import_batch_finished($success, $results, $operations) {
 }
 
 /**
- * Map civi data to storage contact data.
+ * Map procurios data to storage contact data.
  */
 function spbellen_proc_import_parse_contact_data($proc_data) {
   // Check if privacy options are ok for calling.

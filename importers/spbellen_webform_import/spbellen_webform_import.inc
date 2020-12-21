@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Helper functions for spbellen civi importer module.
+ * Helper functions for spbellen webform importer module.
  */
 
 /**
