@@ -496,7 +496,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
         '#value' => 'Overslaan',
         '#attributes' => array(
           'style' => array('float: right'),
-          'onclick' => 'return confirm("Weet je zeker dat je ' . $contact_data['display_name'] . ' wilt overslaan?");',
+          'onclick' => 'return confirm("Weet je zeker dat je ' . $contact_data['display_name'] . ' wilt overslaan? Dit contact zal voor jou dan niet meer terugkomen, ook niet in andere belcampagnes.");',
         ),
       );
     }
