@@ -418,7 +418,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
   // Check if spbellen form.
   if (!empty($form['#node'])) {
     $nid = $form['#node']->nid;
-    if (spbellen_is_spbellen_form($nid)) {
+    if (spbellen_is_spbellen_form($nid) && strpos(request_path(), 'node') === FALSE) {
       // Attach css.
       $form['#attached']['css'] = array(
         drupal_get_path('module', 'spbellen') . '/css/spbellen_webform_form.css',
