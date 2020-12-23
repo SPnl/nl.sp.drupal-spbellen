@@ -1,6 +1,0 @@
-name = SP Beltool Civi importer
-description = CiviCRM contact importer for SP Beltool.
-core = 7.x
-package = SP Beltool
-dependencies[] = spbellen
-dependencies[] = spciviapi
