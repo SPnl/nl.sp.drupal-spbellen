@@ -127,6 +127,9 @@ function spbellen_campaign_form($form, &$form_state) {
               if (strpos($group_data['title'], 'import') !== FALSE || strpos($group_data['title'], 'Active contacts') !== FALSE || strpos($group_data['title'], 'Inactive contacts') !== FALSE) {
                 $title = $group_data['title'];
               }
+              elseif (empty($importer_info[$group_data['importer']])) {
+                $title = 'Oude importer: ' . $group_data['title'];
+              }
               else {
                 $title = $importer_info[$group_data['importer']]['importer_source_title'] . ': ' . $group_data['title'];
               }
