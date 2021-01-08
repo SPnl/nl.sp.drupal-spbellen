@@ -486,7 +486,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
           global $user;
           $user = user_load($account->uid);
           user_login_finalize($account);
-          if ($_SESSION['spbellen_page_type'] == 'call_button') {
+          if (isset($_SESSION['spbellen_page_type']) && $_SESSION['spbellen_page_type'] == 'call_button') {
             drupal_goto('bellen/belknop');
           }
           else {

@@ -134,7 +134,7 @@ function spbellen_proc_import_parse_contact_data($proc_data) {
   $contact_data = array();
   $map = array(
     'crm_contact_id' => 'contact_number',
-    'name' => 'name',
+    'display_name' => 'name',
     'phone' => 'phone_mobile',
     'email' => 'email',
     'street' => 'address|street',

@@ -180,5 +180,38 @@ function spbellen_proc_import_drush_import() {
  * Implements hook_spbellen_crm_block_phone().
  */
 function spbellen_proc_import_spbellen_crm_block_phone($crm_contact_id) {
-  // TODO
+  if (module_exists('procpush')) {
+    if ($relation_id = procpush_get_relation_id($crm_contact_id)) {
+      // Push privacy 'niet bellen' to procurios.
+      $data = array(
+        'relation_id' => $relation_id,
+        'privacy' => array(
+          'do_not_phone',
+        ),
+      );
+      $debug_info = array(
+        'contact_number' => $crm_contact_id,
+        'data' => $data,
+        'source' => 'beltool',
+      );
+      procpush_push_contact($data, $debug_info);
+    }
+  }
+}
+
+/**
+ * Implements hook_spbellen_get_chapter_and_region().
+ */
+function spbellen_proc_import_spbellen_get_chapter_and_region($postal_code) {
+  $chapters_info_raw = procapi_department_search($postal_code);
+  if (!empty($chapters_info_raw)) {
+    $chapter_info_raw = reset($chapters_info_raw);
+    $chapter_info = array(
+      'afdeling' => empty($chapter_info_raw['department_name']) ? '' : $chapter_info_raw['department_name'],
+      'afdeling_id' => empty($chapter_info_raw['department_contact_number']) ? '' : $chapter_info_raw['department_contact_number'],
+      'regio' => empty($chapter_info_raw['region_name']) ? '' : $chapter_info_raw['region_name'],
+      'regio_id' => empty($chapter_info_raw['region_contact_number']) ? '' : $chapter_info_raw['region_contact_number'],
+    );
+    return $chapter_info;
+  }
 }

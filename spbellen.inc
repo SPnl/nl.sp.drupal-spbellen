@@ -900,6 +900,8 @@ function spbellen_contact_fields() {
     'is_lid' => 'Is lid',
     'afdeling' => 'Afdeling',
     'afdeling_id' => 'Afdeling id',
+    'regio' => 'Regio',
+    'regio_id' => 'Regio id',
     'crm_contact_id' => 'CRM contact id',
     'notes' => 'Notities',
   );
@@ -988,6 +990,9 @@ function spbellen_assign_target($campaign) {
               $order_by_geo = 'afdeling_id = :afdeling_id DESC, regio_id = :regio_id DESC, ';
               $order_by_geo_vars[':afdeling_id'] = $caller->afdeling_id;
               $order_by_geo_vars[':regio_id'] = $caller->regio_id;
+            }
+            else {
+              drupal_set_message('Afdeling of regio beller is onbekend, contacten uit eigen regio worden niet eerst weergegeven!', 'error');
             }
             break;
 
