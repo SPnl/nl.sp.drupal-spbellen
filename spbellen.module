@@ -509,6 +509,29 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
 function spbellen_webform_submission_presave($node, &$submission) {
   if (spbellen_is_spbellen_form($node->nid)) {
     $map = spbellen_component_key_id_map($node);
+
+    // Check if contact information was corrected
+    $correction = FALSE;
+    $params = array();
+    $params['submission_id'] = $submission->sid;
+    $params['campaign_title'] = $node->title;
+    $contact_fields =  spbellen_correct_contact_fields();
+    $data = $submission->data;
+    foreach ($contact_fields as $field_key => $field_name) {
+      if (
+        isset($map['spbellen_hidden_'.$field_key]) &&
+        isset($map['spbellen_'.$field_key]) &&
+        !empty($data[$map['spbellen_'.$field_key]][0]) &&
+        !empty($data[$map['spbellen_hidden_'.$field_key]][0]) &&
+        !empty($data[$map['spbellen_hidden_crm_contact_id']][0]) &&
+        $data[$map['spbellen_hidden_'.$field_key]][0] === $data[$map['spbellen_'.$field_key]][0]
+      ) {
+      // Empty correction fields so no data gets pushed without need.
+      unset($submission->data[$map['spbellen_'.$field_key]][0]);
+      }
+    }
+
+    // Check if submission is ok????
     if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
       global $user;
       $params = array(
@@ -583,8 +606,6 @@ function spbellen_webform_submission_insert($node, $submission) {
         spbellen_blacklist($contact_id);
       }
 
-      // Check if contact information was corrected
-      // Create activity with corrected values.
       if ($result === 'wrong_number') {
         // Remove contact phone number.
         $contact_data = spbellen_get_contact_data($contact_id);
