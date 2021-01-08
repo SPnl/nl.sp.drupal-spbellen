@@ -510,7 +510,7 @@ function spbellen_webform_submission_presave($node, &$submission) {
   if (spbellen_is_spbellen_form($node->nid)) {
     $map = spbellen_component_key_id_map($node);
 
-    // Check if contact information was corrected
+    // Check if contact information was corrected, and remove when not corrected.
     $correction = FALSE;
     $params = array();
     $params['submission_id'] = $submission->sid;
@@ -518,7 +518,18 @@ function spbellen_webform_submission_presave($node, &$submission) {
     $contact_fields =  spbellen_correct_contact_fields();
     $data = $submission->data;
     foreach ($contact_fields as $field_key => $field_name) {
-      if (
+      if ($field_key == 'address') {
+        if (
+          $data[$map['spbellen_address']]['postal_code'] === $data[$map['spbellen_hidden_postal_code']][0] &&
+          str_replace(' ', '', $data[$map['spbellen_address']]['house_number']) === str_replace(' ', '', $data[$map['spbellen_hidden_street_number']][0] . $data[$map['spbellen_hidden_street_number_addon']][0]) &&
+          $data[$map['spbellen_address']]['street_name'] === $data[$map['spbellen_hidden_street']][0] &&
+          $data[$map['spbellen_address']]['city'] === $data[$map['spbellen_hidden_city']][0]
+        ) {
+          // Empty correction field so no data gets pushed without need.
+          unset($submission->data[$map['spbellen_address']]);
+        }
+      }
+      elseif (
         isset($map['spbellen_hidden_'.$field_key]) &&
         isset($map['spbellen_'.$field_key]) &&
         !empty($data[$map['spbellen_'.$field_key]][0]) &&
