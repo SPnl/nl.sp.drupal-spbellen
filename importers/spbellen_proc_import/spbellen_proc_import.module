@@ -215,3 +215,10 @@ function spbellen_proc_import_spbellen_get_chapter_and_region($postal_code) {
     return $chapter_info;
   }
 }
+
+/**
+ * Implements hook_spbellen_process_phone_invalid_message.
+ */
+function spbellen_proc_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
+  // TODO
+}
