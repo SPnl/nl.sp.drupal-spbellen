@@ -1742,3 +1742,28 @@ function spbellen_get_campaign_groups_info($campaign_id) {
   }
   return $rows;
 }
+
+function spbellen_show_start_page() {
+  $node = menu_get_object();
+  $nid = $node->nid;
+  $campaign_id = spbellen_get_campaign_id($nid);
+  $campaign = spbellen_get_campaign($nid);
+  // Check if start page needs to be shown.
+  if (
+    // Start page not shown yet.
+    empty($_SESSION['spbellen']['start_page_' . $nid . '_shown']) &&
+    (
+      // Start page text available.
+      !empty($campaign->start_page_text) ||
+      (
+        // Call2dial location.
+        spbellen_click2dial_location() &&
+        // Extension not set yet.
+        empty($_SESSION['spbellen']['extension_number'])
+      )
+    )
+  ) {
+    return TRUE;
+  }
+  return FALSE;
+}

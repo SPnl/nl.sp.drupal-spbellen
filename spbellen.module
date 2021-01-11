@@ -779,46 +779,48 @@ function spbellen_block_view($delta = '') {
           switch ($delta) {
             case 'spbellen_contact_block':
 
-              $data = spbellen_contact_block_data();
+              if (!spbellen_show_start_page()) {
+                $data = spbellen_contact_block_data();
 
-              // Use the cookie library to add variables to js bel button.
-              drupal_add_library('system', 'jquery.cookie');
+                // Use the cookie library to add variables to js bel button.
+                drupal_add_library('system', 'jquery.cookie');
 
-              $jsdata = array();
-              if (!empty($data['click2dial'])) {
-                $jsdata = array(
-                  'spbellen' => array(
-                    'click2dial' => $data['click2dial'],
+                $jsdata = array();
+                if (!empty($data['click2dial'])) {
+                  $jsdata = array(
+                    'spbellen' => array(
+                      'click2dial' => $data['click2dial'],
+                    ),
+                  );
+                }
+
+                $markup = theme('spbellen_block_theme', $data);
+                $module_path = drupal_get_path('module', 'spbellen');
+                $block = array(
+                  'subject' => '',
+                  'content' => array(
+                    '#markup' => $markup,
+                    '#attached' => array(
+                      'js' => array(
+                        array(
+                          'type' => 'file',
+                          'data' => $module_path . '/js/spbellen_click2dial.js',
+                        ),
+                        array(
+                          'data' => $jsdata,
+                          'type' => 'setting',
+                        ),
+                      ),
+                      'css' => array(
+                        array(
+                          'type' => 'file',
+                          'data' => $module_path . '/css/spbellen_contact_block.css',
+                        ),
+                      ),
+                    ),
                   ),
                 );
               }
-
-              $markup = theme('spbellen_block_theme', $data);
-              $module_path = drupal_get_path('module', 'spbellen');
-              $block = array(
-                'subject' => '',
-                'content' => array(
-                  '#markup' => $markup,
-                  '#attached' => array(
-                    'js' => array(
-                      array(
-                        'type' => 'file',
-                        'data' => $module_path . '/js/spbellen_click2dial.js',
-                      ),
-                      array(
-                        'data' => $jsdata,
-                        'type' => 'setting',
-                      ),
-                    ),
-                    'css' => array(
-                      array(
-                        'type' => 'file',
-                        'data' => $module_path . '/css/spbellen_contact_block.css',
-                      ),
-                    ),
-                  ),
-                ),
-              );
               break;
 
             case 'spbellen_search_block':
@@ -834,20 +836,7 @@ function spbellen_block_view($delta = '') {
               $campaign_id = spbellen_get_campaign_id($nid);
               $campaign = spbellen_get_campaign($nid);
               // Check if start page needs to be shown.
-              if (
-                // Start page not shown yet.
-                empty($_SESSION['spbellen']['start_page_' . $nid . '_shown']) &&
-                (
-                  // Start page text available.
-                  !empty($campaign->start_page_text) ||
-                  (
-                    // Call2dial location.
-                    spbellen_click2dial_location() &&
-                    // Extension not set yet.
-                    empty($_SESSION['spbellen']['extension_number'])
-                  )
-                )
-              ) {
+              if (spbellen_show_start_page()) {
                 // Show start page block.
                 $module_path = drupal_get_path('module', 'spbellen');
                 $start_page_text = check_markup($campaign->start_page_text, 'filtered_html');
