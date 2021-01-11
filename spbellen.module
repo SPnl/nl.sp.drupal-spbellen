@@ -520,6 +520,7 @@ function spbellen_webform_submission_presave($node, &$submission) {
     foreach ($contact_fields as $field_key => $field_name) {
       if ($field_key == 'address') {
         if (
+          !empty($data[$map['spbellen_address']]) &&
           $data[$map['spbellen_address']]['postal_code'] === $data[$map['spbellen_hidden_postal_code']][0] &&
           str_replace(' ', '', $data[$map['spbellen_address']]['house_number']) === str_replace(' ', '', $data[$map['spbellen_hidden_street_number']][0] . $data[$map['spbellen_hidden_street_number_addon']][0]) &&
           $data[$map['spbellen_address']]['street_name'] === $data[$map['spbellen_hidden_street']][0] &&
