@@ -219,6 +219,51 @@ function spbellen_proc_import_spbellen_get_chapter_and_region($postal_code) {
 /**
  * Implements hook_spbellen_process_phone_invalid_message.
  */
-function spbellen_proc_import_spbellen_process_phone_invalid_message($crm_contact_id, $text) {
-  // TODO
+function spbellen_proc_import_spbellen_process_phone_invalid($contact_data, $caller) {
+  // Get relation id.
+  $relation_id = procpush_get_relation_id($contact_data['crm_contact_id']);
+
+  if (!empty($relation_id)) {
+    global $user;
+    // Send e-mail to administratie.
+    $caller_text = '<p>Gegevens beller:<br/>';
+    $caller_text .= 'Naam: ' . check_plain($caller->display_name) . '<br/>';
+    $caller_text .= 'Email: ' . check_plain($user->mail) . '<br/>';
+    $caller_text .= 'Telefoon: ' . check_plain($caller->phone) . '<br/>';
+    $caller_text .= 'Afdeling: ' . check_plain($caller->afdeling) . '<br/>';
+    $caller_text .= '</p>';
+
+    $text = '<p>Het telefoonnummer ' . $contact_data['phone'] . ' van ' . check_plain($contact_data['display_name'])  . ' (' . check_plain($contact_data['crm_contact_id']) . ') is volgens de beller niet correct, en wordt verwijderd in Procurios.</p><p>Als het nummer toch correct is, dan dient het opnieuw bij het contact te worden toegevoegd.</p>';
+    $text .= $caller_text;
+    $params['subject'] = 'Verkeerd telefoonnummer in beltool.';
+    $params['body'][] = $text;
+    $result = drupal_mail('spbellen_proc_import', 'phone_invalid', 'administratie@sp.nl',  language_default(), $params);
+
+    // Remove contact phone number in Procurios.
+    $data = array(
+      'relation_id' => $relation_id,
+      'phone' => '[remove:' . $contact_data['phone'] . ']',
+      'name' => '.',
+      'email' => 'punt@sp.nl',
+      'overwrite' => TRUE,
+    );
+    $debug_info = array(
+      'contact_data' => $contact_data,
+      'caller' => $caller,
+    );
+    procpush_push_contact($data, $debug_info);
+  }
 }
+
+/**
+ * Implements hook_mail.
+ */
+function spbellen_proc_import_mail($key, &$message, $params) {
+  switch ($key) {
+  case 'phone_invalid':
+    $message['subject'] = $params['subject'];
+    $message['body'] = $params['body'];
+    break;
+  }
+}
+ 
