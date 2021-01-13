@@ -507,6 +507,7 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
  * Implements hook webform submission presave.
  */
 function spbellen_webform_submission_presave($node, &$submission) {
+
   if (spbellen_is_spbellen_form($node->nid)) {
     $map = spbellen_component_key_id_map($node);
 
@@ -519,16 +520,33 @@ function spbellen_webform_submission_presave($node, &$submission) {
     $data = $submission->data;
     foreach ($contact_fields as $field_key => $field_name) {
       if ($field_key == 'address') {
-        if (
-          !empty($data[$map['spbellen_address']]) &&
-          $data[$map['spbellen_address']]['postal_code'] === $data[$map['spbellen_hidden_postal_code']][0] &&
-          str_replace(' ', '', $data[$map['spbellen_address']]['house_number']) === str_replace(' ', '', $data[$map['spbellen_hidden_street_number']][0] . $data[$map['spbellen_hidden_street_number_addon']][0]) &&
-          $data[$map['spbellen_address']]['street_name'] === $data[$map['spbellen_hidden_street']][0] &&
-          $data[$map['spbellen_address']]['city'] === $data[$map['spbellen_hidden_city']][0]
-        ) {
-          // Empty correction field so no data gets pushed without need.
-          unset($submission->data[$map['spbellen_address']]);
+        // Check if single or separated address field.
+        if (!empty($data[$map['spbellen_hidden_street_address']])) {
+          // Single line address in data.
+          if (
+            !empty($data[$map['spbellen_address']]) &&
+            $data[$map['spbellen_address']]['postal_code'] === $data[$map['spbellen_hidden_postal_code']][0] &&
+            str_replace(' ', '', $data[$map['spbellen_address']]['street_name'] . $data[$map['spbellen_address']]['house_number']) === str_replace(' ', '', $data[$map['spbellen_hidden_street_address']][0]) &&
+            $data[$map['spbellen_address']]['city'] === $data[$map['spbellen_hidden_city']][0]
+          ) {
+            // Empty correction field so no data gets pushed without need.
+            unset($submission->data[$map['spbellen_address']]);
+          }
         }
+        else {
+          // Separated address in data.
+          if (
+            !empty($data[$map['spbellen_address']]) &&
+            $data[$map['spbellen_address']]['postal_code'] === $data[$map['spbellen_hidden_postal_code']][0] &&
+            str_replace(' ', '', $data[$map['spbellen_address']]['house_number']) === str_replace(' ', '', $data[$map['spbellen_hidden_street_number']][0] . $data[$map['spbellen_hidden_street_number_addon']][0]) &&
+            $data[$map['spbellen_address']]['street_name'] === $data[$map['spbellen_hidden_street']][0] &&
+            $data[$map['spbellen_address']]['city'] === $data[$map['spbellen_hidden_city']][0]
+          ) {
+            // Empty correction field so no data gets pushed without need.
+            unset($submission->data[$map['spbellen_address']]);
+          }
+        }
+
       }
       elseif (
         isset($map['spbellen_hidden_'.$field_key]) &&
