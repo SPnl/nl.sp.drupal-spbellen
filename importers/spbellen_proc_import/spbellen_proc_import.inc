@@ -170,5 +170,10 @@ function spbellen_proc_import_parse_contact_data($proc_data) {
   if (!empty($contact_data['phone'])) {
     $contact_data['phone'] = preg_replace('/\D/', '', $contact_data['phone']);
   }
+
+  // Remove last name .
+  if (substr($contact_data['display_name'], -1) == '.') {
+    $contact_data['display_name'] = trim(substr_replace($contact_data['display_name'] ,"",-1));
+  }
   return $contact_data;
 }
