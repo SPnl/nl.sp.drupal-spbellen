@@ -503,10 +503,12 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
       // Add form element for not voicmailing.
       $max_attempts = variable_get('spbellen_max_attempts', '5');
       if ($contact_data['attempts'] < $max_attempts - 1) {
-        $form['submitted']['caller_message']['#title'] = '<p><strong>Geen voicemail inspreken!</strong></p>' . $form['submitted']['caller_message']['#title'];
+        $form['submitted']['caller_message']['#title'] = '<div id="spbellen_voicemail_text"><p><strong>Geen voicemail inspreken!</strong></p></div>' . $form['submitted']['caller_message']['#title'];
       }
       else {
-        $form['submitted']['caller_message']['#title'] = '<p><strong>Voicemail inspreken!</strong></p>' . $form['submitted']['caller_message']['#title'];
+        if (!empty($campaign->voicemail_text)) {
+          $form['submitted']['caller_message']['#title'] = '<div id="spbellen_voicemail_text"><p><strong>Spreek de volgende voicemail in:</strong><br/>' . $campaign->voicemail_text . '</p></div>' . $form['submitted']['caller_message']['#title'];
+        }
       }
     }
   }

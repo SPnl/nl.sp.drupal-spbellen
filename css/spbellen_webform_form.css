@@ -2,7 +2,7 @@ div.webform-component--valid-test {
   display: none;
 }
 
-div.webform-datepicker div.form-item, 
+div.webform-datepicker div.form-item,
 div.webform-component-time div.form-item {
   display: inline;
 }
@@ -14,4 +14,13 @@ div.webform-component-time div.form-item {
 
 .call-back-wrapper div.form-item {
   padding: 0.4em 0em;
+}
+
+.primary-content #spbellen_voicemail_text {
+  border: 1px solid #f60000;
+  padding: 0.7em;
+  margin-bottom: 1em;
+  font-size: 1em;
+  font-weight: normal;
+  font-family: "HelveticaNeueLT-Light", "Helvetica Neue", Helvetica, "Roboto Sans", "Segoe UI", Arial, "Lucida Grande", sans-serif;
 }

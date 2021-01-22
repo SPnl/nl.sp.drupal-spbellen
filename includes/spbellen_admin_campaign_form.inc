@@ -107,6 +107,13 @@ function spbellen_campaign_form($form, &$form_state) {
         '#default_value' => empty($storage['campaign_start_page_text']) ? '' : $storage['campaign_start_page_text'],
       );
 
+      $form['voicemail_text'] = array(
+        '#type' => 'textarea',
+        '#title' => 'Voicemail tekst',
+        '#format' => 'filtered_html',
+        '#default_value' => empty($storage['voicemail_text']) ? '' : $storage['voicemail_text'],
+      );
+
       if ($storage['campaign'] === 'new') {
         $form['intro_text'] = array(
           '#type' => 'textarea',
@@ -328,6 +335,7 @@ function spbellen_campaign_form_validate($form, &$form_state) {
             $storage['disabled'] = $campaign->disabled;
             $storage['campaign_code'] = $campaign->campaign_code;
             $storage['campaign_start_page_text'] = $campaign->start_page_text;
+            $storage['voicemail_text'] = $campaign->voicemail_text;
             $storage['click2dial_call_number'] = $campaign->click2dial_call_number;
             $storage['check_contact_info'] = $campaign->check_contact_info;
             $storage['fail_mail_subject'] = $campaign->fail_mail_subject;
@@ -501,6 +509,7 @@ function spbellen_store_campaign($storage, $values) {
       'intro_text' => $values['intro_text'],
       'title' => $values['title'],
       'start_page_text' => !empty($values['campaign_intro_text']) ? $values['campaign_intro_text'] : '',
+      'voicemail_text' => !empty($values['voicemail_text']) ? $values['voicemail_text'] : '',
       'click2dial_call_number' => !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '',
       'check_contact_info' => empty($values['check_contact_info']['check_contact_info']) ? 0 : 1,
       'fail_mail_subject' => !empty($values['fail_mail_subject']) ? $values['fail_mail_subject'] : '',
@@ -525,6 +534,7 @@ function spbellen_store_campaign($storage, $values) {
     $campaign->campaign_code = empty($values['campaign_code']) ? '' : $values['campaign_code'];
     $campaign->title = empty($values['title']) ? '' : $values['title'];
     $campaign->start_page_text = empty($values['campaign_start_page_text']) ? '' : $values['campaign_start_page_text'];
+    $campaign->voicemail_text = empty($values['voicemail_text']) ? '' : $values['voicemail_text'];
     $campaign->check_contact_info = empty($values['check_contact_info']['check_contact_info']) ? 0 : 1;
     $campaign->click2dial_call_number = !empty($values['click2dial_call_number']) ? $values['click2dial_call_number'] : '';
     $campaign->fail_mail_subject = empty($values['fail_mail_subject']) ? '' : $values['fail_mail_subject'];

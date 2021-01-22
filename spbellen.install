@@ -90,6 +90,12 @@ function spbellen_schema() {
         'size' => 'normal',
         'not null' => FALSE,
       ),
+      'voicemail_text' => array(
+        'description' => 'Voicemail text.',
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE,
+      ),
       'click2dial_call_number' => array(
         'description' => 'Click2dial call number.',
         'type' => 'varchar',
@@ -1972,5 +1978,16 @@ function spbellen_update_7044() {
       $spec = $schema['spbellen_contact_data']['fields'][$field];
       db_add_field('spbellen_contact_data', $field, $spec);
     }
+  }
+}
+
+/**
+ * Add campaign voicemail text to {spbellen_campaign} table.
+ */
+function spbellen_update_7045() {
+  if (!db_field_exists('spbellen_campaign', 'voicemail_text')) {
+    $schema = spbellen_schema();
+    $spec = $schema['spbellen_campaign']['fields']['voicemail_text'];
+    db_add_field('spbellen_campaign', 'voicemail_text', $spec);
   }
 }
