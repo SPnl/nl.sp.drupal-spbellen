@@ -499,6 +499,15 @@ function spbellen_form_webform_client_form_alter(&$form, &$form_state, $form_id)
           'onclick' => 'return confirm("Weet je zeker dat je ' . $contact_data['display_name'] . ' wilt overslaan? Dit contact zal voor jou dan niet meer terugkomen, ook niet in andere belcampagnes.");',
         ),
       );
+
+      // Add form element for not voicmailing.
+      $max_attempts = variable_get('spbellen_max_attempts', '5');
+      if ($contact_data['attempts'] < $max_attempts - 1) {
+        $form['submitted']['caller_message']['#title'] = '<p><strong>Geen voicemail inspreken!</strong></p>' . $form['submitted']['caller_message']['#title'];
+      }
+      else {
+        $form['submitted']['caller_message']['#title'] = '<p><strong>Voicemail inspreken!</strong></p>' . $form['submitted']['caller_message']['#title'];
+      }
     }
   }
 }
