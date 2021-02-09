@@ -43,12 +43,18 @@ function spbellen_proc_import_batch($data, &$context) {
         if ($contact_id = spbellen_import_contact($data['import_id'], $data['group_id'], $contact_data)) {
           // Store relation_id contact number mapping.
           if (module_exists('procpush')) {
-            if (!empty($contact_data_raw['contact_number'])) {
-              db_merge('procpush_id_map')
-                ->key(array(
-                  'contact_number' => $contact_data_raw['contact_number'],
-                ))
+            if (!empty($contact_data_raw['contact_number']) && !empty($contact_data_raw['relation_id'])) {
+              // Remove existing mapping.
+              db_delete('procpush_id_map')
+                ->condition(
+                  db_or()
+                  ->condition('contact_number', $contact_data_raw['contact_number'])
+                  ->condition('relation_id', $contact_data_raw['relation_id'])
+                )
+                ->execute();
+              db_insert('procpush_id_map')
                 ->fields(array(
+                  'contact_number' => $contact_data_raw['contact_number'],
                   'relation_id' => $contact_data_raw['id'],
                 ))
                 ->execute();
