@@ -1504,6 +1504,9 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
   if ($caller_id === 'all') {
     $conditions = ' GROUP BY ca.caller_id';
   }
+  else {
+    $conditions = '';
+  }
   if (!empty($caller_id && $caller_id !== 'all')) {
     $where .= ' AND ac.caller_id = :caller_id';
     $vars[':caller_id'] = $caller_id;
