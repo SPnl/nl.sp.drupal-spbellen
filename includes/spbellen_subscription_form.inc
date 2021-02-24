@@ -479,6 +479,7 @@ function spbellen_subscription_form_submit($form, &$form_state) {
               $caller->regio = $chapter_and_region['regio'];
               $caller->regio_id = $chapter_and_region['regio_id'];
             }
+            $caller->access_type = 'local';
             entity_save('caller', $caller);
           }
 
