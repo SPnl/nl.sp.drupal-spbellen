@@ -186,7 +186,7 @@ function spbellen_proc_import_spbellen_crm_block_phone($crm_contact_id) {
       $data = array(
         'relation_id' => $relation_id,
         'privacy' => array(
-          'do_not_phone',
+          'do_not_phone' => TRUE,
         ),
       );
       $debug_info = array(
@@ -266,4 +266,3 @@ function spbellen_proc_import_mail($key, &$message, $params) {
     break;
   }
 }
- 
