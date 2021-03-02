@@ -44,44 +44,46 @@
   <?php endforeach; ?>
 </table>
 
-<h3>Resultaat statistieken</h3>
-<p>(Aantal - Percentage vragen afgerond - percentage telefoon opgenomen)</p>
-<?php foreach ($result_stats['components'] as $component_id => $component_data) : ?>
-  <p><strong><?php print $component_data['name']; ?></strong></p>
-  <table style = "width: auto">
-    <tr>
-      <th width="10%">Beller</th>
-      <?php foreach ($component_data['options'] as $key => $value) : ?>
-        <?php if ($key == 'answered') : ?>
-          <?php $colspan = 2; ?>
-        <?php elseif ($key == 'answered_completed') : ?>
-          <?php $colspan = 3; ?>
-        <?php else : ?>
-          <?php $colspan = 4; ?>
-        <?php endif; ?>
-        <th colspan=<?php print $colspan; ?>><?php print $value; ?></th>
-      <?php endforeach; ?>
-    </tr>
-    <?php foreach ($component_data['stats'] as $caller_id => $caller_data) : ?>
+<?php if (!empty($result_stats)) : ?>
+  <h3>Resultaat statistieken</h3>
+  <p>(Aantal - Percentage vragen afgerond - percentage telefoon opgenomen)</p>
+  <?php foreach ($result_stats['components'] as $component_id => $component_data) : ?>
+    <p><strong><?php print $component_data['name']; ?></strong></p>
+    <table style = "width: auto">
       <tr>
-        <td><?php print $caller_data['display_name']; ?></td>
+        <th width="10%">Beller</th>
         <?php foreach ($component_data['options'] as $key => $value) : ?>
-          <td class="numeric" width="1">
-            <?php print $caller_data[$key]; ?>
-          </td>
-          <?php if (!in_array($key, array('answered'))) : ?>
-            <?php if (!in_array($key, array('answered_completed'))) : ?>
-              <td class="numeric" width="1">
-                <?php print $caller_data[$key . '_percentage_answered_completed']; ?>%
-              </td>
-            <?php endif; ?>
-            <td class="numeric" width="1">
-              <?php print $caller_data[$key . '_percentage_answered']; ?>%
-            </td>
+          <?php if ($key == 'answered') : ?>
+            <?php $colspan = 2; ?>
+          <?php elseif ($key == 'answered_completed') : ?>
+            <?php $colspan = 3; ?>
+          <?php else : ?>
+            <?php $colspan = 4; ?>
           <?php endif; ?>
-          <td></td>
+          <th colspan=<?php print $colspan; ?>><?php print $value; ?></th>
         <?php endforeach; ?>
       </tr>
-    <?php endforeach; ?>
-  </table>
-<?php endforeach; ?>
+      <?php foreach ($component_data['stats'] as $caller_id => $caller_data) : ?>
+        <tr>
+          <td><?php print $caller_data['display_name']; ?></td>
+          <?php foreach ($component_data['options'] as $key => $value) : ?>
+            <td class="numeric" width="1">
+              <?php print $caller_data[$key]; ?>
+            </td>
+            <?php if (!in_array($key, array('answered'))) : ?>
+              <?php if (!in_array($key, array('answered_completed'))) : ?>
+                <td class="numeric" width="1">
+                  <?php print $caller_data[$key . '_percentage_answered_completed']; ?>%
+                </td>
+              <?php endif; ?>
+              <td class="numeric" width="1">
+                <?php print $caller_data[$key . '_percentage_answered']; ?>%
+              </td>
+            <?php endif; ?>
+            <td></td>
+          <?php endforeach; ?>
+        </tr>
+      <?php endforeach; ?>
+    </table>
+  <?php endforeach; ?>
+<?php endif; ?>

@@ -8,12 +8,6 @@
  * Test code.
  */
 function spbellen_webform_import_dev() {
-  //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'submission?uuid=eacd6149-93ff-4ab4-a14b-45587c87ba82&page=0&pagesize=10&offset=211121');
-  //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'webform/eacd6149-93ff-4ab4-a14b-45587c87ba82');
-  //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'webform');
-  //$data = spbellen_webform_import_rest_get_data('https://doemee.lndo.site/rest', 'submission?uuid=eacd6149-93ff-4ab4-a14b-45587c87ba82&page=1&offset=211121');
-  //$data = spbellen_webform_import_rest_get_phone_forms('https://doemee.lndo.site/rest');
-  //dpm($data);
   $data = spbellen_webform_import_rest_get_submissions('https://doemee.lndo.site/rest', '78f3ddf2-2f0a-4dde-8fe2-8dcd94b9b2ff', 0, 2, 20);
   return 'Testerdetest';
 }

@@ -1604,7 +1604,9 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
   $stats = array();
   // Create query.
   $query = 'SELECT ';
-  $query .= 'ca.caller_id, ca.display_name, ';
+  if ($caller_id !== 'all') {
+    $query .= 'ca.caller_id, ca.display_name, ';
+  }
   foreach ($options as $key => $option) {
     $key_sanitized = preg_replace('/[^a-zA-Z_]/', '', $key);
     $query_parts[] = "SUM(result = 'answered_completed' AND da.data = '" . $key_sanitized . "') AS '" . $key_sanitized . "'";
@@ -1616,7 +1618,7 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
     ':campaign_id' => $campaign_id,
     ':cid' => $cid,
   );
-  if (!empty($caller_id)) {
+  if (!empty($caller_id) && $caller_id !== 'all') {
     $query .= " AND ac.caller_id = :caller_id";
     $vars[':caller_id'] = $caller_id;
   }
@@ -1624,8 +1626,10 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
     $query .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
     $vars[':call_date'] = $call_date;
   }
-  $query .= ' GROUP BY ca.caller_id';
-  $query .= ' ORDER BY ca.display_name ASC';
+  if ($caller_id !== 'all') {
+    $query .= ' GROUP BY ca.caller_id';
+    $query .= ' ORDER BY ca.display_name ASC';
+  }
 
   $results = db_query($query, $vars);
   if ($results) {
@@ -1646,7 +1650,12 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
             $data[$key . '_percentage_answered'] = 0;
           }
         }
-        $stats[$row['caller_id']] = $data;
+        if (!empty($caller_id) || $caller_id === 'all') {
+          $stats = $data;
+        }
+        else {
+          $stats[$row['caller_id']] = $data;
+        }
       }
     }
   }

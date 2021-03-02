@@ -71,48 +71,47 @@
   </table>
 <?php endif; ?>
 
-<?php if (!empty($result_stats_caller_campaign)) : ?>
-  <p><br/></p>
-  <h3>Resultaat statistieken</h3>
-  <p>(Aantal - Percentage vragen afgerond - percentage telefoon opgenomen)</p>
-  <?php foreach ($result_stats_caller_campaign['components'] as $cid => $data) : ?>
-    <p><strong><?php print($data['name']); ?></strong></p>
-    <table style="width: auto">
-      <tr>
-        <th></th>
-        <th colspan="3">beller</th>
-        <th colspan="3">campagne</th>
-        <?php if (!empty($result_stats_caller_campaign_date)) : ?>
-          <th colspan="3">beller<br/><?php print $result_stats_caller_campaign_date['call_date']; ?></th>
-          <th colspan="3">campagne<br/><?php print $result_stats_caller_campaign_date['call_date']; ?></th>
-        <?php endif; ?>
-      </tr>
-      <?php foreach ($data['options'] as $key => $option) : ?>
-        <?php if ($key == 'answered_completed') : ?>
-          <tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td>
-          <?php if (!empty($result_stats_caller_campaign_date)) : ?>
-            <td></td><td></td><td></td><td></td><td></td><td></td>
-          <?php endif; ?>
-          </tr>
-        <?php endif; ?>
+<?php if (!empty($result_stats['campaign'])) : ?>
+  <?php $data_sets = array(
+    'caller_campaign',
+    'campaign',
+    'caller_campaign_date',
+    'campaign_date',
+  ); ?>
+  <?php if (!empty($result_stats['campaign'])) : ?>
+    <p><br/></p>
+    <h3>Resultaat statistieken</h3>
+    <p>(Aantal - Percentage vragen afgerond - percentage telefoon opgenomen)</p>
+    <?php foreach ($result_stats['campaign']['components'] as $cid => $data) : ?>
+      <p><strong><?php print($data['name']); ?></strong></p>
+      <table style="width: auto">
         <tr>
-          <td width="200"><?php print($option); ?></td>
-          <td class="numeric" width="1"><?php print($data['stats'][$key]); ?></td>
-          <td class="numeric"><?php print($data['stats'][$key. '_percentage_answered_completed']); ?>%</td>
-          <td class="numeric"><?php print($data['stats'][$key. '_percentage_answered']); ?>%</td>
-          <td class="numeric" width="1"><?php print($result_stats_campaign['components'][$cid]['stats'][$key]); ?></td>
-          <td class="numeric"><?php print($result_stats_campaign['components'][$cid]['stats'][$key . '_percentage_answered_completed']); ?>%</td>
-          <td class="numeric"><?php print($result_stats_campaign['components'][$cid]['stats'][$key . '_percentage_answered']); ?>%</td>
-          <?php if (!empty($result_stats_caller_campaign_date)) : ?>
-            <td class="numeric" width="1"><?php print($result_stats_caller_campaign_date['components'][$cid]['stats'][$key]); ?></td>
-            <td class="numeric"><?php print($result_stats_caller_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered_completed']); ?>%</td>
-            <td class="numeric"><?php print($result_stats_caller_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered']); ?>%</td>
-            <td class="numeric" width="1"><?php print($result_stats_campaign_date['components'][$cid]['stats'][$key]); ?></td>
-            <td class="numeric"><?php print($result_stats_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered_completed']); ?>%</td>
-            <td class="numeric"><?php print($result_stats_campaign_date['components'][$cid]['stats'][$key . '_percentage_answered']); ?>%</td>
+          <th></th>
+          <?php if (!empty($result_stats['caller_campaign'])) : ?>
+            <th colspan="4">beller campagne</th>
+          <?php endif; ?>
+          <th colspan="4">campagne</th>
+          <?php if (!empty($result_stats['caller_campaign_date'])) : ?>
+            <th colspan="4">beller campagne<br/><?php print $result_stats['caller_campaign_date']['call_date']; ?></th>
+          <?php endif; ?>
+          <?php if (!empty($result_stats['campaign_date'])) : ?>
+            <th colspan="4">campagne<br/><?php print $result_stats['campaign_date']['call_date']; ?></th>
           <?php endif; ?>
         </tr>
-      <?php endforeach; ?>
-    </table>
-  <?php endforeach; ?>
+        <?php foreach ($data['options'] as $key => $option) : ?>
+          <tr>
+            <td width="200"><?php print($option); ?></td>
+            <?php foreach ($data_sets as $data_set) : ?>
+              <?php if (!empty($result_stats[$data_set])) : ?>
+                <td class="numeric" width="1"><?php print($result_stats[$data_set]['components'][$cid]['stats'][$key]); ?></td>
+                <td class="numeric"><?php print($result_stats[$data_set]['components'][$cid]['stats'][$key . '_percentage_answered_completed']); ?>%</td>
+                <td class="numeric"><?php print($result_stats[$data_set]['components'][$cid]['stats'][$key . '_percentage_answered']); ?>%</td>
+                <td></td>
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </tr>
+        <?php endforeach; ?>
+      </table>
+    <?php endforeach; ?>
+  <?php endif; ?>
 <?php endif; ?>

@@ -23,14 +23,14 @@ function spbellen_caller_stats_form($form, &$form_state) {
   if (!empty($caller) && !empty($form_state['last_caller'])) {
     if ($form_state['last_caller'] != $caller) {
       unset($values['call_date']);
-      unset($call_date);
+      $call_date = '';
       unset($form_state['input']['call_date']);
     }
   }
   if (!empty($campaign) && !empty($form_state['last_campaign'])) {
     if ($form_state['last_campaign'] != $campaign) {
       unset($values['call_date']);
-      unset($call_date);
+      $call_date = '';
       unset($form_state['input']['call_date']);
       unset($values['caller']);
       unset($caller);
@@ -107,16 +107,21 @@ function spbellen_caller_stats_form($form, &$form_state) {
     }
     if (!empty($campaign)) {
       $variables['general_stats']['campaign'] = spbellen_get_caller_stats('all', $campaign);
+      $variables['result_stats']['campaign'] = spbellen_get_result_stats('all', $campaign);
     }
     if (!empty($caller_id) && !empty($campaign)) {
       $variables['general_stats']['caller_campaign'] = spbellen_get_caller_stats($caller_id, $campaign);
+      $variables['result_stats']['caller_campaign'] = spbellen_get_result_stats($caller_id, $campaign);
     }
     if (!empty($call_date) && !empty($campaign)) {
       $variables['general_stats']['campaign_date'] = spbellen_get_caller_stats('all', $campaign, $call_date);
+      $variables['result_stats']['campaign_date'] = spbellen_get_result_stats('all', $campaign, $call_date);
     }
     if (!empty($caller_id) && !empty($call_date) && !empty($campaign)) {
       $variables['general_stats']['caller_campaign_date'] = spbellen_get_caller_stats($caller_id, $campaign, $call_date);
+      $variables['result_stats']['caller_campaign_date'] = spbellen_get_result_stats($caller_id, $campaign, $call_date);
     }
+
     $markup = theme('spbellen_caller_overview_theme', $variables);
 
     $form['caller_stats'] = array(
