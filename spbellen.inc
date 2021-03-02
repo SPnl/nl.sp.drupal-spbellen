@@ -1384,10 +1384,15 @@ function spbellen_get_callers_list() {
 /**
  * Search callers.
  */
-function spbellen_get_campaign_callers($campaign_id) {
+function spbellen_get_campaign_callers($campaign_id = NULL) {
   $callers = array();
-  $query = "SELECT ca.caller_id, ca.display_name, us.mail FROM {spbellen_caller} ca INNER JOIN {users} us ON ca.caller_id = us.uid INNER JOIN spbellen_action ac ON ac.caller_id = ca.caller_id INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.campaign_id = :campaign_id AND ta.state = 1";
-  $result = db_query($query, array(':campaign_id' => $campaign_id));
+  $query = "SELECT ca.caller_id, ca.display_name, us.mail FROM {spbellen_caller} ca INNER JOIN {users} us ON ca.caller_id = us.uid INNER JOIN spbellen_action ac ON ac.caller_id = ca.caller_id INNER JOIN spbellen_targets ta ON ac.target_id = ta.id WHERE ta.state = 1";
+  $vars = array();
+  if (!empty($campaign_id)) {
+    $query .= ' AND ta.campaign_id = :campaign_id';
+    $vars[':campaign_id'] = $campaign_id;
+  }
+  $result = db_query($query, $vars);
   if ($result) {
     while ($row = $result->fetchAssoc()) {
       $id = check_plain($row['display_name']) . ',  ' . check_plain($row['mail']) . ' (' . $row['caller_id'] . ')';
@@ -1498,16 +1503,17 @@ function spbellen_get_campaign_stats($campaign_id, $afdeling_id = NULL) {
 function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call_date = NULL) {
   $stats = array();
   $vars = array();
-  $select = "ca.caller_id caller_id, ca.display_name name, ca.phone phone, COUNT(*) total_including_not_answered, SUM(result != 'not_answered') total, SUM(result = 'call_back') call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'skipped') skipped, SUM(result = 'answered_blacklist') blacklisted, SUM(result = 'answered_call_back') answered_call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'answered_completed') answered_completed, SUM(result = 'wrong_number') wrong_number, SUM(result = 'call_appointment') call_appointment";
+  $select = "COUNT(*) total_including_not_answered, SUM(result != 'not_answered') total, SUM(result = 'call_back') call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'skipped') skipped, SUM(result = 'answered_blacklist') blacklisted, SUM(result = 'answered_call_back') answered_call_back, SUM(result = 'not_answered') not_answered, SUM(result = 'answered_completed') answered_completed, SUM(result = 'wrong_number') wrong_number, SUM(result = 'call_appointment') call_appointment";
   $tables = "spbellen_targets ta INNER JOIN spbellen_action ac ON ta.id = ac.target_id INNER JOIN spbellen_caller ca ON ca.caller_id = ac.caller_id";
   $where = "ta.state = 1";
-  if ($caller_id === 'all') {
+  $conditions = '';
+  if ($caller_id !== 'all') {
+    $select = 'ca.caller_id caller_id, ca.display_name name, ca.phone phone, ' . $select;
+  }
+  if (empty($caller_id)) {
     $conditions = ' GROUP BY ca.caller_id';
   }
-  else {
-    $conditions = '';
-  }
-  if (!empty($caller_id && $caller_id !== 'all')) {
+  if (!empty($caller_id) && $caller_id !== 'all') {
     $where .= ' AND ac.caller_id = :caller_id';
     $vars[':caller_id'] = $caller_id;
   }
@@ -1540,17 +1546,13 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
       else {
         $data[$key] = empty($value) ? '' : $value;
       }
-      if (empty($caller_id)) {
+      if (!empty($caller_id) || $caller_id === 'all') {
         $stats = $data;
       }
       else {
         $stats[$record['caller_id']] = $data;
       }
     }
-  }
-  if (!empty($caller_id) && $caller_id !== 'all') {
-    $caller = entity_load_single('caller', $caller_id);
-    $stats['caller_display_name'] = $caller->display_name;
   }
   if (!empty($campaign_id)) {
     $campaign = entity_load_single('campaign', $campaign_id);
@@ -1602,9 +1604,7 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
   $stats = array();
   // Create query.
   $query = 'SELECT ';
-  if ($caller_id == 'all') {
-    $query .= 'ca.caller_id, ca.display_name, ';
-  }
+  $query .= 'ca.caller_id, ca.display_name, ';
   foreach ($options as $key => $option) {
     $key_sanitized = preg_replace('/[^a-zA-Z_]/', '', $key);
     $query_parts[] = "SUM(result = 'answered_completed' AND da.data = '" . $key_sanitized . "') AS '" . $key_sanitized . "'";
@@ -1616,7 +1616,7 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
     ':campaign_id' => $campaign_id,
     ':cid' => $cid,
   );
-  if (!empty($caller_id) && $caller_id != 'all') {
+  if (!empty($caller_id)) {
     $query .= " AND ac.caller_id = :caller_id";
     $vars[':caller_id'] = $caller_id;
   }
@@ -1624,10 +1624,7 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
     $query .= ' AND DATE(FROM_UNIXTIME(ac.timestamp)) = :call_date';
     $vars[':call_date'] = $call_date;
   }
-  if ($caller_id == 'all') {
-    $query .= ' GROUP BY ca.caller_id';
-  }
-
+  $query .= ' GROUP BY ca.caller_id';
   $query .= ' ORDER BY ca.display_name ASC';
 
   $results = db_query($query, $vars);
@@ -1649,12 +1646,7 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
             $data[$key . '_percentage_answered'] = 0;
           }
         }
-        if ($caller_id == 'all') {
-          $stats[$row['caller_id']] = $data;
-        }
-        else {
-          $stats = $data;
-        }
+        $stats[$row['caller_id']] = $data;
       }
     }
   }
@@ -1664,25 +1656,26 @@ function spbellen_get_caller_result_stats($caller_id = NULL, $campaign_id, $call
 /**
  * Get last called date for caller.
  */
-function spbellen_get_call_dates($campaign_id, $caller_id = NULL) {
+function spbellen_get_call_dates($campaign_id = NULL, $caller_id = NULL) {
+  $query = "SELECT DISTINCT(DATE(FROM_UNIXTIME(timestamp))) as calldate FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id INNER JOIN spbellen_caller ca ON ac.caller_id = ca.caller_id WHERE ta.state = 1";
+  $vars = array();
+
   if (!empty($campaign_id)) {
-    $query = "SELECT DISTINCT(DATE(FROM_UNIXTIME(timestamp))) as calldate FROM spbellen_action ac INNER JOIN spbellen_targets ta ON ac.target_id = ta.id INNER JOIN spbellen_caller ca ON ac.caller_id = ca.caller_id WHERE ta.state = 1 AND campaign_id = :campaign_id";
-    $vars = array(
-      ':campaign_id' => $campaign_id,
-    );
+    $query .= ' AND campaign_id = :campaign_id';
+    $vars[':campaign_id'] = $campaign_id;
+  }
 
-    // Filter caller.
-    if (!empty($caller_id)) {
-      $query .= ' AND ac.caller_id = :caller_id';
-      $vars[':caller_id'] = $caller_id;
-    }
+  // Filter caller.
+  if (!empty($caller_id)) {
+    $query .= ' AND ac.caller_id = :caller_id';
+    $vars[':caller_id'] = $caller_id;
+  }
 
-    $query .= ' ORDER BY timestamp DESC';
-    $result = db_query($query, $vars);
-    if ($result) {
-      $dates = $result->FetchAllKeyed(0, 0);
-      return $dates;
-    }
+  $query .= ' ORDER BY timestamp DESC';
+  $result = db_query($query, $vars);
+  if ($result) {
+    $dates = $result->FetchAllKeyed(0, 0);
+    return $dates;
   }
 }
 
