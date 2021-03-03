@@ -50,10 +50,10 @@
         <th colspan="3">campagne<br/><?php print($general_stats['campaign_date']['call_date']); ?></th>
       <?php endif; ?>
       <?php if (!empty($general_stats['caller_date'])) : ?>
-        <th colspan="3">beller<br/><?php print($general_stats['date']['call_date']); ?></th>
+        <th colspan="3">beller<br/><?php print($general_stats['caller_date']['call_date']); ?></th>
       <?php endif; ?>
       <?php if (!empty($general_stats['date'])) : ?>
-        <th colspan="3">alle<br/><?php print($general_stats['date']['call_date']); ?></th>
+        <th colspan="3">alle<br/><?php print($general_stats['caller_date']['call_date']); ?></th>
       <?php endif; ?>
     </tr>
     <?php foreach ($fields as $field_key => $field_title): ?>
@@ -89,7 +89,7 @@
           <th colspan="2">beller&nbsp;campagne<br/><?php print($general_stats['caller_campaign_date']['call_date']); ?></th>
         <?php endif; ?>
         <?php if (!empty($general_stats['caller_date'])) : ?>
-          <th colspan="2">beller<br/><?php print($general_stats['date']['call_date']); ?></th>
+          <th colspan="2">beller<br/><?php print($general_stats['caller_date']['call_date']); ?></th>
         <?php endif; ?>
       </tr>
       <?php foreach ($fields as $field_key => $field_title): ?>
