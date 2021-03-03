@@ -44,6 +44,33 @@
   <?php endforeach; ?>
 </table>
 
+<?php if (empty($general_stats['campaign_title'])) : ?>
+  <?php $fields = spbellen_action_translate(); ?>
+  <h3>Beltijden</h3>
+  <table style="width: auto">
+    <tr>
+      <th>Beller</th>
+      <th colspan="1">Aantal belacties</th>
+      <th></th>
+      <?php foreach ($fields as $field_key => $field_name) : ?>
+        <th colspan="1"><?php print $field_name; ?></th>
+      <?php endforeach; ?>
+    </tr>
+    <?php foreach ($general_stats as $id => $caller_data) : ?>
+      <?php if (is_numeric($id)) : ?>
+        <tr>
+          <td><?php print($caller_data['name']); ?></td>
+          <td class="numeric" width="1"><?php print($caller_data['total_including_not_answered']); ?></td>
+          <td>&nbsp;</td>
+          <?php foreach ($fields as $field_key => $field_name) : ?>
+            <td class="numeric" width="1"><?php print($caller_data['call_times'][$field_key]); ?></td>
+          <?php endforeach; ?>
+        </tr>
+      <?php endif; ?>
+    <?php endforeach; ?>
+  </table>
+<?php endif; ?>
+
 <?php if (!empty($result_stats)) : ?>
   <h3>Resultaat statistieken</h3>
   <p>(Aantal - Percentage vragen afgerond - percentage telefoon opgenomen)</p>

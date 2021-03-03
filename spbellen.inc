@@ -1205,13 +1205,13 @@ function spbellen_blacklist($contact_id, $blacklist_in_crm_too = TRUE) {
 
 function spbellen_action_translate() {
   return array(
-    'not_answered' => 'Niet opgenomen',
-    'wrong_number' => 'Verkeerd nummer',
-    'answered_completed' => 'Gesprek afgerond.',
-    'answered_call_back' => 'Telefoon opgenomen, terugbellen.',
-    'call_appointment' => 'Terugbelafspraak gemaakt.',
-    'answered_blacklist' => 'Niet meer bellen.',
+    'answered_completed' => 'Afgerond',
+    'answered_call_back' => 'Terugbellen',
+    'call_appointment' => 'Belafspraak',
     'skipped' => 'Overgeslagen',
+    'wrong_number' => 'Verkeerd nummer',
+    'answered_blacklist' => 'Nooit meer bellen',
+    'not_answered' => 'Niet opgenomen',
   );
 }
 
@@ -1527,7 +1527,9 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
   }
   $query = 'SELECT ' . $select . ' FROM ' . $tables . ' WHERE ' . $where . $conditions . ' ORDER BY ca.display_name ASC';
   $result = db_query($query, $vars);
+  $number_of_rows = $result->rowCount();
   while ($record = $result->fetchAssoc()) {
+    // Store results.
     foreach ($record as $key => $value) {
       if (!in_array($key, array('caller_id', 'name', 'phone'))) {
         $data[$key] = empty($value) ? 0 : $value;
@@ -1553,6 +1555,15 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
         $stats[$record['caller_id']] = $data;
       }
     }
+    // Add average call times.
+    if (empty($campaign_id)) {
+      if (!empty($caller_id) && $caller_id != 'all') {
+        $stats['call_times'] = spbellen_get_call_duration($caller_id, $call_date);
+      }
+      if (empty($caller_id)) {
+        $stats[$record['caller_id']]['call_times'] = spbellen_get_call_duration($record['caller_id'], $call_date);
+      }
+    }
   }
   if (!empty($campaign_id)) {
     $campaign = entity_load_single('campaign', $campaign_id);
@@ -1561,6 +1572,7 @@ function spbellen_get_caller_stats($caller_id = NULL, $campaign_id = NULL, $call
   if (!empty($call_date)) {
     $stats['call_date'] = $call_date;
   }
+
   return $stats;
 }
 
@@ -1773,4 +1785,54 @@ function spbellen_show_start_page() {
     return TRUE;
   }
   return FALSE;
+}
+
+function spbellen_get_call_duration($caller_id, $call_date = NULL, $call_result = NULL) {
+  $average_call_times = array();
+  if ($caller_id !== 'all') {
+    $call_results = spbellen_action_translate();
+    if (!empty($call_results[$call_result])) {
+      $call_results = array($call_result => $call_results[$call_result]);
+    }
+    foreach ($call_results as $call_result => $call_result_title) {
+      // Initialize previous timestamp bigger then current timestamp.
+      $query = "SET @PrevTimestamp = 9999999999";
+      db_query($query);
+
+      // Build query to create temporary table with raw call time data.
+      $vars = array(
+        ':caller_id' => $caller_id,
+        ':call_result' => $call_result,
+      );
+      $query = "SELECT time FROM (SELECT timestamp, result, DATE_FORMAT(FROM_UNIXTIME(timestamp), '%e %b %Y') AS date, IF(timestamp - previous_timestamp < 0, 0, timestamp - previous_timestamp) AS time FROM (SELECT act.result, act.timestamp, @PrevTimestamp AS previous_timestamp, @PrevTimestamp := act.timestamp FROM spbellen_action act WHERE act.caller_id = :caller_id ";
+      // Optionally filter on call date.
+      if (!empty($call_date)) {
+        $query .= ' AND DATE(FROM_UNIXTIME(act.timestamp)) = :call_date ';
+        $vars[':call_date'] = $call_date;
+      }
+      $query .= " ORDER BY act.id) data WHERE DATE_FORMAT(FROM_UNIXTIME(timestamp), '%e %b %Y') = DATE_FORMAT(FROM_UNIXTIME(previous_timestamp), '%e %b %Y'))  results WHERE results.result = :call_result ORDER BY timestamp ";
+      $tmp_table_name = db_query_temporary($query, $vars);
+
+      $query = "SELECT * FROM " . $tmp_table_name;
+      $result = db_query($query);
+      $all = $result->fetchCol();
+
+      // Get average time.
+      $query = "SET @AvgTime = (SELECT AVG(time) FROM " . $tmp_table_name . ")";
+      db_query($query);
+      $query = "SELECT @AvgTime";
+      $result = db_query($query);
+      $avg = $result->fetchField();
+
+      // Remove extremes and get new average time.
+      $query = "SELECT ROUND(AVG(time)) AS average_call_time FROM " . $tmp_table_name . " WHERE ABS(time / @AvgTime) < 10";
+      $result = db_query($query);
+
+      // Store average.
+      $average_call_times[$call_result] = $result->fetchField();
+
+      db_drop_table($tmp_table_name);
+    }
+  }
+  return $average_call_times;
 }

@@ -87,11 +87,11 @@ function spbellen_caller_stats_form($form, &$form_state) {
     ),
   );
 
-  if (empty($caller)) {
-    $variables['general_stats'] = spbellen_get_caller_stats($caller_id, $campaign, $call_date);
+  if (empty($caller_id)) {
+    $variables['general_stats'] = spbellen_get_caller_stats('', $campaign, $call_date);
 
     if (!empty($campaign)) {
-      $variables['result_stats'] = spbellen_get_result_stats($caller_id, $campaign, $call_date);
+      $variables['result_stats'] = spbellen_get_result_stats('', $campaign, $call_date);
     }
 
     $markup = theme('spbellen_callers_overview_theme', $variables);

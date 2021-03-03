@@ -69,6 +69,42 @@
       </tr>
     <?php endforeach; ?>
   </table>
+  <?php if (empty($general_stats['campaign'])) : ?>
+    <h3>Beltijden</h3>
+    <?php $fields = spbellen_action_translate(); ?>
+    <?php $data_sets = array(
+      'caller',
+      'caller_campaign',
+      'caller_campaign_date',
+      'caller_date',
+    ); ?>
+    <table style="width: auto">
+      <tr>
+        <th></th>
+        <th colspan="2">beller&nbsp;totaal</th>
+        <?php if (!empty($general_stats['caller_campaign'])) : ?>
+          <th colspan="2">beller&nbsp;campagne</th>
+        <?php endif; ?>
+        <?php if (!empty($general_stats['caller_campaign_date'])) : ?>
+          <th colspan="2">beller&nbsp;campagne<br/><?php print($general_stats['caller_campaign_date']['call_date']); ?></th>
+        <?php endif; ?>
+        <?php if (!empty($general_stats['caller_date'])) : ?>
+          <th colspan="2">beller<br/><?php print($general_stats['date']['call_date']); ?></th>
+        <?php endif; ?>
+      </tr>
+      <?php foreach ($fields as $field_key => $field_title): ?>
+        <tr>
+          <td width="200"><?php print $field_title; ?></td>
+          <?php foreach ($data_sets as $data_set): ?>
+            <?php if (!empty($general_stats[$data_set]['call_times'])) : ?>
+              <td class="numeric" width="1"><?php print $general_stats[$data_set]['call_times'][$field_key]; ?></td>
+              <td></td>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </tr>
+      <?php endforeach; ?>
+    </table>
+  <?php endif; ?>
 <?php endif; ?>
 
 <?php if (!empty($result_stats['campaign'])) : ?>
