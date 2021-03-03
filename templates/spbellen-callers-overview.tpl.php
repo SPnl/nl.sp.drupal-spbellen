@@ -46,7 +46,7 @@
 
 <?php if (empty($general_stats['campaign_title'])) : ?>
   <?php $fields = spbellen_action_translate(); ?>
-  <h3>Beltijden</h3>
+  <h3>Beltijden (min)</h3>
   <table style="width: auto">
     <tr>
       <th>Beller</th>

@@ -69,8 +69,9 @@
       </tr>
     <?php endforeach; ?>
   </table>
+
   <?php if (empty($general_stats['campaign'])) : ?>
-    <h3>Beltijden</h3>
+    <h3>Beltijden (min)</h3>
     <?php $fields = spbellen_action_translate(); ?>
     <?php $data_sets = array(
       'caller',

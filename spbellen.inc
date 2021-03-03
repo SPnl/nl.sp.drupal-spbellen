@@ -1825,7 +1825,7 @@ function spbellen_get_call_duration($caller_id, $call_date = NULL, $call_result 
       $avg = $result->fetchField();
 
       // Remove extremes and get new average time.
-      $query = "SELECT ROUND(AVG(time)) AS average_call_time FROM " . $tmp_table_name . " WHERE ABS(time / @AvgTime) < 10";
+      $query = "SELECT ROUND(AVG(time/60), 1) AS average_call_time FROM " . $tmp_table_name . " WHERE ABS(time / @AvgTime) < 10";
       $result = db_query($query);
 
       // Store average.
