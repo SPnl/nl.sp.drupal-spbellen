@@ -144,6 +144,29 @@ function spbellen_contact_search_autocomplete($user_id, $webform_id, $string) {
 }
 
 /**
+ * Returns contacts for autocomplete campaign search form.
+ */
+function spbellen_campaign_search_autocomplete($string) {
+  $string = strtolower($string);
+  $matches = array();
+  if (strlen($string) > 2) {
+    $campaigns_list = spbellen_get_campaigns_list();
+    if (!empty($campaigns_list)) {
+      foreach ($campaigns_list as $campaign_id => $title) {
+        if (strpos(strtolower($title), $string) !== FALSE) {
+          $matches[$title] = $title;
+        }
+        if (count($matches) > 10) {
+          break;
+        }
+      }
+    }
+  }
+  // Return the result to the form in json.
+  drupal_json_output($matches);
+}
+
+/**
  * Helper function to parse id from select value.
  */
 function spbellen_parse_id_from_select_value($id_raw) {
