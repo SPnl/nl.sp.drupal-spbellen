@@ -183,3 +183,27 @@ function spbellen_proc_import_parse_contact_data($proc_data) {
   }
   return $contact_data;
 }
+
+/**
+ * Autocomplete for selections.
+ */
+function spbellen_proc_import_selection_autocomplete($string) {
+  $string = strtolower($string);
+  $matches = array();
+  if (strlen($string) > 2) {
+    $matches = array();
+    $selection_list = procapi_selection_get_select_list();
+
+    foreach ($selection_list as $key => $selection) {
+      if (strpos(strtolower($selection), $string) !== FALSE) {
+        $matches[$selection . ' (' . $key . ')'] = $selection;
+      }
+      if (count($matches) > 10) {
+        break;
+      }
+    }
+  }
+
+  // Return the result to the form in json.
+  drupal_json_output($matches);
+}

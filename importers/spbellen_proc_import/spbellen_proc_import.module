@@ -19,6 +19,15 @@ function spbellen_proc_import_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'spbellen_proc_import.inc',
   );
+
+  $items['spbellen/proc/selection/autocomplete'] = array(
+    'title' => 'Procurios selection autocomplete',
+    'page callback' => 'spbellen_proc_import_selection_autocomplete',
+    'access arguments' => array('spbellen administer campaigns'),
+    'type' => MENU_CALLBACK,
+    'file' => 'spbellen_proc_import.inc',
+  );
+
   return $items;
 }
 
@@ -45,14 +54,25 @@ function spbellen_proc_import_import_form(&$form, &$form_state) {
 
   $selection_list = procapi_selection_get_select_list();
 
-  $form['spbellen_proc_import']['selections'] = array(
-    '#type' => 'select',
-    '#title' => 'Kies één of meerdere selecties',
-    '#required' => TRUE,
-    '#options' => $selection_list,
-    '#multiple' => TRUE,
-    '#empty_value' => 'Kies:',
-  );
+  if (empty($storage['selection'])) {
+    // Select campaign.
+    $form['spbellen_proc_import']['selection'] = array(
+      '#type' => 'textfield',
+      '#title' => 'Zoek een selectie',
+      '#autocomplete_path' => 'spbellen/proc/selection/autocomplete',
+    );
+
+    $form['spbellen_proc_import']['selection_submit'] = array(
+      '#type' => 'button',
+      '#value' => 'Bevestig selectie',
+      '#name' => 'selection_submit',
+    );
+  }
+  else {
+    $form['spbellen_proc_import']['selection'] = array(
+      '#markup' => '<p>' . $storage['selection']['title'] . '</p>',
+    );
+  }
 }
 
 /**
@@ -60,7 +80,32 @@ function spbellen_proc_import_import_form(&$form, &$form_state) {
  */
 function spbellen_proc_import_import_form_validate($form, &$form_state) {
   $values = $form_state['values'];
-  $storage = $form_state['storage'];
+  $storage = &$form_state['storage'];
+
+  if (!empty($form_state['triggering_element']['#name'])) {
+    // Check fixed name buttons.
+    $trigger = $form_state['triggering_element']['#name'];
+    switch ($trigger) {
+      case 'selection_submit':
+        // Store selected selection.
+        if (!empty($values['selection'])) {
+          $selection_id = spbellen_parse_id_from_select_value($values['selection']);
+          if (!empty($selection_id)) {
+            $selection_list = procapi_selection_get_select_list();
+            $storage['selection']['id'] = $selection_id;
+            $storage['selection']['title'] = $selection_list[$storage['selection']['id']];
+          }
+        }
+        break;
+
+      case 'select_importer':
+        // Store selected campaign.
+        if (!empty($values['select_importer'])) {
+          $storage['selected_importer'] = $values['select_importer'];
+        }
+        break;
+    }
+  }
 }
 
 /**
@@ -69,23 +114,23 @@ function spbellen_proc_import_import_form_validate($form, &$form_state) {
 function spbellen_proc_import_import_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $storage = $form_state['storage'];
+  if (!empty($storage['selection'])) {
+    // Create import.
+    $selection_title = $storage['selection']['title'];
+    $selection_id = $storage['selection']['id'];
+    $group_id = spbellen_import_merge_group($storage['selected_importer'], $selection_id, $selection_title, NULL);
+    $groups[] = $group_id;
 
-  if (!empty($values['selections'])) {
-    foreach ($values['selections'] as $selection_id) {
-      // Create import.
-      $selection_title = $form['spbellen_proc_import']['selections']['#options'][$selection_id];
-      $group_id = spbellen_import_merge_group($storage['selected_importer'], $selection_id, $selection_title, NULL);
-      $groups[] = $group_id;
-
-      // Store group campaign relation.
-      spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
-
-    }
+  }
+  if (!empty($groups)) {
     // Import Procurios selections contacts.
     $batch = spbellen_proc_import_import_groups($groups);
     if (!empty($batch)) {
       batch_set($batch);
     }
+  }
+  else {
+    drupal_set_message('Er was geen selectie ingesteld. Probeer het nogmaals.', 'error');
   }
 }
 
