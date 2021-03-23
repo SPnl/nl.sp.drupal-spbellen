@@ -33,15 +33,11 @@ function spbellen_import_form($form, &$form_state) {
       if (empty($storage['campaign'])) {
         // Select campaign.
         $form['select_campaign'] = array(
-          '#type' => 'textfield',
-          '#title' => 'Zoek een belcampagne',
-          '#autocomplete_path' => 'spbellen/campaign_search/autocomplete',
-        );
-
-        $form['select_campaign_submit'] = array(
-          '#type' => 'button',
-          '#value' => 'Verder',
-          '#name' => 'select_campaign_submit',
+          '#type' => 'select',
+          '#title' => 'Kies een belcampagne.',
+          '#name' => 'select_campaign',
+          '#options' => $campaigns_list,
+          '#empty_option' => 'Kies:',
           '#ajax' => array(
             'wrapper' => 'spbellen_import_ajax_form',
             'callback' => 'spbellen_import_form_ajax_callback',
@@ -102,13 +98,10 @@ function spbellen_import_form_validate($form, &$form_state) {
     // Check fixed name buttons.
     $trigger = $form_state['triggering_element']['#name'];
     switch ($trigger) {
-      case 'select_campaign_submit':
+      case 'select_campaign':
         // Store selected campaign.
         if (!empty($values['select_campaign'])) {
-          $campaign_id = spbellen_parse_id_from_select_value($values['select_campaign']);
-          if (!empty($campaign_id)) {
-            $storage['campaign'] = $campaign_id;
-          }
+          $storage['campaign'] = $values['select_campaign'];
         }
         break;
 

@@ -173,15 +173,6 @@ function spbellen_menu() {
     'file' => 'spbellen.inc',
   );
 
-  $items['spbellen/campaign_search/autocomplete'] = array(
-    'title' => 'SP bellen autocomplete',
-    'page callback' => 'spbellen_campaign_search_autocomplete',
-    'page arguments' => array(3),
-    'access arguments' => array('spbellen administer campaigns'),
-    'type' => MENU_CALLBACK,
-    'file' => 'spbellen.inc',
-  );
-
   $campaigns = spbellen_get_campaigns();
   foreach ($campaigns as $campaign) {
     if (empty($campaign->disabled)) {

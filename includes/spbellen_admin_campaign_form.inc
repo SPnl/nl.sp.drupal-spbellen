@@ -21,15 +21,11 @@ function spbellen_campaign_form($form, &$form_state) {
     if (!empty($campaigns_list)) {
       // Select campaign.
       $form['select_campaign'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Zoek een belcampagne',
-        '#autocomplete_path' => 'spbellen/campaign_search/autocomplete',
-      );
-
-      $form['select_campaign_submit'] = array(
-        '#type' => 'button',
-        '#value' => 'Bevestig gekozen campagne',
-        '#name' => 'select_campaign_submit',
+        '#type' => 'select',
+        '#title' => 'Kies een bestaande belcampagne, of maak een nieuwe campagne aan.',
+        '#name' => 'select_campaign',
+        '#options' => $campaigns_list,
+        '#empty_option' => 'Kies:',
         '#ajax' => array(
           'wrapper' => 'spbellen_ajax_form',
           'callback' => 'spbellen_form_ajax_callback',
@@ -326,13 +322,10 @@ function spbellen_campaign_form_validate($form, &$form_state) {
         }
         break;
 
-      case 'select_campaign_submit':
+      case 'select_campaign':
         // Store selected campaign.
         if (!empty($values['select_campaign'])) {
-          $campaign_id = spbellen_parse_id_from_select_value($values['select_campaign']);
-          if (!empty($campaign_id)) {
-            $storage['campaign'] = $campaign_id;
-          }
+          $storage['campaign'] = $values['select_campaign'];
           // Preset stored campaign values.
           $campaign = entity_load_single('campaign', $storage['campaign']);
           $webform = entity_load_single('node', $campaign->webform_id);
