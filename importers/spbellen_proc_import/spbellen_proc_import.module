@@ -120,7 +120,8 @@ function spbellen_proc_import_import_form_submit($form, &$form_state) {
     $selection_id = $storage['selection']['id'];
     $group_id = spbellen_import_merge_group($storage['selected_importer'], $selection_id, $selection_title, NULL);
     $groups[] = $group_id;
-
+    // Store group campaign relation.
+    spbellen_import_insert_group_campaign_relation($group_id, $storage['campaign']);
   }
   if (!empty($groups)) {
     // Import Procurios selections contacts.
