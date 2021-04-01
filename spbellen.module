@@ -1220,12 +1220,16 @@ function spbellen_contact_block_data() {
       $contact_data = spbellen_assign_target($campaign);
 
       if (!empty($contact_data['contact_id'])) {
-
         // Contact data.
         $contact_id = $contact_data['contact_id'];
         $contact_fields = spbellen_contact_fields();
         foreach ($contact_fields as $key => $name) {
           $data[$key] = !empty($contact_data[$key]) ? check_plain($contact_data[$key]) : '';
+        }
+
+        // Correction for new street field.
+        if (empty($data['street_address']) && !empty($data['street'])) {
+          $data['street_address'] = $data['street'] . (empty($data['street_number']) ? '' : ' ' . $data['street_number']) . (empty($data['street_number']) ? '' : $data['street_number_addon']);
         }
 
         // Add notes.
