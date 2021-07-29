@@ -1023,7 +1023,7 @@ function spbellen_assign_target($campaign) {
       $result = db_query($query, $from_vars)->fetchAssoc();
       if (!$result) {
         // Get appointment targets.
-        $query = "SELECT ta.id, ta.contact_id, ta.attempts, occupied, gr.id group_id " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND ta.date < :occupied_time ORDER BY call_back_time ASC, " . $order_defaults . " LIMIT 1";
+        $query = "SELECT ta.id, ta.contact_id, ta.attempts, occupied, gr.id group_id " . $from_where . "result = 'call_appointment' AND call_back_priority = 1 AND ac.call_back_time < :current_time AND ac.call_back_time + 43200 > :current_time AND (occupied = 0 OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY call_back_time ASC, " . $order_defaults . " LIMIT 1";
         $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
           ':current_time' => time(),
           ':occupied_time' => time() - 1800,
@@ -1031,7 +1031,7 @@ function spbellen_assign_target($campaign) {
         if (empty($result)) {
           if ($campaign->afdeling_filter == 0 && !empty($caller->afdeling_id) && !empty($caller->regio_id)) {
             // Try to get chapter targets that are called up less then three times.
-            $query = "SELECT ta.id, ta.contact_id, ta.attempts, occupied, gr.id group_id" . $from_where . "attempts < 3 AND afdeling_id = :afdeling_id AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL) AND ta.date < :occupied_time ORDER BY " . $order_defaults . " LIMIT 1";
+            $query = "SELECT ta.id, ta.contact_id, ta.attempts, occupied, gr.id group_id" . $from_where . "attempts < 3 AND afdeling_id = :afdeling_id AND (result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
             $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
               ':occupied_time' => time() - 1800,
               ':current_time' => time(),
@@ -1040,7 +1040,7 @@ function spbellen_assign_target($campaign) {
           }
           if (empty($result)) {
             // Get target.
-            $query = "SELECT ta.id, ta.contact_id, ta.attempts, occupied, gr.id group_id" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL) AND ta.date < :occupied_time ORDER BY " . $order_defaults . " LIMIT 1";
+            $query = "SELECT ta.id, ta.contact_id, ta.attempts, occupied, gr.id group_id" . $from_where . "(result = 'not_answered' OR result = 'answered_call_back' OR result = 'call_appointment' OR result = 'skipped' OR result IS NULL) AND ((occupied = 0 AND (ac.call_back_time < :current_time OR ac.call_back_time IS NULL)) OR (occupied = 1 AND ta.date < :occupied_time)) ORDER BY " . $order_defaults . " LIMIT 1";
             $result = db_query($query, array_merge($from_vars, $order_by_geo_vars, array(
               ':occupied_time' => time() - 1800,
               ':current_time' => time(),
