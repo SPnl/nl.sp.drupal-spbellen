@@ -532,13 +532,6 @@ function spbellen_webform_submission_presave($node, &$submission) {
 
     // Check if submission is ok????
     if ($submission->data[$map['valid_test']][0] !== $submission->data[$map['spbellen_hidden_contact_id']][0]) {
-      global $user;
-      $params = array(
-        'caller' => $user,
-        'call_submission' => $submission,
-        'campaign_node' => $node,
-      );
-      drupal_mail('spbellen', 'inzending_niet_opgeslagen', 'tdgraaff@sp.nl', language_default(), $params);
       $alias = spbellen_get_campaign_form_alias($node->nid);
       $path = 'aanmelden/campagne/' . $alias;
       drupal_goto($path);
